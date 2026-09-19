@@ -1,0 +1,12 @@
+[project]
+name = "readme-check"
+version = "0.1.0"
+description = "Ask Jev five questions about a README in a single call"
+requires-python = ">=3.11"
+dependencies = [
+    "typesafe-sdk>=0.7.0,<1.0.0",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"

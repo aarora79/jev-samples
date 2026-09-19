@@ -1,0 +1,22 @@
+# Scratchpad: local planning notes, never committed
+.scratchpad/
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+build/
+dist/
+
+# Virtual environments and secrets
+.venv/
+.env
+
+# Tool caches
+.ruff_cache/
+.mypy_cache/
+.pytest_cache/
+.coverage
+
+# OS
+.DS_Store
