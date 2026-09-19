@@ -46,9 +46,7 @@ DEFAULT_TARGET: str = "README.md"
 GITHUB_REPO_URL_PART_COUNT: int = 5
 
 
-def _to_raw_url(
-    url: str
-) -> str:
+def _to_raw_url(url: str) -> str:
     """Rewrite a GitHub web URL to its raw.githubusercontent.com equivalent.
 
     Args:
@@ -62,9 +60,7 @@ def _to_raw_url(
         return url
 
     if "/blob/" in url:  # a file page
-        return url.replace("github.com", "raw.githubusercontent.com", 1).replace(
-            "/blob/", "/", 1
-        )
+        return url.replace("github.com", "raw.githubusercontent.com", 1).replace("/blob/", "/", 1)
 
     parts = url.rstrip("/").split("/")
     if len(parts) == GITHUB_REPO_URL_PART_COUNT:  # a repo root
@@ -74,9 +70,7 @@ def _to_raw_url(
     return url
 
 
-def _load_readme(
-    target: str
-) -> tuple[str, str]:
+def _load_readme(target: str) -> tuple[str, str]:
     """Load a README from a local path or an https URL.
 
     Args:
@@ -145,7 +139,7 @@ def _build_questions() -> dict:
 
 def _print_answers(
     name: str,
-    answers: dict
+    answers: dict,
 ) -> None:
     """Print the answers, then the one verdict worth acting on.
 
@@ -166,9 +160,7 @@ def _print_answers(
         print("\n  -> worth a rewrite before anyone outside the team reads it")
 
 
-def check_readme(
-    target: str
-) -> None:
+def check_readme(target: str) -> None:
     """Read one README and ask Jev five questions about it in one call.
 
     Args:
@@ -176,13 +168,14 @@ def check_readme(
     """
     name, text = _load_readme(target)
 
-    answers = TypeSafeClient().system_one(
+    response = TypeSafeClient().system_one(
         model=MODEL,
         state={"filename": name, "readme": text[:MAX_STATE_CHARS]},
         questions=_build_questions(),
-    ).answers
+    )
+    logger.debug(f"Used {response.usage.input_tokens} input tokens")
 
-    _print_answers(name, answers)
+    _print_answers(name, response.answers)
 
 
 def main() -> None:

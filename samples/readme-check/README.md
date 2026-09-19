@@ -46,7 +46,7 @@ README.md
   sounds stale    0.30
 ```
 
-That call took 327 ms end to end. TypeSafe quotes 70 to 500 ms and calls 100 ms typical, so this run sat at the slow end of their range. Each log line carries the request id, so keep the logs when you report a latency number.
+That call took 327 ms end to end, and four calls from the same machine landed between 319 and 359 ms. Most of that is transit. On the run I inspected, the `x-envoy-upstream-service-time` header reported 108 ms inside TypeSafe, which matches the 100 ms they call typical. Run with `--debug` to see the header, and quote both numbers when you report latency, because the end-to-end figure is mostly a fact about your network.
 
 `--debug` raises the log level, and `--help` lists the options.
 
