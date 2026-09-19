@@ -10,7 +10,10 @@
     "input_tokens": 6285,
     "output_tokens": 346
   },
-  "readiness": 0.8297,
+  "latency_ms": 392,
+  "cost_usd": 0.00026397,
+  "questions_asked": 17,
+  "readiness": 0.8307,
   "questions": {
     "written_for": {
       "label": "written for",
@@ -22,9 +25,9 @@
         "choice": "agent",
         "confidence": 1.0,
         "probabilities": {
+          "human": 0.0,
           "stub": 0.0,
-          "agent": 1.0,
-          "human": 0.0
+          "agent": 1.0
         }
       },
       "credit": 1.0,
@@ -38,13 +41,13 @@
       "returned": {
         "type": "choice",
         "choice": "boundaries",
-        "confidence": 0.65,
+        "confidence": 0.68,
         "probabilities": {
-          "commands": 0.06,
-          "conventions": 0.06,
-          "boundaries": 0.71,
           "layout": 0.03,
-          "testing": 0.14
+          "conventions": 0.06,
+          "testing": 0.11,
+          "commands": 0.06,
+          "boundaries": 0.74
         }
       },
       "credit": null,
@@ -57,7 +60,7 @@
       "inverted": false,
       "returned": {
         "type": "score",
-        "score": 1.98,
+        "score": 1.99,
         "confidence": 0.98,
         "legend": {
           "0": "No commands at all",
@@ -70,7 +73,7 @@
           "2": 0.99
         }
       },
-      "credit": 0.99,
+      "credit": 0.995,
       "judgement": "strong"
     },
     "testing": {
@@ -80,20 +83,20 @@
       "inverted": false,
       "returned": {
         "type": "score",
-        "score": 1.76,
-        "confidence": 0.65,
+        "score": 1.71,
+        "confidence": 0.57,
         "legend": {
           "0": "Nothing about tests",
           "1": "Tells the agent to test without saying how",
           "2": "Exact test commands, and what to do when a test fails"
         },
         "probabilities": {
-          "0": 0.01,
-          "1": 0.22,
-          "2": 0.77
+          "0": 0.0,
+          "1": 0.28,
+          "2": 0.72
         }
       },
-      "credit": 0.88,
+      "credit": 0.855,
       "judgement": "strong"
     },
     "conventions": {
@@ -126,20 +129,20 @@
       "inverted": false,
       "returned": {
         "type": "score",
-        "score": 1.73,
-        "confidence": 0.59,
+        "score": 1.74,
+        "confidence": 0.6,
         "legend": {
           "0": "Nothing about the repository layout",
           "1": "Names a directory or two in passing",
           "2": "Lists the directories or key files and says what each one holds"
         },
         "probabilities": {
-          "0": 0.02,
+          "0": 0.01,
           "1": 0.24,
-          "2": 0.74
+          "2": 0.75
         }
       },
-      "credit": 0.865,
+      "credit": 0.87,
       "judgement": "strong"
     },
     "project_overview": {
@@ -161,9 +164,9 @@
       "inverted": false,
       "returned": {
         "type": "noul",
-        "noul": 0.89
+        "noul": 0.87
       },
-      "credit": 0.89,
+      "credit": 0.87,
       "judgement": "strong"
     },
     "build_commands": {
@@ -221,10 +224,10 @@
       "inverted": false,
       "returned": {
         "type": "noul",
-        "noul": 0.12
+        "noul": 0.17
       },
-      "credit": 0.12,
-      "judgement": "missing"
+      "credit": 0.17,
+      "judgement": "weak"
     },
     "nested_files": {
       "label": "nested file precedence",

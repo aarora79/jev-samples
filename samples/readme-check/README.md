@@ -2,7 +2,7 @@
 
 Reads a README from disk or a GitHub URL, asks Jev five questions about it in one call, and prints each answer with a line explaining the number next to it.
 
-Everything the sample sends sits in [`questions.yml`](questions.yml): the model pin, the state budget, and the five questions with the label each one prints under.
+Everything the sample sends sits in [`questions.yml`](questions.yml): the model pin, the state budget, and five questions, each with the label it prints under.
 `readme_check.py` reads that file, fetches the document, and does the judging.
 
 | Question id | Type | Asks |
@@ -26,7 +26,7 @@ One entry looks like this:
       - A reader could follow them start to finish
 ```
 
-Adding a sixth question means adding a sixth entry. The Python stays the same length.
+Add a sixth question to that file and the Python never grows.
 
 ## Prerequisites
 
@@ -80,7 +80,7 @@ README.md  (https://raw.githubusercontent.com/psf/requests/HEAD/README.md)
 
 Every explanation line comes out of the answer itself: the probabilities Jev spread across the options, the legend it returns beside a Score, and the confidence it reports for both. The sample invents no numbers.
 
-The header names the document Jev read. A GitHub repo root resolves to the raw URL the fetch used, and a relative path resolves to an absolute one, so the line still says which file produced these numbers when you read the output back a week later.
+The header names the document Jev read. A GitHub repo root shows up as the raw URL the fetch used, and a relative path as an absolute one, so the line still says which file produced these numbers a week later.
 
 A call in the same minute took 235 ms end to end, and its `x-envoy-upstream-service-time` header reported 54 ms inside TypeSafe, under the 100 ms they call typical. Calls from this machine landed between 235 and 340 ms across the day, so most of the time is transit. Run with `--debug` to see the header and the token count (1,252 input tokens on that call), and quote both numbers when you report latency.
 
@@ -139,11 +139,11 @@ A call in the same minute took 235 ms end to end, and its `x-envoy-upstream-serv
 }
 ```
 
-Three things to read off it. The score is 1.71 and the summary rounds it to 1.7, so compare against the raw number when you set a threshold near a level boundary. Every `legend` and `probabilities` key arrives as a string on the wire, and the SDK hands them back keyed by `int`, which is why `answer.legend[1]` works and `answer.legend["1"]` raises `KeyError`. TypeSafe bills input tokens only, and it still counted 110 output tokens on this call.
+The score is 1.71 and the summary rounds it to 1.7, so compare against the raw number when you set a threshold near a level boundary. Every `legend` and `probabilities` key arrives as a string on the wire, and the SDK hands them back keyed by `int`, which is why `answer.legend[1]` works and `answer.legend["1"]` raises `KeyError`. TypeSafe bills input tokens only, and it still counted 110 output tokens on this call.
 
 ## What to notice
 
-**The payload is data and the judgment is code.** `questions.yml` holds the model, the state budget and the wording of every question. `readme_check.py` holds the two thresholds and the arithmetic. A reviewer can read a question change without reading Python, and a threshold change shows up in a diff next to the action it guards.
+**The payload is data and the judgment is code.** `questions.yml` holds the model, the state budget and the wording of every question. The two thresholds and the arithmetic sit in `readme_check.py`. A reviewer can read a question change without reading Python, and a threshold change shows up in a diff next to the action it guards.
 
 **The state is an object with named fields.** `{"filename": ..., "readme": ...}` tells the model what each part is, and named fields let you diff one state against another the first time an answer surprises you.
 
@@ -153,7 +153,7 @@ Three things to read off it. The score is 1.71 and the summary rounds it to 1.7,
 
 **Confidence and the winning probability are separate fields.** That run put 0.99 on `user` and reported confidence 0.98. Gate on `.confidence` when you care how sure Jev is of the label, and read `.probabilities` when you care how close the runner-up came.
 
-**A `Score` lands between levels, and its `legend` names them.** Jev returns the rubric text keyed by level, 0 upward in the order you wrote the criteria, so the sample prints the two levels the 1.7 sits between rather than making the reader count. The score is the probability-weighted average of the levels, which is why it lands off the integers.
+**A `Score` lands between levels, and its `legend` names them.** Jev returns the rubric text keyed by level, 0 upward in the order you wrote the criteria. The score is the probability-weighted average of those levels, so the sample prints the two it sits between rather than making the reader count.
 
 **A `Noul` has no separate confidence.** The probability is the confidence, so the sample turns it into a word through the `NOUL_WORDS` bands: 0.99 reads as yes, 0.85 as probably yes, 0.29 as probably no. A value near 0.50 says the document argues both ways or never addresses the statement.
 
@@ -163,5 +163,5 @@ Three things to read off it. The score is 1.71 and the summary rounds it to 1.7,
 
 Point it at twenty READMEs you already know well and read the output against what is in the files. You are testing calibration on your own material: when Jev says 0.9, it should be right about nine times in ten.
 
-1. Add a sixth question to `questions.yml` and time it. The state is the cost, so the wall clock holds about steady. That is fan-out.
+1. Add a sixth question to `questions.yml` and time it. The state is the cost, so the wall clock holds about steady.
 2. Change `model` in `questions.yml` to `jev-latest`, re-run the same files, and see what the pin was protecting.

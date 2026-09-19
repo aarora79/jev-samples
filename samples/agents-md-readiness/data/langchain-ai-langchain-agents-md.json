@@ -10,7 +10,10 @@
     "input_tokens": 5723,
     "output_tokens": 346
   },
-  "readiness": 0.9293,
+  "latency_ms": 476,
+  "cost_usd": 0.00024037,
+  "questions_asked": 17,
+  "readiness": 0.9307,
   "questions": {
     "written_for": {
       "label": "written for",
@@ -20,11 +23,11 @@
       "returned": {
         "type": "choice",
         "choice": "agent",
-        "confidence": 0.98,
+        "confidence": 0.99,
         "probabilities": {
-          "human": 0.01,
+          "human": 0.0,
           "stub": 0.0,
-          "agent": 0.99
+          "agent": 1.0
         }
       },
       "credit": 1.0,
@@ -38,12 +41,12 @@
       "returned": {
         "type": "choice",
         "choice": "boundaries",
-        "confidence": 0.8,
+        "confidence": 0.83,
         "probabilities": {
-          "boundaries": 0.84,
-          "testing": 0.03,
           "commands": 0.07,
-          "layout": 0.04,
+          "testing": 0.02,
+          "layout": 0.03,
+          "boundaries": 0.86,
           "conventions": 0.02
         }
       },
@@ -80,8 +83,8 @@
       "inverted": false,
       "returned": {
         "type": "score",
-        "score": 1.65,
-        "confidence": 0.48,
+        "score": 1.67,
+        "confidence": 0.5,
         "legend": {
           "0": "Nothing about tests",
           "1": "Tells the agent to test without saying how",
@@ -89,12 +92,12 @@
         },
         "probabilities": {
           "0": 0.01,
-          "1": 0.33,
-          "2": 0.66
+          "1": 0.32,
+          "2": 0.67
         }
       },
-      "credit": 0.825,
-      "judgement": "adequate, unsure"
+      "credit": 0.835,
+      "judgement": "adequate"
     },
     "conventions": {
       "label": "conventions",
@@ -149,9 +152,9 @@
       "inverted": false,
       "returned": {
         "type": "noul",
-        "noul": 0.75
+        "noul": 0.77
       },
-      "credit": 0.75,
+      "credit": 0.77,
       "judgement": "adequate"
     },
     "setup_commands": {

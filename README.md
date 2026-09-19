@@ -32,7 +32,7 @@ Read the explainer for a more detailed version: [Jev: a model that decides inste
 - [uv](https://docs.astral.sh/uv/) for dependencies and running
 - A TypeSafe API key in `TYPESAFE_API_KEY`
 
-Each sample reads `TYPESAFE_API_KEY` from the environment. When the environment has no key, it falls back to a `.env` file beside the sample or at the repo root, parsed with fourteen lines of standard library rather than a dependency, and logs which file it came from:
+Each sample reads `TYPESAFE_API_KEY` from the environment, and falls back to a `.env` file beside the sample or at the repo root, logging which file it read. Parsing that file takes fourteen lines of standard library, so no sample carries a dependency for it.
 
 ```bash
 cp .env.example .env         # put your key in it, and the samples find it
@@ -128,9 +128,9 @@ The response, from a run on 19 September 2026:
 }
 ```
 
-Three things to read off that response. A `choice` answer names one of your options and shows where the rest of the probability mass went, and this ticket left none of it elsewhere. A `score` answer carries a `legend` mapping each rubric level back to the text you wrote, so 1.0 means "frustrated but civil". A `noul` answer is one number, and 0.99 is both the answer and the confidence.
+A `choice` answer names one of your options and shows where the rest of the probability mass went, and this ticket left none of it elsewhere. A `score` answer carries a `legend` mapping each rubric level back to the text you wrote, so 1.0 means "frustrated but civil". A `noul` answer is one number, and 0.99 is both the answer and the confidence.
 
-TypeSafe prices input tokens only, at $0.042 per million, so these 439 input tokens cost about $0.000018. The API still counts output tokens, and reported 71 here.
+TypeSafe priced input tokens only in September 2026, at $0.042 per million, so these 439 input tokens cost about $0.000018. The API still counts output tokens, and reported 71 here.
 
 ## Running a sample
 
@@ -167,4 +167,4 @@ Worth reading before you build a gate on top of Jev:
 - [openjev-sglang](https://github.com/ekzhang/openjev-sglang), an open reproduction of the call shape on weights you can host
 - [jevcal](https://github.com/abhixhek/jevcal), which turns a confidence threshold from a guess into a measurement
 
-Accuracy is 67.8% on TypeSafe's own benchmark, and nobody outside the company has reproduced the latency yet. Measure both on your own data before a threshold guards anything that matters.
+Accuracy is 67.8% on TypeSafe's own benchmark, published September 2026, and nobody outside the company has reproduced the latency. Measure both on your own data before a threshold guards anything that matters.

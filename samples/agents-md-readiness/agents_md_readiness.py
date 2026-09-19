@@ -27,6 +27,7 @@ import os
 import pathlib
 import re
 import sys
+import time
 import urllib.error
 import urllib.request
 from typing import NamedTuple
@@ -151,21 +152,23 @@ def _build_question(
 
 
 def _load_payload() -> tuple[dict, dict]:
-    """Read the model pin, the state budget and the questions from questions.yml.
+    """Read the settings and the questions from questions.yml.
 
     Returns:
-        Tuple of (settings, specs). Settings holds the model and the state
-        budget; specs holds each question entry keyed by id, in file order.
+        Tuple of (settings, specs). Settings holds the model, the state budget
+        and the input-token price; specs holds each question entry keyed by id,
+        in file order.
 
     Raises:
         SystemExit: If the file is missing a key the request needs.
     """
     payload = yaml.safe_load(PAYLOAD_FILE.read_text(encoding="utf-8"))
-    missing = {"model", "max_state_chars", "questions"} - payload.keys()
+    wanted = {"model", "max_state_chars", "input_usd_per_million", "questions"}
+    missing = wanted - payload.keys()
     if missing:
         sys.exit(f"{PAYLOAD_FILE.name}: missing {', '.join(sorted(missing))}")
 
-    settings = {"model": payload["model"], "max_state_chars": payload["max_state_chars"]}
+    settings = {key: payload[key] for key in wanted - {"questions"}}
     return settings, payload["questions"]
 
 
@@ -708,13 +711,33 @@ def _print_missing(document: Document) -> None:
         print(f"  looked at       {place}")
     print("\n  readiness       None (not available)")
     print("      Nothing reached Jev, so no question ran and no readiness exists.")
-    print("      None is not zero: zero would say the document failed every check.")
+    print("      A missing file has no score. Zero would mean it failed every check.")
+
+
+def _cost_usd(
+    response: SystemOneResponse,
+    settings: dict,
+) -> float:
+    """Price one call from its input tokens.
+
+    TypeSafe bills input tokens only, at the rate questions.yml records.
+
+    Args:
+        response: The response object the SDK built from the wire body.
+        settings: Settings from questions.yml.
+
+    Returns:
+        The cost in dollars.
+    """
+    return response.usage.input_tokens * settings["input_usd_per_million"] / 1_000_000
 
 
 def _write_report(
     document: Document,
     response: SystemOneResponse,
     specs: dict,
+    settings: dict,
+    latency_ms: int,
 ) -> pathlib.Path:
     """Write one JSON report: every answer as Jev sent it, plus the judgment.
 
@@ -722,6 +745,8 @@ def _write_report(
         document: The document that was read.
         response: The response object the SDK built from the wire body.
         specs: Question entries from questions.yml, keyed by id.
+        settings: Settings from questions.yml, holding the model and the price.
+        latency_ms: Wall-clock milliseconds the call took, end to end.
 
     Returns:
         The path written.
@@ -734,6 +759,9 @@ def _write_report(
         "looked": list(document.looked),
         "model": response.model,
         "usage": response.usage.model_dump(mode="json"),
+        "latency_ms": latency_ms,
+        "cost_usd": round(_cost_usd(response, settings), 8),
+        "questions_asked": len(specs),
         "readiness": round(_readiness(answers, specs), 4),
         "questions": {
             question_id: {
@@ -825,6 +853,7 @@ def score_readiness(
     questions = {
         question_id: _build_question(question_id, spec) for question_id, spec in specs.items()
     }
+    started = time.perf_counter()
     response = TypeSafeClient().system_one(
         model=settings["model"],
         # Treat the document as untrusted. A file that argues for its own
@@ -837,6 +866,7 @@ def score_readiness(
         },
         questions=questions,
     )
+    latency_ms = round((time.perf_counter() - started) * 1000)
     logger.debug(
         f"Asked {len(questions)} questions, used {response.usage.input_tokens} input tokens"
     )
@@ -845,7 +875,13 @@ def score_readiness(
         _print_raw(response)
 
     _print_answers(document.name, document.source, response.answers, specs)
-    print(f"\nReport: {_write_report(document, response, specs)}")
+    tokens = response.usage.input_tokens
+    print(
+        f"\n{len(questions)} questions, {tokens:,} input tokens, {latency_ms} ms, "
+        f"${_cost_usd(response, settings):.5f} at ${settings['input_usd_per_million']} "
+        "per million input tokens."
+    )
+    print(f"Report: {_write_report(document, response, specs, settings, latency_ms)}")
 
 
 def main() -> None:

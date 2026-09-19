@@ -42,11 +42,11 @@ uvx ruff check --fix . && uvx ruff format .   # lint and format
 
 ## Testing instructions
 
-There is no test suite and no CI. Until one exists, a change is done when all of this passes:
+The repo has no test suite and no CI. Until one exists, a change is done when all of this passes:
 
 1. `uv run python -m py_compile <file>` on every Python file you touched.
 2. `uvx ruff check .` and `uvx ruff format --check .` both report clean.
-3. The sample runs against a live key, and every code path you changed runs at least once. For readme-check that means a local file, a GitHub repo root, a `/blob/` file page, and an `http://` URL it should refuse.
+3. The sample runs against a live key, and every code path you changed runs at least once. For readme-check that means a local file, a GitHub repo root, a `/blob/` file page, and an `http://` URL it should refuse. For agents-md-readiness add a repo holding neither AGENTS.md nor CLAUDE.md, and a directory with neither.
 4. Any output shown in a README comes from a run you just did, with the date next to it.
 
 If you add a test suite, use pytest, mock the client rather than calling the API, and replace this section.

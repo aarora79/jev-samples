@@ -24,6 +24,10 @@ model: jev-1.13.0
 # limit, and stops a long document from costing accuracy.
 max_state_chars: 40000
 
+# TypeSafe's published price for input tokens, September 2026. Output tokens cost
+# nothing, and the reports use this to price each run.
+input_usd_per_million: 0.042
+
 # Each question asks about one thing, so no answer has to cover two claims. The
 # order here is the order the sample prints them.
 questions:

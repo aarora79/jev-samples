@@ -10,7 +10,10 @@
     "input_tokens": 2512,
     "output_tokens": 346
   },
-  "readiness": 0.8623,
+  "latency_ms": 317,
+  "cost_usd": 0.0001055,
+  "questions_asked": 17,
+  "readiness": 0.8615,
   "questions": {
     "written_for": {
       "label": "written for",
@@ -23,8 +26,8 @@
         "confidence": 0.94,
         "probabilities": {
           "stub": 0.0,
-          "human": 0.04,
-          "agent": 0.96
+          "agent": 0.96,
+          "human": 0.04
         }
       },
       "credit": 1.0,
@@ -38,13 +41,13 @@
       "returned": {
         "type": "choice",
         "choice": "boundaries",
-        "confidence": 0.67,
+        "confidence": 0.74,
         "probabilities": {
-          "layout": 0.02,
-          "boundaries": 0.73,
-          "conventions": 0.03,
           "commands": 0.05,
-          "testing": 0.17
+          "testing": 0.12,
+          "conventions": 0.02,
+          "layout": 0.01,
+          "boundaries": 0.8
         }
       },
       "credit": null,
@@ -80,8 +83,8 @@
       "inverted": false,
       "returned": {
         "type": "score",
-        "score": 1.46,
-        "confidence": 0.26,
+        "score": 1.41,
+        "confidence": 0.36,
         "legend": {
           "0": "Nothing about tests",
           "1": "Tells the agent to test without saying how",
@@ -89,11 +92,11 @@
         },
         "probabilities": {
           "0": 0.01,
-          "1": 0.51,
-          "2": 0.48
+          "1": 0.57,
+          "2": 0.42
         }
       },
-      "credit": 0.73,
+      "credit": 0.705,
       "judgement": "adequate, unsure"
     },
     "conventions": {
@@ -135,8 +138,8 @@
         },
         "probabilities": {
           "0": 0.0,
-          "1": 0.0,
-          "2": 1.0
+          "1": 0.01,
+          "2": 0.99
         }
       },
       "credit": 0.995,
@@ -149,10 +152,10 @@
       "inverted": false,
       "returned": {
         "type": "noul",
-        "noul": 0.84
+        "noul": 0.87
       },
-      "credit": 0.84,
-      "judgement": "adequate"
+      "credit": 0.87,
+      "judgement": "strong"
     },
     "setup_commands": {
       "label": "setup commands",
@@ -161,9 +164,9 @@
       "inverted": false,
       "returned": {
         "type": "noul",
-        "noul": 0.9
+        "noul": 0.91
       },
-      "credit": 0.9,
+      "credit": 0.91,
       "judgement": "strong"
     },
     "build_commands": {
@@ -221,9 +224,9 @@
       "inverted": false,
       "returned": {
         "type": "noul",
-        "noul": 0.2
+        "noul": 0.19
       },
-      "credit": 0.2,
+      "credit": 0.19,
       "judgement": "weak"
     },
     "nested_files": {
@@ -257,9 +260,9 @@
       "inverted": false,
       "returned": {
         "type": "noul",
-        "noul": 0.95
+        "noul": 0.96
       },
-      "credit": 0.95,
+      "credit": 0.96,
       "judgement": "strong"
     },
     "leaks_secret": {

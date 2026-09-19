@@ -10,7 +10,10 @@
     "input_tokens": 8206,
     "output_tokens": 346
   },
-  "readiness": 0.9482,
+  "latency_ms": 367,
+  "cost_usd": 0.00034465,
+  "questions_asked": 17,
+  "readiness": 0.9475,
   "questions": {
     "written_for": {
       "label": "written for",
@@ -38,13 +41,13 @@
       "returned": {
         "type": "choice",
         "choice": "boundaries",
-        "confidence": 0.79,
+        "confidence": 0.82,
         "probabilities": {
-          "testing": 0.1,
-          "boundaries": 0.83,
+          "testing": 0.08,
           "commands": 0.03,
-          "conventions": 0.01,
-          "layout": 0.03
+          "boundaries": 0.86,
+          "layout": 0.02,
+          "conventions": 0.01
         }
       },
       "credit": null,
@@ -149,9 +152,9 @@
       "inverted": false,
       "returned": {
         "type": "noul",
-        "noul": 0.85
+        "noul": 0.87
       },
-      "credit": 0.85,
+      "credit": 0.87,
       "judgement": "strong"
     },
     "setup_commands": {
@@ -161,9 +164,9 @@
       "inverted": false,
       "returned": {
         "type": "noul",
-        "noul": 0.74
+        "noul": 0.7
       },
-      "credit": 0.74,
+      "credit": 0.7,
       "judgement": "adequate"
     },
     "build_commands": {
@@ -257,9 +260,9 @@
       "inverted": false,
       "returned": {
         "type": "noul",
-        "noul": 0.95
+        "noul": 0.96
       },
-      "credit": 0.95,
+      "credit": 0.96,
       "judgement": "strong"
     },
     "leaks_secret": {

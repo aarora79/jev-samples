@@ -10,7 +10,10 @@
     "input_tokens": 1048,
     "output_tokens": 344
   },
-  "readiness": 0.4773,
+  "latency_ms": 430,
+  "cost_usd": 4.402e-05,
+  "questions_asked": 17,
+  "readiness": 0.4775,
   "questions": {
     "written_for": {
       "label": "written for",
@@ -20,15 +23,15 @@
       "returned": {
         "type": "choice",
         "choice": "agent",
-        "confidence": 0.57,
+        "confidence": 0.41,
         "probabilities": {
-          "agent": 0.72,
-          "stub": 0.0,
-          "human": 0.28
+          "agent": 0.61,
+          "human": 0.39,
+          "stub": 0.0
         }
       },
       "credit": 1.0,
-      "judgement": "strong"
+      "judgement": "strong, unsure"
     },
     "weakest_area": {
       "label": "weakest area",
@@ -38,13 +41,13 @@
       "returned": {
         "type": "choice",
         "choice": "testing",
-        "confidence": 0.35,
+        "confidence": 0.29,
         "probabilities": {
-          "boundaries": 0.29,
           "layout": 0.01,
+          "testing": 0.43,
           "conventions": 0.0,
-          "testing": 0.48,
-          "commands": 0.22
+          "commands": 0.26,
+          "boundaries": 0.3
         }
       },
       "credit": null,
@@ -103,20 +106,20 @@
       "inverted": false,
       "returned": {
         "type": "score",
-        "score": 0.07,
-        "confidence": 0.9,
+        "score": 0.08,
+        "confidence": 0.87,
         "legend": {
           "0": "No conventions at all",
           "1": "General advice that would fit any project",
           "2": "Rules naming the tools, settings and patterns this project uses"
         },
         "probabilities": {
-          "0": 0.95,
-          "1": 0.03,
+          "0": 0.94,
+          "1": 0.04,
           "2": 0.02
         }
       },
-      "credit": 0.035,
+      "credit": 0.04,
       "judgement": "missing"
     },
     "repo_map": {
@@ -127,15 +130,15 @@
       "returned": {
         "type": "score",
         "score": 0.92,
-        "confidence": 0.88,
+        "confidence": 0.87,
         "legend": {
           "0": "Nothing about the repository layout",
           "1": "Names a directory or two in passing",
           "2": "Lists the directories or key files and says what each one holds"
         },
         "probabilities": {
-          "0": 0.08,
-          "1": 0.92,
+          "0": 0.09,
+          "1": 0.91,
           "2": 0.0
         }
       },
@@ -149,9 +152,9 @@
       "inverted": false,
       "returned": {
         "type": "noul",
-        "noul": 0.05
+        "noul": 0.06
       },
-      "credit": 0.05,
+      "credit": 0.06,
       "judgement": "missing"
     },
     "setup_commands": {
@@ -161,9 +164,9 @@
       "inverted": false,
       "returned": {
         "type": "noul",
-        "noul": 0.16
+        "noul": 0.15
       },
-      "credit": 0.16,
+      "credit": 0.15,
       "judgement": "weak"
     },
     "build_commands": {

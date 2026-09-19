@@ -10,7 +10,10 @@
     "input_tokens": 1931,
     "output_tokens": 346
   },
-  "readiness": 0.9145,
+  "latency_ms": 318,
+  "cost_usd": 8.11e-05,
+  "questions_asked": 17,
+  "readiness": 0.9131,
   "questions": {
     "written_for": {
       "label": "written for",
@@ -20,11 +23,11 @@
       "returned": {
         "type": "choice",
         "choice": "agent",
-        "confidence": 0.69,
+        "confidence": 0.61,
         "probabilities": {
+          "human": 0.26,
           "stub": 0.0,
-          "agent": 0.79,
-          "human": 0.21
+          "agent": 0.74
         }
       },
       "credit": 1.0,
@@ -38,13 +41,13 @@
       "returned": {
         "type": "choice",
         "choice": "boundaries",
-        "confidence": 0.73,
+        "confidence": 0.72,
         "probabilities": {
-          "commands": 0.06,
-          "conventions": 0.04,
-          "boundaries": 0.78,
+          "conventions": 0.05,
+          "testing": 0.12,
+          "boundaries": 0.77,
           "layout": 0.01,
-          "testing": 0.11
+          "commands": 0.05
         }
       },
       "credit": null,
@@ -80,8 +83,8 @@
       "inverted": false,
       "returned": {
         "type": "score",
-        "score": 1.24,
-        "confidence": 0.63,
+        "score": 1.22,
+        "confidence": 0.66,
         "legend": {
           "0": "Nothing about tests",
           "1": "Tells the agent to test without saying how",
@@ -89,11 +92,11 @@
         },
         "probabilities": {
           "0": 0.0,
-          "1": 0.76,
-          "2": 0.24
+          "1": 0.78,
+          "2": 0.22
         }
       },
-      "credit": 0.62,
+      "credit": 0.61,
       "judgement": "adequate"
     },
     "conventions": {
@@ -149,9 +152,9 @@
       "inverted": false,
       "returned": {
         "type": "noul",
-        "noul": 0.94
+        "noul": 0.93
       },
-      "credit": 0.94,
+      "credit": 0.93,
       "judgement": "strong"
     },
     "setup_commands": {
@@ -161,9 +164,9 @@
       "inverted": false,
       "returned": {
         "type": "noul",
-        "noul": 0.99
+        "noul": 1.0
       },
-      "credit": 0.99,
+      "credit": 1.0,
       "judgement": "strong"
     },
     "build_commands": {
@@ -257,9 +260,9 @@
       "inverted": false,
       "returned": {
         "type": "noul",
-        "noul": 0.97
+        "noul": 0.96
       },
-      "credit": 0.97,
+      "credit": 0.96,
       "judgement": "strong"
     },
     "leaks_secret": {
