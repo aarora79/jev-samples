@@ -147,7 +147,7 @@ gh release create agents-md-readiness/0.1.0 dist/* \
 
 Versions are plain [semver](https://semver.org), `0.1.0` rather than `v0.1.0`, in the tag, the asset names and what `-version` prints. The tag carries the `agents-md-readiness/` prefix because `install.sh` resolves the newest tag with that prefix, which leaves room for another sample to ship its own binary. `dist/` is gitignored: the release holds the binaries and the repo holds the source.
 
-0.1.0 came out of `b90cbf1` on 19 September 2026. The install path ran end to end from a clean directory: `install.sh` resolved 0.1.0 from the tag, downloaded the linux amd64 asset, printed `checksum ok`, and the installed binary scored `vercel/next.js` at 0.95 in 357 ms for 8,206 input tokens, then exited 2 on `microsoft/vscode` under `-fail-under 0.8`.
+0.1.0 came out of `3bfae70` on 19 September 2026, built in a clean clone, and every asset stamps that revision with `vcs.modified=false`. The install path ran end to end from an empty directory: `install.sh` resolved 0.1.0 off the tag, downloaded the linux amd64 asset, printed `checksum ok`, and installed a binary that reports `agents-md-readiness 0.1.0`. It then scored `langchain-ai/langchain` in 385 ms for 5,723 input tokens and exited 2 on `microsoft/vscode` under `-fail-under 0.8`.
 
 ## What to notice
 
