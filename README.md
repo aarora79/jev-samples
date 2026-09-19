@@ -18,8 +18,13 @@ More to come. One folder per sample.
 - [uv](https://docs.astral.sh/uv/) for dependencies and running
 - A TypeSafe API key in `TYPESAFE_API_KEY`
 
+Nothing in this repo auto-loads `.env`, because that would cost a dependency for one line of shell. The SDK reads `TYPESAFE_API_KEY` from the environment, so put it there either way:
+
 ```bash
-cp .env.example .env    # then put your key in it
+cp .env.example .env         # put your key in it
+set -a && . ./.env && set +a # load it into the environment
+
+# or skip the file entirely
 export TYPESAFE_API_KEY="your-key"
 ```
 

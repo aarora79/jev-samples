@@ -21,7 +21,7 @@ The five questions use all three of Jev's primitives:
 ## Run it
 
 ```bash
-export TYPESAFE_API_KEY="your-key"
+export TYPESAFE_API_KEY="your-key"   # or: set -a && . ./.env && set +a
 
 cd samples/readme-check
 
@@ -35,16 +35,18 @@ uv run readme_check.py ../../README.md
 uv run readme_check.py https://github.com/psf/requests
 ```
 
-Output:
+Output, from a real run against `https://github.com/psf/requests` on 19 September 2026:
 
 ```text
 README.md
-  written for     user         (0.94)
-  setup steps     1.4 / 2
-  worked example  0.91
-  auth explained  0.12
-  sounds stale    0.08
+  written for     user         (0.98)
+  setup steps     1.7 / 2
+  worked example  0.99
+  auth explained  0.85
+  sounds stale    0.30
 ```
+
+That call took 327 ms end to end, inside the 70 to 500 ms TypeSafe quotes but nowhere near the 100 ms they describe as typical. Log lines carry the request id, so keep them when you report a latency number.
 
 `--debug` turns on debug logging. `--help` lists everything.
 
