@@ -2,9 +2,9 @@
 
 A coding agent is only as good as the instructions it finds in your repo. [AGENTS.md](https://agents.md) is where those instructions go, and its homepage claimed "over 60k open-source projects" when I read it on 19 September 2026, counted by [this GitHub code search](https://github.com/search?q=path%3AAGENTS.md+NOT+is%3Afork+NOT+is%3Aarchived&type=code). The file decides whether an agent runs your real test command or guesses, edits the generated file you told it never to touch, or opens a pull request in the wrong format.
 
-Three things go wrong with it at scale. Legacy repos have no AGENTS.md at all. Repos that have one wrote it once, against a format they skimmed, so it misses the sections the spec recommends. Worst of all it drifts: the build command changes, the test runner moves, a directory gets renamed, and the file keeps telling every agent the old story. Nothing in a normal review catches that, because nobody reads AGENTS.md in a diff.
+Legacy repos have no AGENTS.md at all. Repos that have one wrote it against a format they skimmed, so it misses the sections the spec recommends. Worst of all it drifts: the build command changes, the test runner moves, a directory gets renamed, and the file keeps telling every agent the old story. Nothing in a normal review catches that, because nobody reads AGENTS.md in a diff.
 
-This sample turns the file into something CI can check. Wire it into the job that runs when a pull request opens, score the AGENTS.md or CLAUDE.md the branch would merge, and fail the build when readiness drops below the bar you set or when the file leaks a credential. One call per check, 17 questions inside it, and the numbers below say what that costs.
+This sample turns the file into something CI can check. Wire it into the job that runs when a pull request opens, score the AGENTS.md or CLAUDE.md the branch would merge, and fail the build when readiness drops below the bar you set or when the file leaks a credential. Each check is one call carrying 17 questions, and on the eleven repos measured here it cost between $0.00004 and $0.00034.
 
 ## What eleven public repos cost to score
 
@@ -20,7 +20,7 @@ On 19 September 2026 this sample scored the AGENTS.md or CLAUDE.md at the root o
 
 Pricing is TypeSafe's published $0.042 per million input tokens, September 2026, which `questions.yml` carries as `input_usd_per_million`. A repo merging 100 pull requests a month, checking its AGENTS.md on every one, pays about three cents a month and waits under half a second per check.
 
-Two columns need a word first. `Missing` counts how many of the sixteen weighted checks the file said nothing about, scoring under 0.15 out of 1.00, so 13 of 16 means a file that answers almost nothing and 1 means a single gap. `Weakest area` is the one thing Jev would fix first, out of five: **commands** (setup, build and run), **testing** (how to run the tests and what to do when one fails), **conventions** (code style and naming rules), **layout** (where things live in the repo), **boundaries** (what an agent must never do, and what needs a human first).
+`Missing of 16` counts how many of the sixteen weighted checks the file said nothing about, scoring under 0.15 out of 1.00: 13 means a file that answers almost nothing, 1 means a single gap. `Weakest area` is the one thing Jev would fix first, out of five: **commands** (setup, build and run), **testing** (how to run the tests and what to do when one fails), **conventions** (code style and naming rules), **layout** (where things live in the repo), **boundaries** (what an agent must never do, and what needs a human first).
 
 | Repo | File | Readiness | Weakest area | Missing of 16 | Tokens | Latency | Report |
 | --- | --- | --- | --- | --- | --- | --- | --- |
@@ -69,7 +69,7 @@ if readiness < 0.80:
 PY
 ```
 
-Set the bar at 0.80 and four of the eleven repos above fail today: `microsoft/vscode` at 0.28, `ollama/ollama` at 0.48, `sst/opencode` at 0.72, and `stanfordnlp/dspy` with no file to read. Move the bar and the set moves with it.
+Set the bar at 0.80 and four of the eleven repos above fail today: `microsoft/vscode` at 0.28, `ollama/ollama` at 0.48, `sst/opencode` at 0.72, and `stanfordnlp/dspy` with no file to read.
 
 | CI threshold | Fails, out of 11 | Who fails |
 | --- | --- | --- |
@@ -77,7 +77,7 @@ Set the bar at 0.80 and four of the eleven repos above fail today: `microsoft/vs
 | 0.80 | 4 | vscode, ollama, opencode, dspy |
 | 0.90 | 7 | vscode, ollama, opencode, codex, goose, workers-sdk, dspy |
 
-A failing check is the point. It puts the fix in front of the developer holding the branch, at the moment they can still edit the file, instead of leaving AGENTS.md to rot until an agent guesses wrong in production. Each failure names the weakest area and lists the checks judged `missing`, so the fix is a paragraph rather than an investigation. That makes readiness one more gate in the software factory, sitting beside the linter, the type check and the test suite, at three cents a month and under half a second a run.
+A failing check puts the fix in front of the developer holding the branch, while they can still edit the file, instead of leaving AGENTS.md to rot until an agent guesses wrong in production. Each failure names the weakest area and lists the checks judged `missing`, so the fix is a paragraph rather than an investigation. Readiness becomes one more gate in the software factory, beside the linter, the type check and the test suite, at three cents a month and under half a second a run.
 
 ## What it asks
 
@@ -207,7 +207,7 @@ AGENTS.md  (https://raw.githubusercontent.com/apache/airflow/HEAD/AGENTS.md)
       so read this next to the readiness number rather than on its own.
 ```
 
-Then the same call as one padded table. The padding makes it readable in a terminal, and the pipes keep it valid markdown, so the text pastes into a pull request:
+The same call also prints one padded table. The padding makes it readable in a terminal, and the pipes keep it valid markdown, so the text pastes into a pull request:
 
 ```text
 | Key                 | Label                  | Type            | Jev returned              | Weight | Credit | Judgement      |
