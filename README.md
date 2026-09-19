@@ -8,7 +8,7 @@ Every sample is a small self-contained project under [samples/](samples/), and y
 
 | Sample | What it does |
 | --- | --- |
-| [readme-check](samples/readme-check/) | Reads a README from disk or a GitHub URL and asks five questions about it in one call, using all three primitives: `Choice`, `Score` and `Noul`. |
+| [readme-check](samples/readme-check/) | Reads a README from disk or a GitHub URL, asks five questions about it in one call, and explains every number it prints. Uses all three primitives: `Choice`, `Score` and `Noul`. |
 
 More samples to come, one folder each.
 

@@ -1,6 +1,6 @@
 # readme-check
 
-Reads a README from disk or a GitHub URL, asks Jev five questions about it in one call, and prints the answers.
+Reads a README from disk or a GitHub URL, asks Jev five questions about it in one call, and prints each answer with a line explaining the number next to it.
 
 The five questions use all three of Jev's primitives:
 
@@ -33,22 +33,95 @@ uv run readme_check.py ../../README.md
 
 # A GitHub repo root or a file page
 uv run readme_check.py https://github.com/psf/requests
+
+# The raw answers first, then the same summary
+uv run readme_check.py --verbose https://github.com/psf/requests
 ```
 
 Output from a run against `https://github.com/psf/requests` on 19 September 2026:
 
 ```text
-README.md
-  written for     user         (0.98)
-  setup steps     1.7 / 2
-  worked example  0.99
-  auth explained  0.85
-  sounds stale    0.30
+README.md  (https://raw.githubusercontent.com/psf/requests/HEAD/README.md)
+
+  written for     user         (confidence 0.98)
+      Choice: one label out of 3, scored user 0.99, evaluator 0.01, contributor 0.00.
+      Confidence 0.98 rates that pick, and Jev reports it
+      apart from the spread, so the two numbers can differ.
+
+  setup steps     1.7 / 2      (confidence 0.54)
+      Score: between level 1 "Steps exist but assume things they never state"
+      and level 2 "A reader could follow them start to finish".
+      Jev weights the levels by probability (0 0.00, 1 0.30, 2 0.70), so the score lands between two of them.
+
+  worked example  0.99         yes
+  auth explained  0.86         probably yes
+  sounds stale    0.31         unsettled
+      Noul: one probability, which is also the confidence. Near 0.50 says the
+      document argues both ways, or never addresses the statement at all.
 ```
 
-That call took 327 ms end to end, and four calls from the same machine landed between 319 and 359 ms. Most of that is transit. On the run I inspected, the `x-envoy-upstream-service-time` header reported 108 ms inside TypeSafe, which matches the 100 ms they call typical. Run with `--debug` to see the header, and quote both numbers when you report latency, because the end-to-end figure is mostly a fact about your network.
+Every explanation line comes out of the answer itself: the probabilities Jev spread across the options, the legend it returns beside a Score, and the confidence it reports for both. The sample invents no numbers.
 
-`--debug` raises the log level, and `--help` lists the options.
+The header names the document Jev read. A GitHub repo root resolves to the raw URL the fetch used, and a relative path resolves to an absolute one, so the line still says which file produced these numbers when you read the output back a week later.
+
+A call in the same minute took 280 ms end to end, and its `x-envoy-upstream-service-time` header reported 89 ms inside TypeSafe, which matches the 100 ms they call typical. Five calls from this machine landed between 280 and 340 ms, so most of the time is transit. Run with `--debug` to see the header and the token count (1,252 input tokens on that call), and quote both numbers when you report latency.
+
+`--help` lists the options.
+
+## The raw answers
+
+`--verbose` prints the response as Jev returned it, before the sample reads a field off it. From a run against `https://github.com/psf/requests` on 19 September 2026:
+
+```json
+{
+  "model": "jev-1.13.0",
+  "usage": {
+    "input_tokens": 1252,
+    "output_tokens": 110
+  },
+  "answers": {
+    "audience": {
+      "type": "choice",
+      "choice": "user",
+      "confidence": 0.98,
+      "probabilities": {
+        "user": 0.99,
+        "evaluator": 0.01,
+        "contributor": 0.0
+      }
+    },
+    "setup": {
+      "type": "score",
+      "score": 1.71,
+      "confidence": 0.57,
+      "legend": {
+        "0": "No install or setup steps at all",
+        "1": "Steps exist but assume things they never state",
+        "2": "A reader could follow them start to finish"
+      },
+      "probabilities": {
+        "0": 0.0,
+        "1": 0.29,
+        "2": 0.71
+      }
+    },
+    "has_example": {
+      "type": "noul",
+      "noul": 0.99
+    },
+    "explains_auth": {
+      "type": "noul",
+      "noul": 0.84
+    },
+    "sounds_stale": {
+      "type": "noul",
+      "noul": 0.31
+    }
+  }
+}
+```
+
+Three things to read off it. The score is 1.71 and the summary rounds it to 1.7, so compare against the raw number when you set a threshold near a level boundary. Every `legend` and `probabilities` key arrives as a string on the wire, and the SDK hands them back keyed by `int`, which is why `answer.legend[1]` works and `answer.legend["1"]` raises `KeyError`. TypeSafe bills input tokens only, and it still counted 110 output tokens on this call.
 
 ## What to notice
 
@@ -58,9 +131,13 @@ That call took 327 ms end to end, and four calls from the same machine landed be
 
 **The sample pins the model** to `jev-1.13.0`. The SDK defaults to `jev-latest`, so a silent upgrade would move any threshold you tuned against measured behavior.
 
-**A `Score` lands between levels.** The 1.7 above sits between "steps exist but assume things they never state" and "a reader could follow them start to finish". Treat the rubric as a ruler rather than three boxes.
+**Confidence and the winning probability are separate fields.** That run put 0.99 on `user` and reported confidence 0.98. Gate on `.confidence` when you care how sure Jev is of the label, and read `.probabilities` when you care how close the runner-up came.
 
-**A `Noul` has no separate confidence.** The probability is the confidence.
+**A `Score` lands between levels, and its `legend` names them.** Jev returns the rubric text keyed by level, 0 upward in the order you wrote the criteria, so the sample prints the two levels the 1.7 sits between rather than making the reader count. The score is the probability-weighted average of the levels, which is why it lands off the integers.
+
+**A `Noul` has no separate confidence.** The probability is the confidence, so the sample turns it into a word through the `NOUL_WORDS` bands: 0.99 reads as yes, 0.86 as probably yes, 0.31 as unsettled. A value near 0.50 says the document argues both ways or never addresses the statement.
+
+**The same document scores a little differently on each call.** Six calls against `psf/requests` on 19 September 2026 put `sounds stale` between 0.29 and 0.31, which straddles the 0.30 band edge and flips the printed word between "probably no" and "unsettled". Sampling noise of a couple of hundredths will cross any threshold you park on a round number, so measure the spread before you pick one.
 
 ## Two experiments worth running
 

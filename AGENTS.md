@@ -13,7 +13,7 @@ jev-samples/
   README.md               index of samples, a curl walkthrough, the three primitives
   AGENTS.md               this file
   .env.example            TYPESAFE_API_KEY placeholder
-  .scratchpad/            gitignored: plans, handoff notes, working documents
+  .scratchpad/            gitignored: plans, session notes, working documents
   samples/
     readme-check/         one folder per sample
       README.md           what it does, how to run it, what to notice
@@ -130,4 +130,4 @@ Repo specifics on top of the skill:
 
 ## Scratchpad
 
-`.scratchpad/` is gitignored. Plans, session notes and handoff documents go there, never in the repo proper. Start a session by reading `.scratchpad/HANDOFF.md`, and update it before you finish.
+`.scratchpad/` is gitignored. Plans, session notes and working documents go there, never in the repo proper.
