@@ -20,6 +20,8 @@ jev-samples/
       pyproject.toml      its own dependencies
       questions.yml       the Jev payload: model pin, state budget, questions
       readme_check.py     the sample
+    agents-md-readiness/  the second sample
+      go/                 a Go port of that sample, one static binary for CI
 ```
 
 ## Setup and commands
@@ -48,6 +50,7 @@ The repo has no test suite and no CI. Until one exists, a change is done when al
 2. `uvx ruff check .` and `uvx ruff format --check .` both report clean.
 3. The sample runs against a live key, and every code path you changed runs at least once. For readme-check that means a local file, a GitHub repo root, a `/blob/` file page, and an `http://` URL it should refuse. For agents-md-readiness add a repo holding neither AGENTS.md nor CLAUDE.md, and a directory with neither.
 4. Any output shown in a README comes from a run you just did, with the date next to it.
+5. `samples/agents-md-readiness/go/` compiles that sample into one static binary, so a change to its `questions.yml` or its Go files means `gofmt -l .`, `go vet ./...`, `go test ./...` and `./build.sh <version>` in that folder, then one live run of the binary you built. The Python stays canonical, and `payload_test.go` fails when the embedded copy of the payload drifts.
 
 If you add a test suite, use pytest, mock the client rather than calling the API, and replace this section.
 

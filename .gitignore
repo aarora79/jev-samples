@@ -23,5 +23,9 @@ dist/
 # in the sample folder are not.
 samples/agents-md-readiness/*.json
 
+# Cross-compiled binaries from samples/agents-md-readiness/go/build.sh. Releases
+# carry them; the repo does not.
+samples/agents-md-readiness/go/dist/
+
 # OS
 .DS_Store

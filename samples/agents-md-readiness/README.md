@@ -79,6 +79,17 @@ Set the bar at 0.80 and four of the eleven repos above fail today: `microsoft/vs
 
 A failing check puts the fix in front of the developer holding the branch, while they can still edit the file, instead of leaving AGENTS.md to rot until an agent guesses wrong in production. Each failure names the weakest area and lists the checks judged `missing`, so the fix is a paragraph rather than an investigation. Readiness becomes one more gate in the software factory, beside the linter, the type check and the test suite, at three cents a month and under half a second a run.
 
+### One binary, no Python
+
+A CI runner that has no Python can install the same check as a single static executable. [`go/`](go/) holds a Go port of this sample: it bakes in `questions.yml`, talks to the Jev API over HTTP, prints the same table, writes the same JSON, and adds two gates so the job needs no inline script.
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/aarora79/jev-samples/main/samples/agents-md-readiness/go/install.sh | sh
+agents-md-readiness -fail-under 0.8 -fail-on-credential AGENTS.md
+```
+
+Exit codes are 0 scored, 1 error, 2 gate failed. No release carries the binaries yet, so `go build` in that folder is today's install path. The Python here stays canonical, and a test in that folder fails when its copy of the payload drifts. [go/README.md](go/README.md) covers building, releasing and the caveats.
+
 ## What it asks
 
 The [agents.md FAQ](https://agents.md) answers "are there required fields?" with "no", so nothing here checks a schema. The 17 questions cover the sections the format recommends, the properties that decide whether an agent can act on the file, and the one line you never want in a repo.

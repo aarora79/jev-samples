@@ -9,7 +9,7 @@ Every sample is a small self-contained project under [samples/](samples/), and y
 | Sample | What it does |
 | --- | --- |
 | [readme-check](samples/readme-check/) | Reads a README from disk or a GitHub URL, asks five questions about it in one call, and explains every number it prints. Uses all three primitives: `Choice`, `Score` and `Noul`. |
-| [agents-md-readiness](samples/agents-md-readiness/) | Scores an AGENTS.md or CLAUDE.md against the [agents.md](https://agents.md) format: seventeen questions in one call, a padded markdown table, one weighted readiness score, and a JSON report per document. Ships scored runs for eleven open-source repos in [data/](samples/agents-md-readiness/data/). |
+| [agents-md-readiness](samples/agents-md-readiness/) | Scores an AGENTS.md or CLAUDE.md against the [agents.md](https://agents.md) format: seventeen questions in one call, a padded markdown table, one weighted readiness score, and a JSON report per document. Ships scored runs for eleven open-source repos in [data/](samples/agents-md-readiness/data/), plus a [Go port](samples/agents-md-readiness/go/) that compiles the same check into one static binary for a CI runner without Python. |
 
 Each sample keeps its Jev payload in `questions.yml`: the model pin, the state budget, every question with the label it prints under, and what each answer is worth toward the score. The Python reads that file and does the arithmetic, so changing a question or a weight is a data change and changing a threshold is a code change.
 
