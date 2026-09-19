@@ -10,9 +10,7 @@ agents-md-readiness -fail-under 0.8 https://github.com/apache/airflow
 
 ## Install it
 
-No release carries the binaries yet, so build from source today and read "Cut a release" below for the step that turns `install.sh` on.
-
-Once a release exists:
+[v0.1.0](https://github.com/aarora79/jev-samples/releases/tag/agents-md-readiness/v0.1.0) carries binaries for linux and macOS on amd64 and arm64, plus windows amd64:
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/aarora79/jev-samples/main/samples/agents-md-readiness/go/install.sh | sh
@@ -44,7 +42,7 @@ go build -o agents-md-readiness .
 ./build.sh v0.1.0
 ```
 
-That produced five binaries on 19 September 2026, 6.4M to 7.2M each, in 3.7 seconds on this machine: linux amd64 and arm64, darwin amd64 and arm64, windows amd64. `-trimpath` makes the build reproducible, so a second run on the same source gives the same hashes.
+That produced five binaries on 19 September 2026, 6.4M to 7.2M each, in 4.4 seconds on this machine: linux amd64 and arm64, darwin amd64 and arm64, windows amd64. `-trimpath` drops the build paths, and Go stamps the git revision and a dirty flag into the binary, so the same commit in a clean tree reproduces the same hashes and a dirty tree does not. `go version -m <binary>` prints both. The release assets came from a fresh clone of the tagged commit, which is why their hashes differ from a build in a working tree that has edits.
 
 ## Run it
 
@@ -134,14 +132,22 @@ Seven files, 1,214 lines of Go, one dependency. `gopkg.in/yaml.v3` reads the pay
 
 ## Cut a release
 
+Build from a clean clone of the commit you are tagging, so the revision Go stamps into each binary matches the release:
+
 ```bash
+git clone --depth 1 https://github.com/aarora79/jev-samples.git /tmp/relbuild
+cd /tmp/relbuild/samples/agents-md-readiness/go
 ./build.sh v0.1.0
 gh release create agents-md-readiness/v0.1.0 dist/* \
+  --repo aarora79/jev-samples \
+  --target "$(git rev-parse HEAD)" \
   --title "agents-md-readiness v0.1.0" \
   --notes "Static binaries for linux, macOS and Windows."
 ```
 
 The tag carries the `agents-md-readiness/` prefix because `install.sh` resolves the newest tag with that prefix, which leaves room for another sample to ship its own binary. `dist/` is gitignored: the release holds the binaries and the repo holds the source.
+
+v0.1.0 came out of `b90cbf1` on 19 September 2026. The install path ran end to end from a clean directory: `install.sh` resolved v0.1.0 from the tag, downloaded the linux amd64 asset, printed `checksum ok`, and the installed binary scored `vercel/next.js` at 0.95 in 357 ms for 8,206 input tokens, then exited 2 on `microsoft/vscode` under `-fail-under 0.8`.
 
 ## What to notice
 
