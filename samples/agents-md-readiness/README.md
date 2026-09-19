@@ -20,6 +20,8 @@ On 19 September 2026 this sample scored the AGENTS.md or CLAUDE.md at the root o
 
 Pricing is TypeSafe's published $0.042 per million input tokens, September 2026, which `questions.yml` carries as `input_usd_per_million`. A repo merging 100 pull requests a month, checking its AGENTS.md on every one, pays about three cents a month and waits under half a second per check.
 
+`Weakest area` below is the one thing Jev would fix first in each file, out of five: **commands** (setup, build and run), **testing** (how to run the tests and what to do when one fails), **conventions** (code style and naming rules), **layout** (where things live in the repo), **boundaries** (what an agent must never do, and what needs a human first).
+
 | Repo | File | Readiness | Weakest area | Missing | Tokens | Latency | Report |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | `vercel/next.js` | AGENTS.md | 0.95 | boundaries | 0 | 8,206 | 367 ms | [json](data/vercel-next-js-agents-md.json) |
