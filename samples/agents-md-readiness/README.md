@@ -1,6 +1,6 @@
 # agents-md-readiness
 
-A coding agent is only as good as the instructions it finds in your repo. [AGENTS.md](https://agents.md) is where those instructions go, and 60,000 public repos now ship one. The file decides whether an agent runs your real test command or guesses, edits the generated file you told it never to touch, or opens a pull request in the wrong format.
+A coding agent is only as good as the instructions it finds in your repo. [AGENTS.md](https://agents.md) is where those instructions go, and its homepage claimed "over 60k open-source projects" when I read it on 19 September 2026, counted by [this GitHub code search](https://github.com/search?q=path%3AAGENTS.md+NOT+is%3Afork+NOT+is%3Aarchived&type=code). The file decides whether an agent runs your real test command or guesses, edits the generated file you told it never to touch, or opens a pull request in the wrong format.
 
 Three things go wrong with it at scale. Legacy repos have no AGENTS.md at all. Repos that have one wrote it once, against a format they skimmed, so it misses the sections the spec recommends. Worst of all it drifts: the build command changes, the test runner moves, a directory gets renamed, and the file keeps telling every agent the old story. Nothing in a normal review catches that, because nobody reads AGENTS.md in a diff.
 
@@ -359,3 +359,10 @@ That is the calibration check: when Jev says 0.9, it should be right about nine 
 
 1. Change a weight in `questions.yml` and re-run the same files. Drop `leaks_secret` to 0.02 and watch a leaking file climb back to respectable, which is the argument for keeping it at 0.15.
 2. Add a `noul` entry to `questions.yml` for a rule your team cares about, and time the call before and after. The state is the cost, so the wall clock holds about steady.
+
+## Sources
+
+- [agents.md](https://agents.md), read 19 September 2026, for the format, the recommended sections, the nested-file precedence rule, the "no required fields" FAQ answer, and the "over 60k open-source projects" figure. That count comes from [a GitHub code search](https://github.com/search?q=path%3AAGENTS.md+NOT+is%3Afork+NOT+is%3Aarchived&type=code) the site links, which I did not reproduce.
+- [openai/agents.md](https://github.com/openai/agents.md) for the minimal example the format ships with.
+- [apache/airflow/AGENTS.md](https://github.com/apache/airflow/blob/main/AGENTS.md) as the comprehensive example, and the ten other repos named in the table, each scored from the raw file on its default branch on 19 September 2026.
+- TypeSafe's published price of $0.042 per million input tokens, September 2026, recorded in `questions.yml` as `input_usd_per_million`. Every latency here comes from this machine on that date, so treat it as one network's numbers rather than the vendor's.
