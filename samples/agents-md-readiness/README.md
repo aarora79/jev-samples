@@ -20,9 +20,9 @@ On 19 September 2026 this sample scored the AGENTS.md or CLAUDE.md at the root o
 
 Pricing is TypeSafe's published $0.042 per million input tokens, September 2026, which `questions.yml` carries as `input_usd_per_million`. A repo merging 100 pull requests a month, checking its AGENTS.md on every one, pays about three cents a month and waits under half a second per check.
 
-`Weakest area` below is the one thing Jev would fix first in each file, out of five: **commands** (setup, build and run), **testing** (how to run the tests and what to do when one fails), **conventions** (code style and naming rules), **layout** (where things live in the repo), **boundaries** (what an agent must never do, and what needs a human first).
+Two columns need a word first. `Missing` counts how many of the sixteen weighted checks the file said nothing about, scoring under 0.15 out of 1.00, so 13 of 16 means a file that answers almost nothing and 1 means a single gap. `Weakest area` is the one thing Jev would fix first, out of five: **commands** (setup, build and run), **testing** (how to run the tests and what to do when one fails), **conventions** (code style and naming rules), **layout** (where things live in the repo), **boundaries** (what an agent must never do, and what needs a human first).
 
-| Repo | File | Readiness | Weakest area | Missing | Tokens | Latency | Report |
+| Repo | File | Readiness | Weakest area | Missing of 16 | Tokens | Latency | Report |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | `vercel/next.js` | AGENTS.md | 0.95 | boundaries | 0 | 8,206 | 367 ms | [json](data/vercel-next-js-agents-md.json) |
 | `apache/airflow` | AGENTS.md | 0.95 | commands | 1 | 6,410 | 425 ms | [json](data/apache-airflow-agents-md.json) |
@@ -36,7 +36,7 @@ Pricing is TypeSafe's published $0.042 per million input tokens, September 2026,
 | `microsoft/vscode` | AGENTS.md | 0.28 | boundaries | 13 | 1,007 | 345 ms | [json](data/microsoft-vscode-agents-md.json) |
 | `stanfordnlp/dspy` | none | None | | | 0 | | [json](data/stanfordnlp-dspy-not-found.json) |
 
-Every row links to the run it came from in [`data/`](data/), which holds the eleven reports these numbers were read off. `Missing` counts the checks judged `missing` out of sixteen weighted ones, and `Weakest area` is the one the model would fix first.
+Every row links to the run it came from in [`data/`](data/), which holds the eleven reports these numbers were read off.
 
 The table rounds readiness to two places, and repeat runs moved each number by under 0.01: Airflow landed between 0.94 and 0.95 across five calls, which is why it and `vercel/next.js` both read 0.95, with 0.9471 and 0.9482 underneath.
 
