@@ -4,7 +4,7 @@
 #   curl -fsSL https://raw.githubusercontent.com/aarora79/jev-samples/main/samples/agents-md-readiness/go/install.sh | sh
 #
 # Environment:
-#   VERSION  tag to install, default the newest agents-md-readiness release
+#   VERSION  semver release to install, for example 0.1.0, default the newest
 #   BINDIR   where to put the binary, default /usr/local/bin then ~/.local/bin
 #
 # Piping a script from the internet into a shell is a choice. To read it first:
@@ -63,6 +63,8 @@ command -v curl >/dev/null 2>&1 || fail "curl is required"
 version="${VERSION:-}"
 [ -n "$version" ] || version=$(resolve_version)
 [ -n "$version" ] || fail "no $TAG_PREFIX release found on $REPO"
+# Releases are plain semver, so drop a leading v if someone typed one.
+version="${version#v}"
 
 target=$(platform)
 asset="${BINARY}_${version}_${target}"

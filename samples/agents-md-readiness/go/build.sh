@@ -2,7 +2,7 @@
 # Cross-compile agents-md-readiness for every platform install.sh knows about,
 # and write SHA256SUMS beside the binaries.
 #
-#   ./build.sh v0.1.0
+#   ./build.sh 0.1.0
 #
 # The Python sample one directory up is the canonical implementation, and its
 # questions.yml is the canonical payload. go:embed cannot reach outside this

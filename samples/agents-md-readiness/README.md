@@ -88,7 +88,7 @@ curl -fsSL https://raw.githubusercontent.com/aarora79/jev-samples/main/samples/a
 agents-md-readiness -fail-under 0.8 -fail-on-credential AGENTS.md
 ```
 
-Exit codes are 0 scored, 1 error, 2 gate failed. [v0.1.0](https://github.com/aarora79/jev-samples/releases/tag/agents-md-readiness/v0.1.0) ships binaries for linux and macOS on amd64 and arm64, plus windows amd64, and the installer checks them against the published `SHA256SUMS`. The Python here stays canonical, and a test in that folder fails when its copy of the payload drifts. [go/README.md](go/README.md) covers building, releasing and the caveats.
+Exit codes are 0 scored, 1 error, 2 gate failed. [0.1.0](https://github.com/aarora79/jev-samples/releases/tag/agents-md-readiness/0.1.0) ships binaries for linux and macOS on amd64 and arm64, plus windows amd64, and the installer checks them against the published `SHA256SUMS`. The Python here stays canonical, and a test in that folder fails when its copy of the payload drifts. [go/README.md](go/README.md) covers building, releasing and the caveats.
 
 ## What it asks
 
