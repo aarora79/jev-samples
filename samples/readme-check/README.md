@@ -1,6 +1,6 @@
 # readme-check
 
-Read a README, ask Jev five questions about it, print the answers. One call, one round trip, no parsing.
+Reads a README from disk or a GitHub URL, asks Jev five questions about it in one call, and prints the answers.
 
 The five questions use all three of Jev's primitives:
 
@@ -35,7 +35,7 @@ uv run readme_check.py ../../README.md
 uv run readme_check.py https://github.com/psf/requests
 ```
 
-Output, from a real run against `https://github.com/psf/requests` on 19 September 2026:
+Output from a run against `https://github.com/psf/requests` on 19 September 2026:
 
 ```text
 README.md
@@ -46,19 +46,19 @@ README.md
   sounds stale    0.30
 ```
 
-That call took 327 ms end to end, inside the 70 to 500 ms TypeSafe quotes but nowhere near the 100 ms they describe as typical. Log lines carry the request id, so keep them when you report a latency number.
+That call took 327 ms end to end. TypeSafe quotes 70 to 500 ms and calls 100 ms typical, so this run sat at the slow end of their range. Each log line carries the request id, so keep the logs when you report a latency number.
 
-`--debug` turns on debug logging. `--help` lists everything.
+`--debug` raises the log level, and `--help` lists the options.
 
 ## What to notice
 
-**The state is an object, not a blob.** `{"filename": ..., "readme": ...}` tells the model what each part is, and named fields let you diff one state against another the first time an answer surprises you.
+**The state is an object with named fields.** `{"filename": ..., "readme": ...}` tells the model what each part is, and named fields let you diff one state against another the first time an answer surprises you.
 
-**The document is truncated at 40,000 characters**, roughly 10,000 tokens. That keeps five questions well inside the 32,000-token per-question limit, and state you did not need for the question costs accuracy as well as money.
+**The sample truncates the document at 40,000 characters**, roughly 10,000 tokens. Five questions then fit well inside the 32,000-token per-question limit, and padding the state would cost accuracy as well as money.
 
-**The model is pinned** to `jev-1.13.0`. The SDK defaults to `jev-latest`, so any threshold you tune against measured behavior would drift under a silent upgrade.
+**The sample pins the model** to `jev-1.13.0`. The SDK defaults to `jev-latest`, so a silent upgrade would move any threshold you tuned against measured behavior.
 
-**A `Score` lands between levels.** `1.4` on the three-level rubric sits between "steps exist but assume things they never state" and "a reader could follow them start to finish". Treat the rubric as a ruler rather than three boxes.
+**A `Score` lands between levels.** The 1.7 above sits between "steps exist but assume things they never state" and "a reader could follow them start to finish". Treat the rubric as a ruler rather than three boxes.
 
 **A `Noul` has no separate confidence.** The probability is the confidence.
 
@@ -66,5 +66,5 @@ That call took 327 ms end to end, inside the 70 to 500 ms TypeSafe quotes but no
 
 Point it at twenty READMEs you already know well and read the output against what is in the files. You are testing calibration on your own material: when Jev says 0.9, it should be right about nine times in ten.
 
-1. Add a sixth question and watch the wall clock barely move. That is fan-out: the state is the cost, and questions are cheap.
+1. Add a sixth question and time it. The state is the cost, so the wall clock holds about steady. That is fan-out.
 2. Change `MODEL` to `jev-latest`, re-run the same files, and see what the pin was protecting.
