@@ -18,6 +18,7 @@ jev-samples/
     readme-check/         one folder per sample
       README.md           what it does, how to run it, what to notice
       pyproject.toml      its own dependencies
+      questions.yml       the Jev payload: model pin, state budget, questions
       readme_check.py     the sample
 ```
 
@@ -26,8 +27,9 @@ jev-samples/
 Each sample folder is its own uv project, so the root needs no install and samples never share a virtualenv.
 
 ```bash
-# Every sample reads the key from the environment. Nothing loads .env for you.
-set -a && . ./.env && set +a      # or: export TYPESAFE_API_KEY="your-key"
+# Samples read TYPESAFE_API_KEY from the environment, then fall back to .env
+# beside the sample or at the repo root. Export it to override the file.
+export TYPESAFE_API_KEY="your-key"   # optional once .env exists
 
 cd samples/readme-check
 uv run readme_check.py --help     # run a sample
@@ -73,23 +75,25 @@ logging.basicConfig(
 
 These are the habits the samples exist to teach, so breaking one in a sample teaches the wrong thing.
 
-- **Pin the model.** `MODEL = "jev-1.13.0"` as a module constant. The SDK defaults to `jev-latest`, which moves under you.
+- **The payload lives in `questions.yml`,** never in the Python. The file holds the model pin, the state budget and every question with its display label. The Python reads it, builds the state and judges the answers.
+- **Pin the model** in that file: `model: jev-1.13.0`. The SDK defaults to `jev-latest`, which moves under you.
 - **State is an object with named fields.** Name each part, so the model knows where one ends and the next begins.
-- **Truncate the state** and say why in a comment. Padding costs accuracy as well as money.
+- **Truncate the state** through `max_state_chars` and say why in a YAML comment. Padding costs accuracy as well as money.
 - **One question, one thing.** Never fold two claims into one question.
 - **Gate per action, not per system.** Put the threshold next to the action it guards, and pick the number from the cost of being wrong.
-- **Weight composite judgments in Python**, so the weights live in a diff.
+- **Weight composite judgments outside the model.** Put the weight for each question in `questions.yml` next to the question, and do the arithmetic in Python. Both sit in a diff, and neither hides inside a question's wording.
 - **Do arithmetic in Python.** Jev cannot count, and its date and number comparisons fail.
 - **Treat state built from user input as untrusted.** Text written to argue for its own classification moves the answer.
 
 ## Adding a sample
 
 1. Create `samples/<sample-name>/` with kebab-case naming.
-2. Give it its own `pyproject.toml`.
-3. Write the sample as a single module where possible. Reach for a second file only when one stops being readable.
-4. Write the sample README to answer three questions in this order: what it does, how to run it, what to notice.
-5. Add a row to the table in the root README.
-6. Run the checks under "Testing instructions".
+2. Give it its own `pyproject.toml`, depending on `typesafe-sdk` and `pyyaml`.
+3. Put the whole Jev payload in `questions.yml`: `model`, `max_state_chars`, then `questions`, each entry carrying `type`, `label`, `instructions` and any `criteria`. Question order in the file is print order.
+4. Write the sample as a single module where possible. Reach for a second file only when one stops being readable.
+5. Write the sample README to answer three questions in this order: what it does, how to run it, what to notice.
+6. Add a row to the table in the root README.
+7. Run the checks under "Testing instructions".
 
 If a sample needs rules of its own, add `samples/<sample-name>/AGENTS.md`. Agents read the nearest file up the tree, so it wins for files in that folder.
 
@@ -118,7 +122,7 @@ Repo specifics on top of the skill:
 ## Security
 
 - Never commit a key. `.env` is gitignored, and placeholders stay fake beyond doubt (`YOUR_TYPESAFE_API_KEY`).
-- Never put a real key in a README, a log line, a commit message, or a shell history you paste back. Read it from `$TYPESAFE_API_KEY` in every example.
+- Never put a real key in a README, a log line, a commit message, or a shell history you paste back. A sample may log the path a key came from, never the key.
 - Fetch over https only. The sample refuses an `http://` target rather than pulling a document in the clear.
 - Treat state built from user input as untrusted, the same way you treat a prompt.
 

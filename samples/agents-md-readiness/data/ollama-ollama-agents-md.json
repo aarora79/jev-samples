@@ -1,0 +1,278 @@
+{
+  "filename": "AGENTS.md",
+  "source": "https://raw.githubusercontent.com/ollama/ollama/HEAD/AGENTS.md",
+  "found": true,
+  "looked": [
+    "https://raw.githubusercontent.com/ollama/ollama/HEAD/AGENTS.md"
+  ],
+  "model": "jev-1.13.0",
+  "usage": {
+    "input_tokens": 1048,
+    "output_tokens": 344
+  },
+  "readiness": 0.4773,
+  "questions": {
+    "written_for": {
+      "label": "written for",
+      "type": "choice",
+      "weight": 0.08,
+      "inverted": false,
+      "returned": {
+        "type": "choice",
+        "choice": "agent",
+        "confidence": 0.57,
+        "probabilities": {
+          "agent": 0.72,
+          "stub": 0.0,
+          "human": 0.28
+        }
+      },
+      "credit": 1.0,
+      "judgement": "strong"
+    },
+    "weakest_area": {
+      "label": "weakest area",
+      "type": "choice",
+      "weight": null,
+      "inverted": false,
+      "returned": {
+        "type": "choice",
+        "choice": "testing",
+        "confidence": 0.35,
+        "probabilities": {
+          "boundaries": 0.29,
+          "layout": 0.01,
+          "conventions": 0.0,
+          "testing": 0.48,
+          "commands": 0.22
+        }
+      },
+      "credit": null,
+      "judgement": null
+    },
+    "commands": {
+      "label": "commands",
+      "type": "score",
+      "weight": 0.11,
+      "inverted": false,
+      "returned": {
+        "type": "score",
+        "score": 2.0,
+        "confidence": 1.0,
+        "legend": {
+          "0": "No commands at all",
+          "1": "Commands described in prose, so the exact line is a guess",
+          "2": "Exact commands, with the paths and flags needed to run them"
+        },
+        "probabilities": {
+          "0": 0.0,
+          "1": 0.0,
+          "2": 1.0
+        }
+      },
+      "credit": 1.0,
+      "judgement": "strong"
+    },
+    "testing": {
+      "label": "testing",
+      "type": "score",
+      "weight": 0.09,
+      "inverted": false,
+      "returned": {
+        "type": "score",
+        "score": 0.0,
+        "confidence": 1.0,
+        "legend": {
+          "0": "Nothing about tests",
+          "1": "Tells the agent to test without saying how",
+          "2": "Exact test commands, and what to do when a test fails"
+        },
+        "probabilities": {
+          "0": 1.0,
+          "1": 0.0,
+          "2": 0.0
+        }
+      },
+      "credit": 0.0,
+      "judgement": "missing"
+    },
+    "conventions": {
+      "label": "conventions",
+      "type": "score",
+      "weight": 0.07,
+      "inverted": false,
+      "returned": {
+        "type": "score",
+        "score": 0.07,
+        "confidence": 0.9,
+        "legend": {
+          "0": "No conventions at all",
+          "1": "General advice that would fit any project",
+          "2": "Rules naming the tools, settings and patterns this project uses"
+        },
+        "probabilities": {
+          "0": 0.95,
+          "1": 0.03,
+          "2": 0.02
+        }
+      },
+      "credit": 0.035,
+      "judgement": "missing"
+    },
+    "repo_map": {
+      "label": "repo map",
+      "type": "score",
+      "weight": 0.03,
+      "inverted": false,
+      "returned": {
+        "type": "score",
+        "score": 0.92,
+        "confidence": 0.88,
+        "legend": {
+          "0": "Nothing about the repository layout",
+          "1": "Names a directory or two in passing",
+          "2": "Lists the directories or key files and says what each one holds"
+        },
+        "probabilities": {
+          "0": 0.08,
+          "1": 0.92,
+          "2": 0.0
+        }
+      },
+      "credit": 0.46,
+      "judgement": "thin"
+    },
+    "project_overview": {
+      "label": "project overview",
+      "type": "noul",
+      "weight": 0.03,
+      "inverted": false,
+      "returned": {
+        "type": "noul",
+        "noul": 0.05
+      },
+      "credit": 0.05,
+      "judgement": "missing"
+    },
+    "setup_commands": {
+      "label": "setup commands",
+      "type": "noul",
+      "weight": 0.05,
+      "inverted": false,
+      "returned": {
+        "type": "noul",
+        "noul": 0.16
+      },
+      "credit": 0.16,
+      "judgement": "weak"
+    },
+    "build_commands": {
+      "label": "build or run commands",
+      "type": "noul",
+      "weight": 0.04,
+      "inverted": false,
+      "returned": {
+        "type": "noul",
+        "noul": 0.99
+      },
+      "credit": 0.99,
+      "judgement": "strong"
+    },
+    "test_commands": {
+      "label": "test commands",
+      "type": "noul",
+      "weight": 0.07,
+      "inverted": false,
+      "returned": {
+        "type": "noul",
+        "noul": 0.02
+      },
+      "credit": 0.02,
+      "judgement": "missing"
+    },
+    "code_style": {
+      "label": "code style rules",
+      "type": "noul",
+      "weight": 0.03,
+      "inverted": false,
+      "returned": {
+        "type": "noul",
+        "noul": 0.03
+      },
+      "credit": 0.03,
+      "judgement": "missing"
+    },
+    "pr_rules": {
+      "label": "commit and PR rules",
+      "type": "noul",
+      "weight": 0.03,
+      "inverted": false,
+      "returned": {
+        "type": "noul",
+        "noul": 0.01
+      },
+      "credit": 0.01,
+      "judgement": "missing"
+    },
+    "security_notes": {
+      "label": "security notes",
+      "type": "noul",
+      "weight": 0.07,
+      "inverted": false,
+      "returned": {
+        "type": "noul",
+        "noul": 0.03
+      },
+      "credit": 0.03,
+      "judgement": "missing"
+    },
+    "nested_files": {
+      "label": "nested file precedence",
+      "type": "noul",
+      "weight": 0.02,
+      "inverted": false,
+      "returned": {
+        "type": "noul",
+        "noul": 0.03
+      },
+      "credit": 0.03,
+      "judgement": "missing"
+    },
+    "boundaries": {
+      "label": "boundaries and asks",
+      "type": "noul",
+      "weight": 0.06,
+      "inverted": false,
+      "returned": {
+        "type": "noul",
+        "noul": 0.03
+      },
+      "credit": 0.03,
+      "judgement": "missing"
+    },
+    "runnable_commands": {
+      "label": "commands are runnable",
+      "type": "noul",
+      "weight": 0.07,
+      "inverted": false,
+      "returned": {
+        "type": "noul",
+        "noul": 0.97
+      },
+      "credit": 0.97,
+      "judgement": "strong"
+    },
+    "leaks_secret": {
+      "label": "leaks a credential",
+      "type": "noul",
+      "weight": 0.15,
+      "inverted": true,
+      "returned": {
+        "type": "noul",
+        "noul": 0.02
+      },
+      "credit": 0.98,
+      "judgement": "clean"
+    }
+  }
+}

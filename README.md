@@ -9,8 +9,22 @@ Every sample is a small self-contained project under [samples/](samples/), and y
 | Sample | What it does |
 | --- | --- |
 | [readme-check](samples/readme-check/) | Reads a README from disk or a GitHub URL, asks five questions about it in one call, and explains every number it prints. Uses all three primitives: `Choice`, `Score` and `Noul`. |
+| [agents-md-readiness](samples/agents-md-readiness/) | Scores an AGENTS.md or CLAUDE.md against the [agents.md](https://agents.md) format: seventeen questions in one call, a padded markdown table, one weighted readiness score, and a JSON report per document. Ships scored runs for eleven open-source repos in [data/](samples/agents-md-readiness/data/). |
+
+Each sample keeps its Jev payload in `questions.yml`: the model pin, the state budget, every question with the label it prints under, and what each answer is worth toward the score. The Python reads that file and does the arithmetic, so changing a question or a weight is a data change and changing a threshold is a code change.
 
 More samples to come, one folder each.
+
+## Jev on two pages
+
+The three question types, the shape of a request and its response, where Jev sits against a frontier model on latency, the failure modes, and the patterns worth copying. Both pages live in [my-ai-assets](https://github.com/aarora79/my-ai-assets/tree/main/explainers/jev/poster), and this README embeds them from there, so one copy serves both repos.
+
+<p>
+  <img src="https://raw.githubusercontent.com/aarora79/my-ai-assets/main/explainers/jev/poster/jev-poster-front.png" width="49%" alt="Poster front: most model calls are decisions rather than essays, the three question types, one support ticket answered three ways with a threshold written beside each action, and the three design choices behind the speed.">
+  <img src="https://raw.githubusercontent.com/aarora79/my-ai-assets/main/explainers/jev/poster/jev-poster-back.png" width="49%" alt="Poster back: a log-scale latency chart placing Jev against a frontier model on TypeSafe's September 2026 figures, what Jev gets wrong, the patterns that hold up, four repos worth reading, and the whole API on one panel.">
+</p>
+
+Read the explainer for a more detailed version: [Jev: a model that decides instead of writing](https://github.com/aarora79/my-ai-assets/blob/main/explainers/jev/jev-explainer.md). The same poster prints from a [two-page A4 PDF](https://github.com/aarora79/my-ai-assets/blob/main/explainers/jev/poster/jev-poster.pdf), duplex on the long edge with no scaling.
 
 ## Prerequisites
 
@@ -18,15 +32,16 @@ More samples to come, one folder each.
 - [uv](https://docs.astral.sh/uv/) for dependencies and running
 - A TypeSafe API key in `TYPESAFE_API_KEY`
 
-Nothing here auto-loads `.env`, which would cost a dependency for one line of shell. The SDK reads `TYPESAFE_API_KEY` from the environment:
+Each sample reads `TYPESAFE_API_KEY` from the environment. When the environment has no key, it falls back to a `.env` file beside the sample or at the repo root, parsed with fourteen lines of standard library rather than a dependency, and logs which file it came from:
 
 ```bash
-cp .env.example .env         # put your key in it
-set -a && . ./.env && set +a # load it into the environment
+cp .env.example .env         # put your key in it, and the samples find it
 
-# or skip the file
+# the environment still wins, for a different key or a throwaway one
 export TYPESAFE_API_KEY="your-key"
 ```
+
+The `curl` calls below read the environment, so export the key for those.
 
 ## Try it with curl
 
@@ -124,6 +139,11 @@ Each sample folder is its own uv project, so `uv run` resolves its dependencies 
 ```bash
 cd samples/readme-check
 uv run readme_check.py --help
+uv run readme_check.py https://github.com/psf/requests
+
+cd ../agents-md-readiness
+uv run agents_md_readiness.py --help
+uv run agents_md_readiness.py https://github.com/apache/airflow
 ```
 
 ## The three primitives

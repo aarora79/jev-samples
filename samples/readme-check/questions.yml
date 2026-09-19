@@ -1,0 +1,49 @@
+# Everything this sample sends to Jev: the model pin, the state budget, and all
+# five questions. The judgment stays in Python, where the two thresholds sit
+# beside the action they guard.
+#
+# Adding a question means adding an entry here. Nothing else changes.
+
+# Both SDKs default to jev-latest, and a silent upgrade would move answers under
+# thresholds calibrated against an older version.
+model: jev-1.13.0
+
+# Roughly 10,000 tokens. Keeps five questions well inside the 32,000-token
+# per-question limit, and stops a long document from costing accuracy.
+max_state_chars: 40000
+
+# Each question asks about one thing, so no answer has to cover two claims. The
+# order here is the order the sample prints them.
+questions:
+  audience:
+    type: choice
+    label: written for
+    instructions: Who is this README written for
+    criteria:
+      user: Someone who wants to install and use the thing
+      contributor: Someone who wants to change the code
+      evaluator: Someone deciding whether to adopt it
+
+  setup:
+    type: score
+    label: setup steps
+    instructions: How complete the setup instructions are
+    criteria:
+      - No install or setup steps at all
+      - Steps exist but assume things they never state
+      - A reader could follow them start to finish
+
+  has_example:
+    type: noul
+    label: worked example
+    instructions: The document shows at least one worked example
+
+  explains_auth:
+    type: noul
+    label: auth explained
+    instructions: The document explains how to authenticate
+
+  sounds_stale:
+    type: noul
+    label: sounds stale
+    instructions: The document mentions versions or features that sound out of date

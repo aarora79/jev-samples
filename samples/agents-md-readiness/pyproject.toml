@@ -1,7 +1,7 @@
 [project]
-name = "readme-check"
+name = "agents-md-readiness"
 version = "0.1.0"
-description = "Ask Jev five questions about a README in a single call"
+description = "Check an AGENTS.md against the agents.md format in a single call"
 requires-python = ">=3.11"
 dependencies = [
     "pyyaml>=6.0,<7.0",

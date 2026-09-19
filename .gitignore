@@ -18,5 +18,10 @@ dist/
 .pytest_cache/
 .coverage
 
+# Readiness reports land in samples/agents-md-readiness/data/ and are committed:
+# they are the runs behind the table in that sample's README. Strays elsewhere
+# in the sample folder are not.
+samples/agents-md-readiness/*.json
+
 # OS
 .DS_Store

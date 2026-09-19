@@ -1,0 +1,13 @@
+{
+  "filename": null,
+  "source": "https://raw.githubusercontent.com/stanfordnlp/dspy/HEAD/CLAUDE.md",
+  "found": false,
+  "looked": [
+    "https://raw.githubusercontent.com/stanfordnlp/dspy/HEAD/AGENTS.md",
+    "https://raw.githubusercontent.com/stanfordnlp/dspy/HEAD/CLAUDE.md"
+  ],
+  "model": null,
+  "usage": null,
+  "readiness": null,
+  "questions": {}
+}

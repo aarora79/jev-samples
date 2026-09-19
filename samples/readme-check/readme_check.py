@@ -1,8 +1,11 @@
 """Ask Jev five questions about a README in a single call.
 
-Reads a README from disk or from a GitHub URL, sends it to Jev as state, and
-asks five questions at once: one Choice, one Score and three Nouls. Nothing is
-parsed on the way back, because Jev never returns prose.
+Reads a README from disk or from a GitHub URL, sends it to Jev as state, and asks
+every question in questions.yml at once: one Choice, one Score and three Nouls.
+Nothing is parsed on the way back, because Jev never returns prose.
+
+The payload lives in questions.yml. The judgment lives here, where each threshold
+sits beside the action it guards.
 
 Usage:
     uv run readme_check.py                                   # ./README.md
@@ -14,10 +17,12 @@ Usage:
 import argparse
 import json
 import logging
+import os
 import pathlib
 import sys
 import urllib.request
 
+import yaml
 from typesafe_sdk import (
     Choice,
     ChoiceAnswer,
@@ -36,26 +41,26 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-# Pin the model. Both SDKs default to jev-latest, and a silent upgrade would
-# move answers under thresholds calibrated against an older version.
-MODEL: str = "jev-1.13.0"
-
-# Roughly 10,000 tokens. Keeps five questions well inside the 32,000-token
-# per-question limit, and stops a long document from costing accuracy.
-MAX_STATE_CHARS: int = 40_000
+# The model pin, the state budget and every question. Sits beside this file so
+# `uv run readme_check.py` finds it from any working directory.
+PAYLOAD_FILE: pathlib.Path = pathlib.Path(__file__).parent / "questions.yml"
 
 FETCH_TIMEOUT_SECONDS: int = 20
+
+# The SDK reads the key from this variable.
+API_KEY_ENV: str = "TYPESAFE_API_KEY"
+
+# Where to look when the environment has no key: beside the sample, then at the
+# repo root. The sample reads one variable out of the file and logs the path it
+# came from, never the value.
+ENV_FILES: tuple[pathlib.Path, ...] = (
+    pathlib.Path(__file__).parent / ".env",
+    pathlib.Path(__file__).parents[2] / ".env",
+)
 
 DEFAULT_TARGET: str = "README.md"
 
 GITHUB_REPO_URL_PART_COUNT: int = 5
-
-# The three Noul question ids, mapped to their display labels in print order.
-NOUL_LABELS: dict[str, str] = {
-    "has_example": "worked example",
-    "explains_auth": "auth explained",
-    "sounds_stale": "sounds stale",
-}
 
 # A word for each band of a Noul probability, highest floor first. Jev returns
 # one number and no separate confidence, so 0.5 says the document never settled
@@ -67,6 +72,51 @@ NOUL_WORDS: tuple[tuple[float, str], ...] = (
     (0.1, "probably no"),
     (0.0, "no"),
 )
+
+
+def _build_question(
+    question_id: str,
+    spec: dict,
+) -> Choice | Score | Noul:
+    """Turn one questions.yml entry into the SDK object for its type.
+
+    Args:
+        question_id: The key the entry sits under, used in error messages.
+        spec: The entry itself, holding type, instructions and any criteria.
+
+    Returns:
+        A Choice, Score or Noul built from the entry.
+
+    Raises:
+        SystemExit: If the entry names a type Jev does not have.
+    """
+    kind = spec.get("type")
+    if kind == "noul":
+        return Noul(instructions=spec["instructions"])
+    if kind == "choice":
+        return Choice(instructions=spec["instructions"], criteria=spec["criteria"])
+    if kind == "score":
+        return Score(instructions=spec["instructions"], criteria=spec["criteria"])
+    sys.exit(f"{PAYLOAD_FILE.name}: question {question_id} has unknown type {kind!r}")
+
+
+def _load_payload() -> tuple[dict, dict]:
+    """Read the model pin, the state budget and the questions from questions.yml.
+
+    Returns:
+        Tuple of (settings, specs). Settings holds the model and the state
+        budget; specs holds each question entry keyed by id, in file order.
+
+    Raises:
+        SystemExit: If the file is missing a key the request needs.
+    """
+    payload = yaml.safe_load(PAYLOAD_FILE.read_text(encoding="utf-8"))
+    missing = {"model", "max_state_chars", "questions"} - payload.keys()
+    if missing:
+        sys.exit(f"{PAYLOAD_FILE.name}: missing {', '.join(sorted(missing))}")
+
+    settings = {"model": payload["model"], "max_state_chars": payload["max_state_chars"]}
+    return settings, payload["questions"]
 
 
 def _to_raw_url(url: str) -> str:
@@ -88,7 +138,7 @@ def _to_raw_url(url: str) -> str:
     parts = url.rstrip("/").split("/")
     if len(parts) == GITHUB_REPO_URL_PART_COUNT:  # a repo root
         owner, repo = parts[3], parts[4]
-        return f"https://raw.githubusercontent.com/{owner}/{repo}/HEAD/README.md"
+        return f"https://raw.githubusercontent.com/{owner}/{repo}/HEAD/{DEFAULT_TARGET}"
 
     return url
 
@@ -122,44 +172,6 @@ def _load_readme(target: str) -> tuple[str, str, str]:
     with urllib.request.urlopen(url, timeout=FETCH_TIMEOUT_SECONDS) as response:  # nosec B310 - https-only, enforced above
         text = response.read().decode("utf-8", "replace")
     return url.rsplit("/", 1)[-1], url, text
-
-
-def _build_questions() -> dict:
-    """Build the five questions, one per thing worth knowing about a README.
-
-    Each question is atomic: it asks about exactly one thing, so no answer has
-    to cover two claims at once.
-
-    Returns:
-        Question ids mapped to Choice, Score and Noul instances.
-    """
-    return {
-        "audience": Choice(
-            instructions="Who is this README written for",
-            criteria={
-                "user": "Someone who wants to install and use the thing",
-                "contributor": "Someone who wants to change the code",
-                "evaluator": "Someone deciding whether to adopt it",
-            },
-        ),
-        "setup": Score(
-            instructions="How complete the setup instructions are",
-            criteria=[
-                "No install or setup steps at all",
-                "Steps exist but assume things they never state",
-                "A reader could follow them start to finish",
-            ],
-        ),
-        "has_example": Noul(
-            instructions="The document shows at least one worked example",
-        ),
-        "explains_auth": Noul(
-            instructions="The document explains how to authenticate",
-        ),
-        "sounds_stale": Noul(
-            instructions="The document mentions versions or features that sound out of date",
-        ),
-    }
 
 
 def _describe_noul(value: float) -> str:
@@ -236,6 +248,7 @@ def _print_answers(
     name: str,
     source: str,
     answers: dict,
+    specs: dict,
 ) -> None:
     """Print each answer, what the number means, then the one verdict.
 
@@ -247,26 +260,35 @@ def _print_answers(
         name: Display name of the document that was read.
         source: The path or URL the text came from.
         answers: Answers keyed by question id, as returned by Jev.
+        specs: Question entries from questions.yml, keyed by id and in file
+            order, which is the order this prints them.
     """
     audience = answers["audience"]
     setup = answers["setup"]
     print(f"\n{name}  ({source})\n")
 
-    print(f"  written for     {audience.choice:12} (confidence {audience.confidence:.2f})")
-    options = len(audience.probabilities)
-    print(f"      Choice: one label out of {options}, scored {_describe_choice(audience)}.")
+    print(
+        f"  {specs['audience']['label']:15} {audience.choice:12} (confidence {audience.confidence:.2f})"
+    )
+    print(
+        f"      Choice: one label out of {len(audience.probabilities)}, scored {_describe_choice(audience)}."
+    )
     print(f"      Confidence {audience.confidence:.2f} rates that pick, and Jev reports it")
     print("      apart from the spread, so the two numbers can differ.\n")
 
     top = len(setup.legend) - 1
-    print(f"  setup steps     {setup.score:.1f} / {top}      (confidence {setup.confidence:.2f})")
+    print(
+        f"  {specs['setup']['label']:15} {setup.score:.1f} / {top}      (confidence {setup.confidence:.2f})"
+    )
     for line in _describe_score(setup):
         print(f"      {line}")
     print()
 
-    for question_id, label in NOUL_LABELS.items():
+    for question_id, spec in specs.items():
+        if spec["type"] != "noul":
+            continue
         value = answers[question_id].noul
-        print(f"  {label:15} {value:.2f}         {_describe_noul(value)}")
+        print(f"  {spec['label']:15} {value:.2f}         {_describe_noul(value)}")
     print("      Noul: one probability, which is also the confidence. Near 0.50 says the")
     print("      document argues both ways, or never addresses the statement at all.")
 
@@ -275,29 +297,77 @@ def _print_answers(
         print("\n  -> worth a rewrite before anyone outside the team reads it")
 
 
+def _key_from_env_files() -> str | None:
+    """Read TYPESAFE_API_KEY out of the first .env file that sets it.
+
+    Handles the two shapes a key file takes in practice: `NAME=value` and
+    `export NAME=value`, with or without quotes.
+
+    Returns:
+        The key, or None when no file sets it.
+    """
+    for path in ENV_FILES:
+        if not path.exists():
+            continue
+        for line in path.read_text(encoding="utf-8").splitlines():
+            name, _, value = line.strip().removeprefix("export ").partition("=")
+            if name.strip() != API_KEY_ENV:
+                continue
+            logger.info(f"Read {API_KEY_ENV} from {path}")
+            return value.strip().strip("\"'")
+    return None
+
+
+def _require_api_key() -> None:
+    """Put the key in the environment before anything reaches the network.
+
+    The environment wins. A .env file beside the sample or at the repo root is
+    the fallback, so an activated virtualenv with no exports still runs.
+
+    Raises:
+        SystemExit: If neither the environment nor a .env file has the key.
+    """
+    if os.environ.get(API_KEY_ENV):
+        return
+
+    key = _key_from_env_files()
+    if not key:
+        looked = ", ".join(str(path) for path in ENV_FILES)
+        sys.exit(
+            f"{API_KEY_ENV} is not set, and no key sits in {looked}.\n"
+            f"  export {API_KEY_ENV}=your-key"
+        )
+    os.environ[API_KEY_ENV] = key
+
+
 def check_readme(
     target: str,
     verbose: bool = False,
 ) -> None:
-    """Read one README and ask Jev five questions about it in one call.
+    """Read one README and ask Jev every question in the payload, in one call.
 
     Args:
         target: A filesystem path or an https URL.
         verbose: Print the raw answers before the explained summary.
     """
+    _require_api_key()
+    settings, specs = _load_payload()
+    questions = {
+        question_id: _build_question(question_id, spec) for question_id, spec in specs.items()
+    }
     name, source, text = _load_readme(target)
 
     response = TypeSafeClient().system_one(
-        model=MODEL,
-        state={"filename": name, "readme": text[:MAX_STATE_CHARS]},
-        questions=_build_questions(),
+        model=settings["model"],
+        state={"filename": name, "readme": text[: settings["max_state_chars"]]},
+        questions=questions,
     )
     logger.debug(f"Used {response.usage.input_tokens} input tokens")
 
     if verbose:
         _print_raw(response)
 
-    _print_answers(name, source, response.answers)
+    _print_answers(name, source, response.answers, specs)
 
 
 def main() -> None:
@@ -319,7 +389,9 @@ Example usage:
     # Print the raw answers Jev returned, then the explained summary
     uv run readme_check.py --verbose https://github.com/psf/requests
 
-Requires TYPESAFE_API_KEY in the environment.
+The questions, the model pin and the state budget live in questions.yml.
+Reads TYPESAFE_API_KEY from the environment, or from .env beside this file or at
+the repo root.
 """,
     )
     parser.add_argument(

@@ -1,0 +1,179 @@
+# Everything this sample sends to Jev, plus the weights it judges with: the model
+# pin, the state budget, and all seventeen questions.
+#
+# Each question carries a `weight`, and readiness is the weighted average of what
+# every weighted question returned. The weights here sum to 1, and the sample
+# divides by their total anyway, so an edited weight needs no rebalancing.
+#
+# Weights say what a missing thing costs. A leaked credential outranks everything,
+# because rotating a key and auditing a repo costs more than any missing section.
+# Commands and tests come next, because an agent runs those lines. A repo map and
+# nested-file precedence sit at the bottom, because an agent can list the tree and
+# most repos hold one instruction file.
+#
+# `weakest_area` carries no weight. It routes the fix rather than grading the file.
+#
+# Adding a question means adding an entry here. Nothing else changes.
+
+# Both SDKs default to jev-latest, and a silent upgrade would move answers under
+# thresholds calibrated against an older version.
+model: jev-1.13.0
+
+# Roughly 10,000 tokens. Seventeen questions each see the state plus themselves,
+# so this keeps every one of them well inside the 32,000-token per-question
+# limit, and stops a long document from costing accuracy.
+max_state_chars: 40000
+
+# Each question asks about one thing, so no answer has to cover two claims. The
+# order here is the order the sample prints them.
+questions:
+  written_for:
+    type: choice
+    label: written for
+    weight: 0.08
+    instructions: Who this document is written for
+    criteria:
+      agent: Instructions for a coding agent working in this repository
+      human: Documentation for a human contributor, in the style of a README
+      stub: A placeholder holding too little to guide anyone
+    # What each option is worth toward readiness. A file written for humans earns
+    # nothing here, whatever else it happens to contain.
+    credit:
+      agent: 1.0
+      human: 0.0
+      stub: 0.0
+
+  # No weight: this one names the next thing to fix rather than grading the file.
+  weakest_area:
+    type: choice
+    label: weakest area
+    instructions: Which area of this document needs work first
+    criteria:
+      commands: Setup, build and run commands
+      testing: How to run the tests and what to do when one fails
+      conventions: Code style and naming rules
+      layout: Where things live in the repository
+      boundaries: Actions the agent must avoid, and the ones needing a human first
+
+  # Each score rubric runs 0 to 2 with evenly spaced steps, so dividing by the top
+  # level gives an honest fraction.
+  commands:
+    type: score
+    label: commands
+    weight: 0.11
+    instructions: How completely this document covers the commands an agent needs
+    criteria:
+      - No commands at all
+      - Commands described in prose, so the exact line is a guess
+      - Exact commands, with the paths and flags needed to run them
+
+  testing:
+    type: score
+    label: testing
+    weight: 0.09
+    instructions: How completely this document covers running the tests
+    criteria:
+      - Nothing about tests
+      - Tells the agent to test without saying how
+      - Exact test commands, and what to do when a test fails
+
+  conventions:
+    type: score
+    label: conventions
+    weight: 0.07
+    instructions: How specific the code style and convention rules are
+    criteria:
+      - No conventions at all
+      - General advice that would fit any project
+      - Rules naming the tools, settings and patterns this project uses
+
+  # An agent can list the tree itself, so a map earns little. It still saves a
+  # search on every task.
+  repo_map:
+    type: score
+    label: repo map
+    weight: 0.03
+    instructions: How completely this document maps the repository layout
+    criteria:
+      - Nothing about the repository layout
+      - Names a directory or two in passing
+      - Lists the directories or key files and says what each one holds
+
+  # The agents.md FAQ answers "are there required fields?" with "no", so the
+  # checks below track the sections the format recommends and the properties
+  # that decide whether an agent can act on the file.
+  project_overview:
+    type: noul
+    label: project overview
+    weight: 0.03
+    # The layout half of this claim belongs to the repo_map score above, so this
+    # asks about one thing: what the project is.
+    instructions: The document says what the project is and what it does
+
+  setup_commands:
+    type: noul
+    label: setup commands
+    weight: 0.05
+    instructions: The document gives commands to install dependencies or set up the environment
+
+  build_commands:
+    type: noul
+    label: build or run commands
+    weight: 0.04
+    instructions: The document gives commands to build or run the project
+
+  test_commands:
+    type: noul
+    label: test commands
+    weight: 0.07
+    instructions: The document gives commands to run the tests
+
+  code_style:
+    type: noul
+    label: code style rules
+    weight: 0.03
+    instructions: The document states code style or naming rules for this project
+
+  pr_rules:
+    type: noul
+    label: commit and PR rules
+    weight: 0.03
+    instructions: The document states how to write a commit message or a pull request
+
+  security_notes:
+    type: noul
+    label: security notes
+    weight: 0.07
+    instructions: The document covers security, secret handling, or what never to commit
+
+  nested_files:
+    type: noul
+    label: nested file precedence
+    weight: 0.02
+    instructions: The document explains nested AGENTS.md or CLAUDE.md files, or which file wins for a directory
+
+  boundaries:
+    type: noul
+    label: boundaries and asks
+    weight: 0.06
+    instructions: The document names actions the agent must never take or must ask about first
+
+  runnable_commands:
+    type: noul
+    label: commands are runnable
+    weight: 0.07
+    instructions: Commands appear as literal command lines a reader could copy and run
+
+  # The heaviest weight in the file, and the only inverted one: a yes here costs
+  # readiness instead of earning it.
+  #
+  # Asking whether a key is real asks Jev to judge authenticity, which it cannot
+  # do: a key labelled fake reads as fake to it. This asks about the shape of the
+  # text instead, which the document settles. The wording moved one test file
+  # from 0.05 to 0.98.
+  leaks_secret:
+    type: noul
+    label: leaks a credential
+    weight: 0.15
+    invert: true
+    instructions: The document contains a line that looks like a credential, API key, or access token
