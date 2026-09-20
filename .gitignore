@@ -20,15 +20,19 @@ dist/
 
 # Readiness reports land in samples/agents-md-readiness/data/ and are committed:
 # they are the runs behind the table in that sample's README. Strays elsewhere
-# in the sample folder are not.
+# in the sample folder are not, and neither is this repo scoring itself, which a
+# local run writes on every invocation and the README's table does not count.
 samples/agents-md-readiness/*.json
+samples/agents-md-readiness/data/jev-samples-agents-md.json
 
 # Compiled binaries from samples/agents-md-readiness/go/. build.sh writes dist/,
-# and the README's `go build -o agents-md-readiness .` writes the bare name beside
-# the source. A release carries the binaries; the repo carries the source.
+# `go build -o agents-md-readiness .` writes that name beside the source, and a
+# plain `go build` names its output after the directory, which is `go`. A release
+# carries the binaries; the repo carries the source.
 samples/agents-md-readiness/go/dist/
 samples/agents-md-readiness/go/agents-md-readiness
-samples/agents-md-readiness/go/agents-md-readiness.exe
+samples/agents-md-readiness/go/go
+*.exe
 
 # OS
 .DS_Store
