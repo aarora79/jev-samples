@@ -92,7 +92,28 @@ curl -fsSL https://raw.githubusercontent.com/aarora79/jev-samples/main/samples/a
 agents-md-readiness -fail-under 0.8 -fail-on-credential AGENTS.md
 ```
 
-Exit codes are 0 scored, 1 error, 2 gate failed. [0.1.0](https://github.com/aarora79/jev-samples/releases/tag/agents-md-readiness/0.1.0) ships binaries for linux and macOS on amd64 and arm64, plus windows amd64, and the installer checks them against the published `SHA256SUMS`. The Python here stays canonical, and a test in that folder fails when its copy of the payload drifts. [go/README.md](go/README.md) covers building, releasing and the caveats.
+Exit codes are 0 scored, 1 error, 2 gate failed. [0.2.0](https://github.com/aarora79/jev-samples/releases/tag/agents-md-readiness/0.2.0) ships binaries for linux and macOS on amd64 and arm64, plus windows amd64, and the installer checks them against the published `SHA256SUMS`. The Python here stays canonical, and a test in that folder fails when its copy of the payload drifts. [go/README.md](go/README.md) covers building, releasing and the caveats.
+
+### This repo runs the check on itself
+
+[`.github/workflows/agents-md-readiness.yml`](../../.github/workflows/agents-md-readiness.yml) installs that release and scores this repo's AGENTS.md on any pull request touching it, failing below 0.85 readiness or on a credential reading `suspect` or worse. Copy it, change the bar, and the check is yours.
+
+```yaml
+- run: curl -fsSL https://raw.githubusercontent.com/aarora79/jev-samples/main/samples/agents-md-readiness/go/install.sh | sh
+  env:
+    VERSION: "0.2.0"
+    BINDIR: ${{ runner.temp }}/bin
+
+- run: ${{ runner.temp }}/bin/agents-md-readiness -fail-under 0.85 -fail-on-credential -json report AGENTS.md
+  env:
+    TYPESAFE_API_KEY: ${{ secrets.TYPESAFE_API_KEY }}
+```
+
+Three details the workflow settles, each from a run rather than a guess:
+
+- **The bar leaves room for the model.** This file scores 0.92 with a spread of 0.01 across repeat runs, so 0.85 passes today and still fails a real regression. On a GitHub runner the check took 641 ms and 3,109 input tokens.
+- **A failing gate has to fail the job.** `set -o pipefail` keeps the exit code through the `tee` that feeds the job summary. A throwaway commit raising the bar to 0.99 failed with `readiness 0.92 is under the 0.99 bar` and exit code 2, and the summary and the JSON artifact still appeared, because both steps run under `always()`.
+- **A fork pull request gets no secrets.** The job checks for the key first and writes a line in the summary saying it skipped, instead of failing on a missing key and teaching everyone to ignore a red check.
 
 ## What it asks
 

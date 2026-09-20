@@ -10,7 +10,7 @@ agents-md-readiness -fail-under 0.8 https://github.com/apache/airflow
 
 ## Install it
 
-[0.1.0](https://github.com/aarora79/jev-samples/releases/tag/agents-md-readiness/0.1.0) carries binaries for linux and macOS on amd64 and arm64, plus windows amd64:
+[0.2.0](https://github.com/aarora79/jev-samples/releases/tag/agents-md-readiness/0.2.0) carries binaries for linux and macOS on amd64 and arm64, plus windows amd64:
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/aarora79/jev-samples/main/samples/agents-md-readiness/go/install.sh | sh
@@ -39,7 +39,7 @@ go build -o agents-md-readiness .
 `build.sh` cross-compiles every platform `install.sh` knows about from whichever machine you run it on, and writes `SHA256SUMS` beside the binaries:
 
 ```bash
-./build.sh 0.1.0
+./build.sh 0.2.0
 ```
 
 That produced five binaries on 19 September 2026, 6.4M to 7.2M each, in 4.4 seconds on this machine: linux amd64 and arm64, darwin amd64 and arm64, windows amd64. `-trimpath` drops the build paths, and Go stamps the git revision and a dirty flag into the binary, so the same commit in a clean tree reproduces the same hashes and a dirty tree does not. `go version -m <binary>` prints both. The release assets came from a fresh clone of the tagged commit, which is why their hashes differ from a build in a working tree that has edits.
@@ -147,17 +147,19 @@ Build from a clean clone of the commit you are tagging, so the revision Go stamp
 ```bash
 git clone --depth 1 https://github.com/aarora79/jev-samples.git /tmp/relbuild
 cd /tmp/relbuild/samples/agents-md-readiness/go
-./build.sh 0.1.0
-gh release create agents-md-readiness/0.1.0 dist/* \
+./build.sh 0.2.0
+gh release create agents-md-readiness/0.2.0 dist/* \
   --repo aarora79/jev-samples \
   --target "$(git rev-parse HEAD)" \
-  --title "agents-md-readiness 0.1.0" \
+  --title "agents-md-readiness 0.2.0" \
   --notes "Static binaries for linux, macOS and Windows."
 ```
 
-Versions are plain [semver](https://semver.org), `0.1.0` rather than `v0.1.0`, in the tag, the asset names and what `-version` prints. The tag carries the `agents-md-readiness/` prefix because `install.sh` resolves the newest tag with that prefix, which leaves room for another sample to ship its own binary. `dist/` is gitignored: the release holds the binaries and the repo holds the source.
+Versions are plain [semver](https://semver.org), `0.2.0` rather than `v0.2.0`, in the tag, the asset names and what `-version` prints. The tag carries the `agents-md-readiness/` prefix because `install.sh` resolves the newest tag with that prefix, which leaves room for another sample to ship its own binary. `dist/` is gitignored: the release holds the binaries and the repo holds the source.
 
-0.1.0 came out of `3bfae70` on 19 September 2026, built in a clean clone, and every asset stamps that revision with `vcs.modified=false`. The install path ran end to end from an empty directory: `install.sh` resolved 0.1.0 off the tag, downloaded the linux amd64 asset, printed `checksum ok`, and installed a binary that reports `agents-md-readiness 0.1.0`. It then scored `langchain-ai/langchain` in 385 ms for 5,723 input tokens and exited 2 on `microsoft/vscode` under `-fail-under 0.8`.
+0.2.0 came out of `2d28560` on 19 September 2026, built in a clean clone, and every asset stamps that revision with `vcs.modified=false`. It carries the deadband; 0.1.0, cut from `3bfae70`, does not, which is why the minor version moved rather than the patch. The install path ran end to end from an empty directory: `install.sh` resolved 0.2.0 off the tag, downloaded the linux amd64 asset, printed `checksum ok`, and installed a binary that reports `agents-md-readiness 0.2.0`.
+
+This repo's own pull request check installs that release and scores this repo's AGENTS.md, so [the workflow](../../../.github/workflows/agents-md-readiness.yml) is the worked example: `checksum ok`, readiness 0.93, 3,109 input tokens, 641 ms on a GitHub runner. Raising its bar to 0.99 on a throwaway commit failed the job with `readiness 0.92 is under the 0.99 bar` and exit code 2.
 
 ## What to notice
 

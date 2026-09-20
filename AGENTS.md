@@ -44,7 +44,7 @@ uvx ruff check --fix . && uvx ruff format .   # lint and format
 
 ## Testing instructions
 
-The repo has no test suite and no CI. Until one exists, a change is done when all of this passes:
+One check runs in CI: `.github/workflows/agents-md-readiness.yml` scores this file on any pull request that touches it, and fails below 0.85 readiness or on a line that looks like a credential. The repo has no test suite, so a change is done when all of this passes:
 
 1. `uv run python -m py_compile <file>` on every Python file you touched.
 2. `uvx ruff check .` and `uvx ruff format --check .` both report clean.
@@ -52,7 +52,7 @@ The repo has no test suite and no CI. Until one exists, a change is done when al
 4. Any output shown in a README comes from a run you just did, with the date next to it.
 5. `samples/agents-md-readiness/go/` compiles that sample into one static binary, so a change to its `questions.yml` or its Go files means `gofmt -l .`, `go vet ./...`, `go test ./...` and `./build.sh <version>` in that folder, then one live run of the binary you built. The Python stays canonical, and `payload_test.go` fails when the embedded copy of the payload drifts.
 
-If you add a test suite, use pytest, mock the client rather than calling the API, and replace this section.
+Run the whole list before you open a pull request, because CI covers the AGENTS.md check and nothing else. If you add a test suite, use pytest, mock the client rather than calling the API, and wire it into that workflow.
 
 ## Code style
 
