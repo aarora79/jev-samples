@@ -83,37 +83,55 @@ Set the bar at 0.80 and four of the eleven repos above fail today: `microsoft/vs
 
 A failing check puts the fix in front of the developer holding the branch, while they can still edit the file, instead of leaving the gap in place until an agent guesses wrong in production. Each failure names the weakest area and lists the checks judged `missing`, so the fix is a paragraph rather than an investigation. Readiness becomes one more gate in the software factory, beside the linter, the type check and the test suite, at three cents a month and under half a second a run.
 
-### One binary, no Python
+## Gate a pull request with one binary
 
-A CI runner that has no Python can install the same check as a single static executable. [`go/`](go/) holds a Go port of this sample: it bakes in `questions.yml`, talks to the Jev API over HTTP, prints the same table, writes the same JSON, and adds two gates so the job needs no inline script.
+A CI runner needs neither Python nor uv nor the SDK to run this check. [`go/`](go/) holds a Go port of this sample compiled to one static executable: it bakes in `questions.yml`, talks to the Jev API over HTTP, prints the same table, writes the same JSON, and carries the two gates, so the job is an install and a command.
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/aarora79/jev-samples/main/samples/agents-md-readiness/go/install.sh | sh
-agents-md-readiness -fail-under 0.8 -fail-on-credential AGENTS.md
+agents-md-readiness -fail-under 0.85 -fail-on-credential AGENTS.md
 ```
 
-Exit codes are 0 scored, 1 error, 2 gate failed. [0.2.0](https://github.com/aarora79/jev-samples/releases/tag/agents-md-readiness/0.2.0) ships binaries for linux and macOS on amd64 and arm64, plus windows amd64, and the installer checks them against the published `SHA256SUMS`. The Python here stays canonical, and a test in that folder fails when its copy of the payload drifts. [go/README.md](go/README.md) covers building, releasing and the caveats.
+Exit codes are 0 scored, 1 error, 2 gate failed, so a pull request job needs no parsing. [0.2.0](https://github.com/aarora79/jev-samples/releases/tag/agents-md-readiness/0.2.0) ships binaries for linux and macOS on amd64 and arm64, plus windows amd64, and the installer verifies each download against the published `SHA256SUMS`.
 
-### This repo runs the check on itself
-
-[`.github/workflows/agents-md-readiness.yml`](../../.github/workflows/agents-md-readiness.yml) installs that release and scores this repo's AGENTS.md on any pull request touching it, failing below 0.85 readiness or on a credential reading `suspect` or worse. Copy it, change the bar, and the check is yours.
+Paste this into your own repo, set `TYPESAFE_API_KEY` as a repository secret, and every pull request that edits AGENTS.md gets scored before it merges:
 
 ```yaml
-- run: curl -fsSL https://raw.githubusercontent.com/aarora79/jev-samples/main/samples/agents-md-readiness/go/install.sh | sh
-  env:
-    VERSION: "0.2.0"
-    BINDIR: ${{ runner.temp }}/bin
+name: AGENTS.md readiness
+on:
+  pull_request:
+    paths: [AGENTS.md]
 
-- run: ${{ runner.temp }}/bin/agents-md-readiness -fail-under 0.85 -fail-on-credential -json report AGENTS.md
-  env:
-    TYPESAFE_API_KEY: ${{ secrets.TYPESAFE_API_KEY }}
+permissions:
+  contents: read
+
+jobs:
+  score:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - run: curl -fsSL https://raw.githubusercontent.com/aarora79/jev-samples/main/samples/agents-md-readiness/go/install.sh | sh
+        env:
+          VERSION: "0.2.0"
+          BINDIR: ${{ runner.temp }}/bin
+
+      - run: |
+          set -o pipefail
+          ${{ runner.temp }}/bin/agents-md-readiness \
+            -fail-under 0.85 -fail-on-credential \
+            AGENTS.md | tee -a "$GITHUB_STEP_SUMMARY"
+        env:
+          TYPESAFE_API_KEY: ${{ secrets.TYPESAFE_API_KEY }}
 ```
 
-Three details the workflow settles, each from a run rather than a guess:
+That is the check this repo runs on itself, in [`.github/workflows/agents-md-readiness.yml`](../../.github/workflows/agents-md-readiness.yml), with a key check for forks and an uploaded report on top. Three details in it come from runs rather than guesses:
 
-- **The bar leaves room for the model.** This file scores 0.92 with a spread of 0.01 across repeat runs, so 0.85 passes today and still fails a real regression. On a GitHub runner the check took 641 ms and 3,109 input tokens.
-- **A failing gate has to fail the job.** `set -o pipefail` keeps the exit code through the `tee` that feeds the job summary. A throwaway commit raising the bar to 0.99 failed with `readiness 0.92 is under the 0.99 bar` and exit code 2, and the summary and the JSON artifact still appeared, because both steps run under `always()`.
-- **A fork pull request gets no secrets.** The job checks for the key first and writes a line in the summary saying it skipped, instead of failing on a missing key and teaching everyone to ignore a red check.
+- **The bar leaves room for the model.** This repo's AGENTS.md scores 0.94, and repeat runs of one file move readiness by about 0.01, so 0.85 passes with room and still fails a real regression. On a GitHub runner the check took 641 ms and 3,109 input tokens, which is $0.00013.
+- **A failing gate has to fail the job.** `set -o pipefail` keeps the exit code through the `tee`. A throwaway commit raising the bar to 0.99 failed the job with `readiness 0.92 is under the 0.99 bar` and exit code 2, and the summary still appeared.
+- **A fork pull request gets no secrets.** The workflow in this repo checks for the key first and writes a line saying it skipped, instead of failing on a missing key and teaching everyone to ignore a red check.
+
+The Python here stays canonical, and a test in `go/` fails when its copy of the payload drifts from `questions.yml`. [go/README.md](go/README.md) covers building from source, the deadband, cutting a release, and the caveats, including unsigned macOS binaries.
 
 ## What it asks
 
