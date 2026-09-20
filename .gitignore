@@ -23,9 +23,12 @@ dist/
 # in the sample folder are not.
 samples/agents-md-readiness/*.json
 
-# Cross-compiled binaries from samples/agents-md-readiness/go/build.sh. Releases
-# carry them; the repo does not.
+# Compiled binaries from samples/agents-md-readiness/go/. build.sh writes dist/,
+# and the README's `go build -o agents-md-readiness .` writes the bare name beside
+# the source. A release carries the binaries; the repo carries the source.
 samples/agents-md-readiness/go/dist/
+samples/agents-md-readiness/go/agents-md-readiness
+samples/agents-md-readiness/go/agents-md-readiness.exe
 
 # OS
 .DS_Store
