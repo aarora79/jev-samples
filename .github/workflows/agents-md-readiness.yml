@@ -1,0 +1,87 @@
+name: AGENTS.md readiness
+
+# Score this repo's own AGENTS.md on every pull request that touches it, with the
+# binary the agents-md-readiness sample ships. The job fails when readiness drops
+# below the bar or when the file looks like it carries a credential, which puts the
+# fix in front of whoever holds the branch.
+on:
+  pull_request:
+    paths:
+      - AGENTS.md
+      - .github/workflows/agents-md-readiness.yml
+  workflow_dispatch:
+
+# The job reads the checkout and writes a summary, and it needs nothing else.
+permissions:
+  contents: read
+
+jobs:
+  score:
+    runs-on: ubuntu-latest
+    env:
+      # Readiness sits at 0.92 with a spread of 0.01 across repeat runs, so 0.85
+      # leaves room for the model's own variance and still fails a real
+      # regression.
+      BAR: "0.85"
+      VERSION: "0.2.0"
+    steps:
+      - uses: actions/checkout@v4
+
+      # A pull request from a fork gets no secrets, so the job says why it stopped
+      # instead of failing on a missing key.
+      - name: Check for the API key
+        id: key
+        env:
+          TYPESAFE_API_KEY: ${{ secrets.TYPESAFE_API_KEY }}
+        run: |
+          if [ -z "$TYPESAFE_API_KEY" ]; then
+            echo "present=false" >> "$GITHUB_OUTPUT"
+            echo "TYPESAFE_API_KEY is not set for this run, so the score is skipped." >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "present=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Install agents-md-readiness
+        if: steps.key.outputs.present == 'true'
+        run: |
+          curl -fsSL "https://raw.githubusercontent.com/${{ github.repository }}/main/samples/agents-md-readiness/go/install.sh" | sh
+        env:
+          VERSION: ${{ env.VERSION }}
+          BINDIR: ${{ runner.temp }}/bin
+
+      - name: Score AGENTS.md
+        if: steps.key.outputs.present == 'true'
+        id: score
+        env:
+          TYPESAFE_API_KEY: ${{ secrets.TYPESAFE_API_KEY }}
+        run: |
+          set -o pipefail
+          # The binary prints a markdown table, so the same output reads in the log
+          # and in the job summary. tee keeps both.
+          "${{ runner.temp }}/bin/agents-md-readiness" \
+            -fail-under "$BAR" \
+            -fail-on-credential \
+            -json "${{ runner.temp }}/report" \
+            AGENTS.md | tee "${{ runner.temp }}/score.txt"
+
+      - name: Write the summary
+        # always() so a failing gate still explains itself in the summary.
+        if: always() && steps.key.outputs.present == 'true'
+        run: |
+          {
+            echo "## AGENTS.md readiness"
+            echo
+            echo "Bar: $BAR. Binary: agents-md-readiness $VERSION."
+            echo
+            echo '```'
+            cat "${{ runner.temp }}/score.txt" || echo "the run produced no output"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload the report
+        if: always() && steps.key.outputs.present == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: agents-md-readiness-report
+          path: ${{ runner.temp }}/report
+          if-no-files-found: ignore
