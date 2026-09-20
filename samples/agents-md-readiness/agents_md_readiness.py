@@ -104,6 +104,13 @@ JUDGEMENTS_INVERTED: tuple[tuple[float, str], ...] = (
 UNSURE_BELOW: float = 0.5
 UNSURE_BAND: tuple[float, float] = (0.35, 0.65)
 
+# Repeat calls on one document moved a credit by up to 0.03, so a value this near
+# a band edge can land on either side of it between runs. Within this distance the
+# label names both bands instead of picking one, so two runs of the same file
+# print readings that agree. The unsure markers widen by the same amount, because
+# over-flagging doubt costs a reader nothing and under-flagging it costs trust.
+DEADBAND: float = 0.02
+
 # The table columns, in order. Padded on print, so the same text reads in a
 # terminal and pastes into markdown.
 TABLE_HEADER: list[str] = ["Key", "Label", "Type", "Jev returned", "Weight", "Credit", "Judgement"]
@@ -283,6 +290,30 @@ def _load_document(target: str | None) -> Document:
     return Document(url.rsplit("/", 1)[-1], url, text, (url,))
 
 
+def _band_word(
+    value: float,
+    bands: tuple[tuple[float, str], ...],
+) -> str:
+    """Name the band a value falls in, or both bands when it sits on their edge.
+
+    Args:
+        value: The number to place, from 0 to 1.
+        bands: Floors paired with words, highest floor first.
+
+    Returns:
+        One word, or "lower to upper" when the value sits within DEADBAND of the
+        edge between two bands.
+    """
+    for index, (floor, wording) in enumerate(bands):
+        # The lowest floor is the bottom of the range, so no edge sits beneath it.
+        # Rounding the distance keeps a credit exactly one deadband away inside the
+        # band: 0.85 - 0.83 comes out of binary floating point just over 0.02.
+        if floor > 0.0 and round(abs(value - floor), 6) <= DEADBAND:
+            return f"{bands[index + 1][1]} to {wording}"
+
+    return next(wording for floor, wording in bands if value >= floor)
+
+
 def _describe_noul(value: float) -> str:
     """Turn one Noul probability into the word it stands for.
 
@@ -290,12 +321,10 @@ def _describe_noul(value: float) -> str:
         value: The probability Jev returned for the statement, from 0 to 1.
 
     Returns:
-        The word for the band the probability falls in.
+        The word for the band the probability falls in, or both words when it
+        sits on the edge between two of them.
     """
-    for floor, wording in NOUL_WORDS:
-        if value >= floor:
-            return wording
-    return NOUL_WORDS[-1][1]
+    return _band_word(value, NOUL_WORDS)
 
 
 def _describe_choice(answer: ChoiceAnswer) -> str:
@@ -397,17 +426,19 @@ def _judgement(
         answer: The answer Jev returned for it.
 
     Returns:
-        A word for the credit the answer earned, with "unsure" appended when Jev
-        hedged.
+        A word for the credit the answer earned, both words when the credit sits
+        on the edge between two bands, and "unsure" appended when Jev hedged.
     """
     credit = _credit(spec, answer)
     bands = JUDGEMENTS_INVERTED if spec.get("invert") else JUDGEMENTS
-    wording = next(word for floor, word in bands if credit >= floor)
+    wording = _band_word(credit, bands)
 
+    # Both markers widen by the deadband, so a confidence wobbling around the cut
+    # reads the same way on every run.
     if spec["type"] == "noul":
-        unsure = UNSURE_BAND[0] <= answer.noul <= UNSURE_BAND[1]
+        unsure = UNSURE_BAND[0] - DEADBAND <= answer.noul <= UNSURE_BAND[1] + DEADBAND
     else:
-        unsure = answer.confidence < UNSURE_BELOW
+        unsure = answer.confidence < UNSURE_BELOW + DEADBAND
     return f"{wording}, unsure" if unsure else wording
 
 

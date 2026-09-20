@@ -10,10 +10,10 @@
     "input_tokens": 5723,
     "output_tokens": 346
   },
-  "latency_ms": 476,
+  "latency_ms": 409,
   "cost_usd": 0.00024037,
   "questions_asked": 17,
-  "readiness": 0.9307,
+  "readiness": 0.9297,
   "questions": {
     "written_for": {
       "label": "written for",
@@ -25,9 +25,9 @@
         "choice": "agent",
         "confidence": 0.99,
         "probabilities": {
-          "human": 0.0,
-          "stub": 0.0,
-          "agent": 1.0
+          "agent": 0.99,
+          "human": 0.01,
+          "stub": 0.0
         }
       },
       "credit": 1.0,
@@ -41,13 +41,13 @@
       "returned": {
         "type": "choice",
         "choice": "boundaries",
-        "confidence": 0.83,
+        "confidence": 0.82,
         "probabilities": {
-          "commands": 0.07,
-          "testing": 0.02,
           "layout": 0.03,
+          "testing": 0.03,
+          "conventions": 0.02,
           "boundaries": 0.86,
-          "conventions": 0.02
+          "commands": 0.06
         }
       },
       "credit": null,
@@ -97,7 +97,7 @@
         }
       },
       "credit": 0.835,
-      "judgement": "adequate"
+      "judgement": "adequate to strong, unsure"
     },
     "conventions": {
       "label": "conventions",
@@ -152,9 +152,9 @@
       "inverted": false,
       "returned": {
         "type": "noul",
-        "noul": 0.77
+        "noul": 0.76
       },
-      "credit": 0.77,
+      "credit": 0.76,
       "judgement": "adequate"
     },
     "setup_commands": {
@@ -224,10 +224,10 @@
       "inverted": false,
       "returned": {
         "type": "noul",
-        "noul": 0.87
+        "noul": 0.86
       },
-      "credit": 0.87,
-      "judgement": "strong"
+      "credit": 0.86,
+      "judgement": "adequate to strong"
     },
     "nested_files": {
       "label": "nested file precedence",

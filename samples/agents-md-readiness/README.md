@@ -2,21 +2,21 @@
 
 A coding agent is only as good as the instructions it finds in your repo. [AGENTS.md](https://agents.md) is where those instructions go, and its homepage claimed "over 60k open-source projects" when I read it on 19 September 2026, counted by [this GitHub code search](https://github.com/search?q=path%3AAGENTS.md+NOT+is%3Afork+NOT+is%3Aarchived&type=code). The file decides whether an agent runs your real test command or guesses, edits the generated file you told it never to touch, or opens a pull request in the wrong format.
 
-Legacy repos have no AGENTS.md at all. Repos that have one wrote it against a format they skimmed, so it misses the sections the spec recommends. Worst of all it drifts: the build command changes, the test runner moves, a directory gets renamed, and the file keeps telling every agent the old story. Nothing in a normal review catches that, because nobody reads AGENTS.md in a diff.
+Legacy repos have no AGENTS.md at all. Repos that have one wrote it against a format they skimmed, and the same sections go missing from one repo to the next. Eight of the ten files scored below never say which file wins for a directory, and `boundaries` is the weakest area in eight of them. Review misses both, because nobody reads AGENTS.md in a diff.
 
-This sample turns the file into something CI can check. Wire it into the job that runs when a pull request opens, score the AGENTS.md or CLAUDE.md the branch would merge, and fail the build when readiness drops below the bar you set or when the file leaks a credential. Each check is one call carrying 17 questions, and on the eleven repos measured here it cost between $0.00004 and $0.00034.
+This sample scores that file for readiness, then turns the score into something CI can check. Wire it into the job that runs when a pull request opens, score the AGENTS.md or CLAUDE.md the branch would merge, and fail the build when readiness drops below the bar you set or when the file leaks a credential. Each check is one call carrying 17 questions, and on the eleven repos measured here it cost between $0.00004 and $0.00034.
 
 ## What eleven public repos cost to score
 
-On 19 September 2026 this sample scored the AGENTS.md or CLAUDE.md at the root of eleven public repos. Ten had a file, and the eleventh has neither. Every call asked all 17 questions at once.
+On 20 September 2026 this sample scored the AGENTS.md or CLAUDE.md at the root of eleven public repos. Ten had a file, and the eleventh has neither. Every call asked all 17 questions at once.
 
 | Measured across the ten scored repos | |
 | --- | --- |
 | Input tokens, all ten calls | 38,945 |
 | Cost, all ten calls | $0.0016 |
 | Cost per repo | $0.00004 to $0.00034 |
-| Latency per repo, end to end | 317 to 476 ms, mean 381 ms |
-| Output tokens | free, and counted |
+| Latency per repo, end to end | 300 to 462 ms, mean 387 ms |
+| Output tokens, all ten calls | 3,456, counted and not charged |
 
 Pricing is TypeSafe's published $0.042 per million input tokens, September 2026, which `questions.yml` carries as `input_usd_per_million`. A repo merging 100 pull requests a month, checking its AGENTS.md on every one, pays about three cents a month and waits under half a second per check.
 
@@ -24,31 +24,33 @@ Pricing is TypeSafe's published $0.042 per million input tokens, September 2026,
 
 | Repo | File | Readiness | Weakest area | Missing of 16 | Tokens | Latency | Report |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| `vercel/next.js` | AGENTS.md | 0.95 | boundaries | 0 | 8,206 | 367 ms | [json](data/vercel-next-js-agents-md.json) |
-| `apache/airflow` | AGENTS.md | 0.95 | commands | 1 | 6,410 | 425 ms | [json](data/apache-airflow-agents-md.json) |
-| `langchain-ai/langchain` | AGENTS.md | 0.93 | boundaries | 1 | 5,723 | 476 ms | [json](data/langchain-ai-langchain-agents-md.json) |
-| `anthropics/anthropic-cookbook` | CLAUDE.md | 0.91 | boundaries | 1 | 1,931 | 323 ms | [json](data/anthropics-anthropic-cookbook-claude-md.json) |
-| `cloudflare/workers-sdk` | AGENTS.md | 0.89 | boundaries | 0 | 2,843 | 344 ms | [json](data/cloudflare-workers-sdk-agents-md.json) |
-| `block/goose` | AGENTS.md | 0.86 | boundaries | 1 | 2,512 | 317 ms | [json](data/block-goose-agents-md.json) |
-| `openai/codex` | AGENTS.md | 0.83 | boundaries | 2 | 6,285 | 392 ms | [json](data/openai-codex-agents-md.json) |
-| `sst/opencode` | AGENTS.md | 0.72 | boundaries | 4 | 2,980 | 396 ms | [json](data/sst-opencode-agents-md.json) |
-| `ollama/ollama` | AGENTS.md | 0.48 | testing | 9 | 1,048 | 430 ms | [json](data/ollama-ollama-agents-md.json) |
-| `microsoft/vscode` | AGENTS.md | 0.28 | boundaries | 13 | 1,007 | 345 ms | [json](data/microsoft-vscode-agents-md.json) |
+| `vercel/next.js` | AGENTS.md | 0.95 | boundaries | 1 | 8,206 | 402 ms | [json](data/vercel-next-js-agents-md.json) |
+| `apache/airflow` | AGENTS.md | 0.95 | commands | 1 | 6,410 | 399 ms | [json](data/apache-airflow-agents-md.json) |
+| `langchain-ai/langchain` | AGENTS.md | 0.93 | boundaries | 1 | 5,723 | 409 ms | [json](data/langchain-ai-langchain-agents-md.json) |
+| `anthropics/anthropic-cookbook` | CLAUDE.md | 0.91 | boundaries | 1 | 1,931 | 404 ms | [json](data/anthropics-anthropic-cookbook-claude-md.json) |
+| `cloudflare/workers-sdk` | AGENTS.md | 0.89 | boundaries | 0 | 2,843 | 395 ms | [json](data/cloudflare-workers-sdk-agents-md.json) |
+| `block/goose` | AGENTS.md | 0.87 | boundaries | 1 | 2,512 | 366 ms | [json](data/block-goose-agents-md.json) |
+| `openai/codex` | AGENTS.md | 0.83 | boundaries | 3 | 6,285 | 462 ms | [json](data/openai-codex-agents-md.json) |
+| `sst/opencode` | AGENTS.md | 0.72 | boundaries | 4 | 2,980 | 407 ms | [json](data/sst-opencode-agents-md.json) |
+| `ollama/ollama` | AGENTS.md | 0.48 | testing | 9 | 1,048 | 327 ms | [json](data/ollama-ollama-agents-md.json) |
+| `microsoft/vscode` | AGENTS.md | 0.28 | boundaries | 13 | 1,007 | 300 ms | [json](data/microsoft-vscode-agents-md.json) |
 | `stanfordnlp/dspy` | none | None | | | 0 | | [json](data/stanfordnlp-dspy-not-found.json) |
 
 Every row links to the run it came from in [`data/`](data/), which holds the eleven reports these numbers were read off.
 
-The table rounds readiness to two places, and repeat runs moved each number by under 0.01: Airflow landed between 0.94 and 0.95 across five calls, which is why it and `vercel/next.js` both read 0.95, with 0.9471 and 0.9482 underneath.
+The table rounds readiness to two places, and repeat runs moved each number by under 0.01, which is why `vercel/next.js` and `apache/airflow` both read 0.95, with 0.9467 and 0.9466 underneath. Those two sit 0.0001 apart, so which one leads the table is a coin toss between runs.
 
 **The score grades the file, not the project.** VS Code's AGENTS.md is 271 bytes and points at `.github/copilot-instructions.md` for everything. The check reads only the file you hand it, so 0.28 is right about that file and says nothing about the project behind it. Ollama's is 358 bytes of build commands, which is why it lands at 0.48.
 
-**Nearly nobody documents nesting.** Eight of the ten files scored `nested_files` as `missing`, `cloudflare/workers-sdk` reaching `adequate` at 0.68 and `vercel/next.js` `weak` at 0.15. An agent cannot infer the precedence rule from prose about something else, so it is the cheapest thing on this page to fix.
+**Nearly nobody documents nesting.** Eight of the ten files scored `nested_files` as `missing`, `cloudflare/workers-sdk` reaching `adequate` at 0.69 and `vercel/next.js` landing at 0.13, close enough to the band edge that it reads `missing to weak`. An agent cannot infer the precedence rule from prose about something else, so it is the cheapest thing on this page to fix.
 
 **`boundaries` wins the weakest-area vote eight times out of ten.** Those files name commands, tests and style, then say nothing about what an agent must never do. Airflow is one of two exceptions, with explicit "Ask first" and "Never" lists, so its weakest area is commands. Ollama is the other, with testing.
 
 ## Wiring it into CI
 
-The exit code and the JSON report are the two hooks. A run that finds no file exits 0 with `"readiness": null`, so a repo without an AGENTS.md fails your gate on the readiness bar rather than on a crash, and a leaked credential shows up as a `leaks_secret` judgement of `present`.
+The exit code and the JSON report are the two hooks. A run that finds no file exits 0 with `"readiness": null`, so a repo without an AGENTS.md fails your gate on the readiness bar rather than on a crash, and a leaked credential shows up as a high `leaks_secret` probability.
+
+Gate on the numbers rather than the judgement words. A judgement names both bands when a credit lands within the deadband of their edge, so `suspect` can read `likely present to suspect`, and matching on the word misses it.
 
 ```bash
 # in a pull request job, after checkout
@@ -58,10 +60,10 @@ import json, pathlib, sys
 
 report = json.loads(pathlib.Path("data/your-repo-agents-md.json").read_text())
 readiness = report["readiness"]
-leak = report["questions"]["leaks_secret"]["judgement"]
+leak = report["questions"]["leaks_secret"]["returned"]["noul"]
 
-if leak in {"present", "likely present", "suspect"}:
-    sys.exit("AGENTS.md looks like it carries a credential")
+if leak > 0.3:
+    sys.exit(f"AGENTS.md looks like it carries a credential, at {leak:.2f}")
 if readiness is None:
     sys.exit("no AGENTS.md or CLAUDE.md in this repo")
 if readiness < 0.80:
@@ -77,7 +79,7 @@ Set the bar at 0.80 and four of the eleven repos above fail today: `microsoft/vs
 | 0.80 | 4 | vscode, ollama, opencode, dspy |
 | 0.90 | 7 | vscode, ollama, opencode, codex, goose, workers-sdk, dspy |
 
-A failing check puts the fix in front of the developer holding the branch, while they can still edit the file, instead of leaving AGENTS.md to rot until an agent guesses wrong in production. Each failure names the weakest area and lists the checks judged `missing`, so the fix is a paragraph rather than an investigation. Readiness becomes one more gate in the software factory, beside the linter, the type check and the test suite, at three cents a month and under half a second a run.
+A failing check puts the fix in front of the developer holding the branch, while they can still edit the file, instead of leaving the gap in place until an agent guesses wrong in production. Each failure names the weakest area and lists the checks judged `missing`, so the fix is a paragraph rather than an investigation. Readiness becomes one more gate in the software factory, beside the linter, the type check and the test suite, at three cents a month and under half a second a run.
 
 ### One binary, no Python
 
@@ -178,18 +180,18 @@ uv run agents_md_readiness.py https://github.com/anthropics/anthropic-cookbook/b
 uv run agents_md_readiness.py --verbose https://github.com/apache/airflow
 ```
 
-Output from a run against `https://github.com/apache/airflow` on 19 September 2026:
+Output from a run against `https://github.com/apache/airflow` on 20 September 2026:
 
 ```text
 AGENTS.md  (https://raw.githubusercontent.com/apache/airflow/HEAD/AGENTS.md)
 
   written for     agent        (confidence 1.00)
       Choice: one label out of 3,
-      scored agent 1.00, stub 0.00, human 0.00.
+      scored agent 1.00, human 0.00, stub 0.00.
 
   commands        2.0 / 2      (confidence 1.00)
       nearest level 2 "Exact commands, with the paths and flags needed to run them"
-  testing         2.0 / 2      (confidence 0.97)
+  testing         2.0 / 2      (confidence 0.98)
       nearest level 2 "Exact test commands, and what to do when a test fails"
   conventions     2.0 / 2      (confidence 1.00)
       nearest level 2 "Rules naming the tools, settings and patterns this project uses"
@@ -197,23 +199,23 @@ AGENTS.md  (https://raw.githubusercontent.com/apache/airflow/HEAD/AGENTS.md)
       nearest level 2 "Lists the directories or key files and says what each one holds"
 
   agents.md checklist
-    project overview         0.42   unsettled
+    project overview         0.45   unsettled
     setup commands           0.99   yes
     build or run commands    0.99   yes
     test commands            0.99   yes
     code style rules         0.99   yes
-    commit and PR rules      0.86   probably yes
+    commit and PR rules      0.85   probably yes
     security notes           0.99   yes
     nested file precedence   0.04   no
     boundaries and asks      0.99   yes
     commands are runnable    0.95   yes
-    leaks a credential       0.03   no
+    leaks a credential       0.04   no
       Noul: one probability, and the number is the confidence. The agents.md FAQ
       says the format requires no fields, so read these as coverage rather than
       as a pass or a fail.
 
-  weakest area    commands     (confidence 0.46)
-      Choice: commands 0.60, boundaries 0.18, conventions 0.14, testing 0.05, layout 0.03.
+  weakest area    commands     (confidence 0.47)
+      Choice: commands 0.58, boundaries 0.21, conventions 0.14, testing 0.05, layout 0.02.
       Jev ranks the five areas and names one even when every area is strong,
       so read this next to the readiness number rather than on its own.
 ```
@@ -221,34 +223,34 @@ AGENTS.md  (https://raw.githubusercontent.com/apache/airflow/HEAD/AGENTS.md)
 The same call also prints one padded table. The padding makes it readable in a terminal, and the pipes keep it valid markdown, so the text pastes into a pull request:
 
 ```text
-| Key                 | Label                  | Type            | Jev returned              | Weight | Credit | Judgement      |
-| ------------------- | ---------------------- | --------------- | ------------------------- | ------ | ------ | -------------- |
-| `written_for`       | written for            | choice          | agent, confidence 1.00    | 0.08   | 1.00   | strong         |
-| `weakest_area`      | weakest area           | choice          | commands, confidence 0.46 |        |        | routes the fix |
-| `commands`          | commands               | score           | 2.0 / 2, confidence 1.00  | 0.11   | 1.00   | strong         |
-| `testing`           | testing                | score           | 2.0 / 2, confidence 0.97  | 0.09   | 0.99   | strong         |
-| `conventions`       | conventions            | score           | 2.0 / 2, confidence 1.00  | 0.07   | 1.00   | strong         |
-| `repo_map`          | repo map               | score           | 2.0 / 2, confidence 1.00  | 0.03   | 1.00   | strong         |
-| `project_overview`  | project overview       | noul            | 0.42                      | 0.03   | 0.42   | thin, unsure   |
-| `setup_commands`    | setup commands         | noul            | 0.99                      | 0.05   | 0.99   | strong         |
-| `build_commands`    | build or run commands  | noul            | 0.99                      | 0.04   | 0.99   | strong         |
-| `test_commands`     | test commands          | noul            | 0.99                      | 0.07   | 0.99   | strong         |
-| `code_style`        | code style rules       | noul            | 0.99                      | 0.03   | 0.99   | strong         |
-| `pr_rules`          | commit and PR rules    | noul            | 0.86                      | 0.03   | 0.86   | strong         |
-| `security_notes`    | security notes         | noul            | 0.99                      | 0.07   | 0.99   | strong         |
-| `nested_files`      | nested file precedence | noul            | 0.04                      | 0.02   | 0.04   | missing        |
-| `boundaries`        | boundaries and asks    | noul            | 0.99                      | 0.06   | 0.99   | strong         |
-| `runnable_commands` | commands are runnable  | noul            | 0.95                      | 0.07   | 0.95   | strong         |
-| `leaks_secret`      | leaks a credential     | noul (inverted) | 0.03                      | 0.15   | 0.97   | clean          |
+| Key                 | Label                  | Type            | Jev returned              | Weight | Credit | Judgement          |
+| ------------------- | ---------------------- | --------------- | ------------------------- | ------ | ------ | ------------------ |
+| `written_for`       | written for            | choice          | agent, confidence 1.00    | 0.08   | 1.00   | strong             |
+| `weakest_area`      | weakest area           | choice          | commands, confidence 0.47 |        |        | routes the fix     |
+| `commands`          | commands               | score           | 2.0 / 2, confidence 1.00  | 0.11   | 1.00   | strong             |
+| `testing`           | testing                | score           | 2.0 / 2, confidence 0.98  | 0.09   | 0.99   | strong             |
+| `conventions`       | conventions            | score           | 2.0 / 2, confidence 1.00  | 0.07   | 1.00   | strong             |
+| `repo_map`          | repo map               | score           | 2.0 / 2, confidence 1.00  | 0.03   | 1.00   | strong             |
+| `project_overview`  | project overview       | noul            | 0.45                      | 0.03   | 0.45   | thin, unsure       |
+| `setup_commands`    | setup commands         | noul            | 0.99                      | 0.05   | 0.99   | strong             |
+| `build_commands`    | build or run commands  | noul            | 0.99                      | 0.04   | 0.99   | strong             |
+| `test_commands`     | test commands          | noul            | 0.99                      | 0.07   | 0.99   | strong             |
+| `code_style`        | code style rules       | noul            | 0.99                      | 0.03   | 0.99   | strong             |
+| `pr_rules`          | commit and PR rules    | noul            | 0.85                      | 0.03   | 0.85   | adequate to strong |
+| `security_notes`    | security notes         | noul            | 0.99                      | 0.07   | 0.99   | strong             |
+| `nested_files`      | nested file precedence | noul            | 0.04                      | 0.02   | 0.04   | missing            |
+| `boundaries`        | boundaries and asks    | noul            | 0.99                      | 0.06   | 0.99   | strong             |
+| `runnable_commands` | commands are runnable  | noul            | 0.95                      | 0.07   | 0.95   | strong             |
+| `leaks_secret`      | leaks a credential     | noul (inverted) | 0.04                      | 0.15   | 0.96   | clean              |
 
 **Readiness 0.95 / 1.00**, the weighted average of the credit column over 16 questions carrying 1.00 of weight.
 Weights live in questions.yml, so raise the one you care about and re-run.
 
-17 questions, 6,410 input tokens, 425 ms, $0.00027 at $0.042 per million input tokens.
+17 questions, 6,410 input tokens, 399 ms, $0.00027 at $0.042 per million input tokens.
 Report: /home/ubuntu/repos/jev-samples/samples/agents-md-readiness/data/apache-airflow-agents-md.json
 ```
 
-The `Credit` column shows what each answer contributed, from 0 to 1: a Score over its top level, a Noul as its probability, one minus that probability for the inverted row, and the `credit` table for a Choice. `Judgement` reads the credit as a word, and appends "unsure" when a Choice or Score returns under 0.50 confidence or a Noul falls between 0.35 and 0.65.
+The `Credit` column shows what each answer contributed, from 0 to 1: a Score over its top level, a Noul as its probability, one minus that probability for the inverted row, and the `credit` table for a Choice. `Judgement` reads the credit as a word, names both words when the credit lands within 0.02 of the edge between two bands, and appends "unsure" when a Choice or Score returns under 0.52 confidence or a Noul falls between 0.33 and 0.67.
 
 Airflow's file is 22,071 characters, which is where most of those 6,410 tokens went. It loses its five points on `nested_files` and `project_overview`: the file never explains nesting, and it opens with Dag naming rules instead of saying what Airflow is.
 
@@ -263,7 +265,7 @@ That folder holds the eleven committed reports behind the table at the top of th
 jq -r '[.source, (.readiness|tostring)] | @tsv' data/*.json | sort -k2 -r
 
 # name the checks one file failed outright
-jq -r '.questions | to_entries[] | select(.value.judgement == "missing") | .key' data/apache-airflow-agents-md.json
+jq -r '.questions | to_entries[] | select(.value.credit != null and .value.credit < 0.15) | .key' data/apache-airflow-agents-md.json
 
 # what the whole batch cost
 cat data/*.json | jq -s '{tokens: ([.[]|select(.found)|.usage.input_tokens]|add), cost_usd: ([.[]|select(.found)|.cost_usd]|add)}'
@@ -284,7 +286,7 @@ jq -r '[(.source | sub("https://raw.githubusercontent.com/"; "") | sub("/HEAD/.*
 
 ## When neither file exists
 
-A repo holding neither name still produces a result, so the run reports the absence and a loop over twenty repos keeps going. From a run against `https://github.com/stanfordnlp/dspy` on 19 September 2026:
+A repo holding neither name still produces a result, so the run reports the absence and a loop over twenty repos keeps going. From a run against `https://github.com/stanfordnlp/dspy` on 20 September 2026:
 
 ```text
 no AGENTS.md or CLAUDE.md
@@ -306,7 +308,7 @@ The report carries `"readiness": null`, `"found": false` and the list of places 
 
 ## Either filename
 
-`anthropics/anthropic-cookbook` ships a CLAUDE.md and no AGENTS.md, so the repo root tries the second name. From a run on 19 September 2026:
+`anthropics/anthropic-cookbook` ships a CLAUDE.md and no AGENTS.md, so the repo root tries the second name. From a run on 20 September 2026:
 
 ```text
 INFO,Fetching: https://raw.githubusercontent.com/anthropics/anthropic-cookbook/HEAD/AGENTS.md
@@ -315,14 +317,55 @@ INFO,Fetching: https://raw.githubusercontent.com/anthropics/anthropic-cookbook/H
 
 CLAUDE.md  (https://raw.githubusercontent.com/anthropics/anthropic-cookbook/HEAD/CLAUDE.md)
 
-  written for     agent        (confidence 0.61)
+  written for     agent        (confidence 0.60)
       Choice: one label out of 3,
       scored agent 0.74, human 0.26, stub 0.00.
 ```
 
 Only a 404 moves the sample to the next name, so a network error or a private repo still fails loudly. In a directory holding neither file, the run reports the absence and scores nothing.
 
-That file scored `written_for` at 0.61 confidence with 0.26 on `human`, the lowest of any file checked that day. It opens with a paragraph aimed at a reader, then turns into agent instructions, and the split probability says so.
+That file scored `written_for` at 0.60 confidence with 0.26 on `human`, the lowest of any file checked that day. It opens with a paragraph aimed at a reader, then turns into agent instructions, and the split probability says so.
+
+## How the thresholds fit together
+
+Every answer takes the same two steps: one credit, then a fork. A person reads words, and CI acts on numbers, so the two halves treat an uncertain answer differently.
+
+```text
+  one answer from Jev
+  a noul, or a choice or score that also carries a confidence
+        |
+        v
+  credit, 0.00 to 1.00
+  a noul as returned, or 1 - noul where the entry inverts it
+  a score divided by its top level
+  the credit table a choice entry carries
+        |
+        +---> WORDS, read by a person
+        |       which band holds the credit          -> the Judgement column
+        |       within 0.02 of an edge, name both    -> "adequate to strong"
+        |       confidence under 0.52,
+        |       or a noul from 0.33 to 0.67          -> append ", unsure"
+        |
+        +---> NUMBERS, acted on by CI
+                readiness, the weighted mean of every credit
+                leaks_secret noul      > 0.30  -> read it for a credential
+                test_commands noul     < 0.50  -> add the test commands
+                readiness              < 0.60  -> thin for an agent
+                written_for confidence > 0.70  -> wrong audience
+                each gate fires or it stays quiet, and none has a deadband
+```
+
+The bands, with the deadband that straddles every edge between them:
+
+```text
+  0.00        0.15       0.35       0.60        0.85        1.00
+   |  missing  |   weak   |   thin   | adequate  |   strong   |
+             [0.02]     [0.02]     [0.02]      [0.02]
+```
+
+Repeat calls on one document move a credit by up to 0.06, so a value sitting on an edge lands on either side of it between runs. The deadband catches that: a credit within 0.02 of an edge prints both bands, so two runs of the same file read the same way. Across eight runs of this repo's own AGENTS.md, no question produced two readings that contradicted each other, and four of sixteen rows showed a compound word. On the ten scored repos above, 8 credits in 160 sit inside a deadband.
+
+A gate gets none of this, because an exit code has no third state. Each one leans instead toward the error that costs less, which is why the credential gate sits low at 0.30 and fires on a maybe. The same rule applies when you read the JSON: gate on the numbers, because the words hedge.
 
 ## The gates fire per action
 
@@ -377,5 +420,5 @@ That is the calibration check: when Jev says 0.9, it should be right about nine 
 
 - [agents.md](https://agents.md), read 19 September 2026, for the format, the recommended sections, the nested-file precedence rule, the "no required fields" FAQ answer, and the "over 60k open-source projects" figure. That count comes from [a GitHub code search](https://github.com/search?q=path%3AAGENTS.md+NOT+is%3Afork+NOT+is%3Aarchived&type=code) the site links, which I did not reproduce.
 - [openai/agents.md](https://github.com/openai/agents.md) for the minimal example the format ships with.
-- [apache/airflow/AGENTS.md](https://github.com/apache/airflow/blob/main/AGENTS.md) as the comprehensive example, and the ten other repos named in the table, each scored from the raw file on its default branch on 19 September 2026.
+- [apache/airflow/AGENTS.md](https://github.com/apache/airflow/blob/main/AGENTS.md) as the comprehensive example, and the ten other repos named in the table, each scored from the raw file on its default branch on 20 September 2026.
 - TypeSafe's published price of $0.042 per million input tokens, September 2026, recorded in `questions.yml` as `input_usd_per_million`. Every latency here comes from this machine on that date, so treat it as one network's numbers rather than the vendor's.

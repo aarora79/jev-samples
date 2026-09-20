@@ -10,10 +10,10 @@
     "input_tokens": 1007,
     "output_tokens": 346
   },
-  "latency_ms": 345,
+  "latency_ms": 300,
   "cost_usd": 4.229e-05,
   "questions_asked": 17,
-  "readiness": 0.2767,
+  "readiness": 0.2794,
   "questions": {
     "written_for": {
       "label": "written for",
@@ -25,9 +25,9 @@
         "choice": "agent",
         "confidence": 1.0,
         "probabilities": {
+          "human": 0.0,
           "agent": 1.0,
-          "stub": 0.0,
-          "human": 0.0
+          "stub": 0.0
         }
       },
       "credit": 1.0,
@@ -41,13 +41,13 @@
       "returned": {
         "type": "choice",
         "choice": "boundaries",
-        "confidence": 0.36,
+        "confidence": 0.48,
         "probabilities": {
-          "conventions": 0.06,
-          "boundaries": 0.49,
-          "commands": 0.21,
-          "layout": 0.19,
-          "testing": 0.05
+          "layout": 0.15,
+          "boundaries": 0.58,
+          "commands": 0.18,
+          "testing": 0.04,
+          "conventions": 0.05
         }
       },
       "credit": null,
@@ -84,15 +84,15 @@
       "returned": {
         "type": "score",
         "score": 0.04,
-        "confidence": 0.95,
+        "confidence": 0.94,
         "legend": {
           "0": "Nothing about tests",
           "1": "Tells the agent to test without saying how",
           "2": "Exact test commands, and what to do when a test fails"
         },
         "probabilities": {
-          "0": 0.97,
-          "1": 0.03,
+          "0": 0.96,
+          "1": 0.04,
           "2": 0.0
         }
       },
@@ -106,20 +106,20 @@
       "inverted": false,
       "returned": {
         "type": "score",
-        "score": 0.19,
-        "confidence": 0.71,
+        "score": 0.18,
+        "confidence": 0.73,
         "legend": {
           "0": "No conventions at all",
           "1": "General advice that would fit any project",
           "2": "Rules naming the tools, settings and patterns this project uses"
         },
         "probabilities": {
-          "0": 0.81,
-          "1": 0.18,
+          "0": 0.83,
+          "1": 0.16,
           "2": 0.01
         }
       },
-      "credit": 0.095,
+      "credit": 0.09,
       "judgement": "missing"
     },
     "repo_map": {
@@ -130,15 +130,15 @@
       "returned": {
         "type": "score",
         "score": 0.65,
-        "confidence": 0.46,
+        "confidence": 0.47,
         "legend": {
           "0": "Nothing about the repository layout",
           "1": "Names a directory or two in passing",
           "2": "Lists the directories or key files and says what each one holds"
         },
         "probabilities": {
-          "0": 0.36,
-          "1": 0.64,
+          "0": 0.35,
+          "1": 0.65,
           "2": 0.0
         }
       },
@@ -164,9 +164,9 @@
       "inverted": false,
       "returned": {
         "type": "noul",
-        "noul": 0.03
+        "noul": 0.04
       },
-      "credit": 0.03,
+      "credit": 0.04,
       "judgement": "missing"
     },
     "build_commands": {
@@ -188,9 +188,9 @@
       "inverted": false,
       "returned": {
         "type": "noul",
-        "noul": 0.03
+        "noul": 0.04
       },
-      "credit": 0.03,
+      "credit": 0.04,
       "judgement": "missing"
     },
     "code_style": {
@@ -200,9 +200,9 @@
       "inverted": false,
       "returned": {
         "type": "noul",
-        "noul": 0.09
+        "noul": 0.08
       },
-      "credit": 0.09,
+      "credit": 0.08,
       "judgement": "missing"
     },
     "pr_rules": {
@@ -260,9 +260,9 @@
       "inverted": false,
       "returned": {
         "type": "noul",
-        "noul": 0.11
+        "noul": 0.12
       },
-      "credit": 0.11,
+      "credit": 0.12,
       "judgement": "missing"
     },
     "leaks_secret": {
@@ -272,9 +272,9 @@
       "inverted": true,
       "returned": {
         "type": "noul",
-        "noul": 0.02
+        "noul": 0.01
       },
-      "credit": 0.98,
+      "credit": 0.99,
       "judgement": "clean"
     }
   }

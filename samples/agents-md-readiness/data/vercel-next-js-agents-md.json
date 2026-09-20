@@ -10,10 +10,10 @@
     "input_tokens": 8206,
     "output_tokens": 346
   },
-  "latency_ms": 367,
+  "latency_ms": 402,
   "cost_usd": 0.00034465,
   "questions_asked": 17,
-  "readiness": 0.9475,
+  "readiness": 0.9467,
   "questions": {
     "written_for": {
       "label": "written for",
@@ -26,8 +26,8 @@
         "confidence": 1.0,
         "probabilities": {
           "human": 0.0,
-          "stub": 0.0,
-          "agent": 1.0
+          "agent": 1.0,
+          "stub": 0.0
         }
       },
       "credit": 1.0,
@@ -41,13 +41,13 @@
       "returned": {
         "type": "choice",
         "choice": "boundaries",
-        "confidence": 0.82,
+        "confidence": 0.75,
         "probabilities": {
-          "testing": 0.08,
-          "commands": 0.03,
-          "boundaries": 0.86,
-          "layout": 0.02,
-          "conventions": 0.01
+          "conventions": 0.01,
+          "boundaries": 0.8,
+          "layout": 0.03,
+          "testing": 0.13,
+          "commands": 0.03
         }
       },
       "credit": null,
@@ -152,10 +152,10 @@
       "inverted": false,
       "returned": {
         "type": "noul",
-        "noul": 0.87
+        "noul": 0.86
       },
-      "credit": 0.87,
-      "judgement": "strong"
+      "credit": 0.86,
+      "judgement": "adequate to strong"
     },
     "setup_commands": {
       "label": "setup commands",
@@ -164,9 +164,9 @@
       "inverted": false,
       "returned": {
         "type": "noul",
-        "noul": 0.7
+        "noul": 0.71
       },
-      "credit": 0.7,
+      "credit": 0.71,
       "judgement": "adequate"
     },
     "build_commands": {
@@ -200,9 +200,9 @@
       "inverted": false,
       "returned": {
         "type": "noul",
-        "noul": 0.95
+        "noul": 0.94
       },
-      "credit": 0.95,
+      "credit": 0.94,
       "judgement": "strong"
     },
     "pr_rules": {
@@ -212,9 +212,9 @@
       "inverted": false,
       "returned": {
         "type": "noul",
-        "noul": 0.89
+        "noul": 0.88
       },
-      "credit": 0.89,
+      "credit": 0.88,
       "judgement": "strong"
     },
     "security_notes": {
@@ -236,10 +236,10 @@
       "inverted": false,
       "returned": {
         "type": "noul",
-        "noul": 0.15
+        "noul": 0.13
       },
-      "credit": 0.15,
-      "judgement": "weak"
+      "credit": 0.13,
+      "judgement": "missing to weak"
     },
     "boundaries": {
       "label": "boundaries and asks",

@@ -10,10 +10,10 @@
     "input_tokens": 1931,
     "output_tokens": 346
   },
-  "latency_ms": 318,
+  "latency_ms": 404,
   "cost_usd": 8.11e-05,
   "questions_asked": 17,
-  "readiness": 0.9131,
+  "readiness": 0.9121,
   "questions": {
     "written_for": {
       "label": "written for",
@@ -23,7 +23,7 @@
       "returned": {
         "type": "choice",
         "choice": "agent",
-        "confidence": 0.61,
+        "confidence": 0.6,
         "probabilities": {
           "human": 0.26,
           "stub": 0.0,
@@ -41,13 +41,13 @@
       "returned": {
         "type": "choice",
         "choice": "boundaries",
-        "confidence": 0.72,
+        "confidence": 0.73,
         "probabilities": {
-          "conventions": 0.05,
-          "testing": 0.12,
-          "boundaries": 0.77,
+          "conventions": 0.04,
           "layout": 0.01,
-          "commands": 0.05
+          "commands": 0.05,
+          "testing": 0.12,
+          "boundaries": 0.78
         }
       },
       "credit": null,
@@ -83,8 +83,8 @@
       "inverted": false,
       "returned": {
         "type": "score",
-        "score": 1.22,
-        "confidence": 0.66,
+        "score": 1.26,
+        "confidence": 0.6,
         "legend": {
           "0": "Nothing about tests",
           "1": "Tells the agent to test without saying how",
@@ -92,11 +92,11 @@
         },
         "probabilities": {
           "0": 0.0,
-          "1": 0.78,
-          "2": 0.22
+          "1": 0.74,
+          "2": 0.26
         }
       },
-      "credit": 0.61,
+      "credit": 0.63,
       "judgement": "adequate"
     },
     "conventions": {
@@ -152,9 +152,9 @@
       "inverted": false,
       "returned": {
         "type": "noul",
-        "noul": 0.93
+        "noul": 0.92
       },
-      "credit": 0.93,
+      "credit": 0.92,
       "judgement": "strong"
     },
     "setup_commands": {
@@ -164,9 +164,9 @@
       "inverted": false,
       "returned": {
         "type": "noul",
-        "noul": 1.0
+        "noul": 0.99
       },
-      "credit": 1.0,
+      "credit": 0.99,
       "judgement": "strong"
     },
     "build_commands": {
@@ -215,7 +215,7 @@
         "noul": 0.83
       },
       "credit": 0.83,
-      "judgement": "adequate"
+      "judgement": "adequate to strong"
     },
     "security_notes": {
       "label": "security notes",
@@ -248,10 +248,10 @@
       "inverted": false,
       "returned": {
         "type": "noul",
-        "noul": 0.85
+        "noul": 0.83
       },
-      "credit": 0.85,
-      "judgement": "strong"
+      "credit": 0.83,
+      "judgement": "adequate to strong"
     },
     "runnable_commands": {
       "label": "commands are runnable",
@@ -260,9 +260,9 @@
       "inverted": false,
       "returned": {
         "type": "noul",
-        "noul": 0.96
+        "noul": 0.97
       },
-      "credit": 0.96,
+      "credit": 0.97,
       "judgement": "strong"
     },
     "leaks_secret": {
@@ -272,9 +272,9 @@
       "inverted": true,
       "returned": {
         "type": "noul",
-        "noul": 0.07
+        "noul": 0.08
       },
-      "credit": 0.93,
+      "credit": 0.92,
       "judgement": "clean"
     }
   }

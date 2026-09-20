@@ -10,10 +10,10 @@
     "input_tokens": 2512,
     "output_tokens": 346
   },
-  "latency_ms": 317,
+  "latency_ms": 366,
   "cost_usd": 0.0001055,
   "questions_asked": 17,
-  "readiness": 0.8615,
+  "readiness": 0.8659,
   "questions": {
     "written_for": {
       "label": "written for",
@@ -23,11 +23,11 @@
       "returned": {
         "type": "choice",
         "choice": "agent",
-        "confidence": 0.94,
+        "confidence": 0.96,
         "probabilities": {
+          "agent": 0.97,
           "stub": 0.0,
-          "agent": 0.96,
-          "human": 0.04
+          "human": 0.03
         }
       },
       "credit": 1.0,
@@ -41,13 +41,13 @@
       "returned": {
         "type": "choice",
         "choice": "boundaries",
-        "confidence": 0.74,
+        "confidence": 0.72,
         "probabilities": {
+          "testing": 0.13,
           "commands": 0.05,
-          "testing": 0.12,
-          "conventions": 0.02,
-          "layout": 0.01,
-          "boundaries": 0.8
+          "boundaries": 0.77,
+          "conventions": 0.03,
+          "layout": 0.02
         }
       },
       "credit": null,
@@ -83,8 +83,8 @@
       "inverted": false,
       "returned": {
         "type": "score",
-        "score": 1.41,
-        "confidence": 0.36,
+        "score": 1.56,
+        "confidence": 0.34,
         "legend": {
           "0": "Nothing about tests",
           "1": "Tells the agent to test without saying how",
@@ -92,11 +92,11 @@
         },
         "probabilities": {
           "0": 0.01,
-          "1": 0.57,
-          "2": 0.42
+          "1": 0.42,
+          "2": 0.57
         }
       },
-      "credit": 0.705,
+      "credit": 0.78,
       "judgement": "adequate, unsure"
     },
     "conventions": {
@@ -129,7 +129,7 @@
       "inverted": false,
       "returned": {
         "type": "score",
-        "score": 1.99,
+        "score": 2.0,
         "confidence": 0.99,
         "legend": {
           "0": "Nothing about the repository layout",
@@ -138,11 +138,11 @@
         },
         "probabilities": {
           "0": 0.0,
-          "1": 0.01,
-          "2": 0.99
+          "1": 0.0,
+          "2": 1.0
         }
       },
-      "credit": 0.995,
+      "credit": 1.0,
       "judgement": "strong"
     },
     "project_overview": {
@@ -152,10 +152,10 @@
       "inverted": false,
       "returned": {
         "type": "noul",
-        "noul": 0.87
+        "noul": 0.85
       },
-      "credit": 0.87,
-      "judgement": "strong"
+      "credit": 0.85,
+      "judgement": "adequate to strong"
     },
     "setup_commands": {
       "label": "setup commands",
@@ -164,9 +164,9 @@
       "inverted": false,
       "returned": {
         "type": "noul",
-        "noul": 0.91
+        "noul": 0.9
       },
-      "credit": 0.91,
+      "credit": 0.9,
       "judgement": "strong"
     },
     "build_commands": {
@@ -224,10 +224,10 @@
       "inverted": false,
       "returned": {
         "type": "noul",
-        "noul": 0.19
+        "noul": 0.17
       },
-      "credit": 0.19,
-      "judgement": "weak"
+      "credit": 0.17,
+      "judgement": "missing to weak"
     },
     "nested_files": {
       "label": "nested file precedence",

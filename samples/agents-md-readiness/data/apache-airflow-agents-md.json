@@ -10,10 +10,10 @@
     "input_tokens": 6410,
     "output_tokens": 344
   },
-  "latency_ms": 425,
+  "latency_ms": 399,
   "cost_usd": 0.00026922,
   "questions_asked": 17,
-  "readiness": 0.9471,
+  "readiness": 0.9466,
   "questions": {
     "written_for": {
       "label": "written for",
@@ -25,9 +25,9 @@
         "choice": "agent",
         "confidence": 1.0,
         "probabilities": {
-          "agent": 1.0,
+          "human": 0.0,
           "stub": 0.0,
-          "human": 0.0
+          "agent": 1.0
         }
       },
       "credit": 1.0,
@@ -41,13 +41,13 @@
       "returned": {
         "type": "choice",
         "choice": "commands",
-        "confidence": 0.46,
+        "confidence": 0.47,
         "probabilities": {
+          "commands": 0.58,
           "testing": 0.05,
-          "layout": 0.03,
-          "boundaries": 0.2,
-          "conventions": 0.16,
-          "commands": 0.5599999999999999
+          "layout": 0.02,
+          "boundaries": 0.21,
+          "conventions": 0.14
         }
       },
       "credit": null,
@@ -83,8 +83,8 @@
       "inverted": false,
       "returned": {
         "type": "score",
-        "score": 1.98,
-        "confidence": 0.97,
+        "score": 1.99,
+        "confidence": 0.98,
         "legend": {
           "0": "Nothing about tests",
           "1": "Tells the agent to test without saying how",
@@ -92,11 +92,11 @@
         },
         "probabilities": {
           "0": 0.0,
-          "1": 0.02,
-          "2": 0.98
+          "1": 0.01,
+          "2": 0.99
         }
       },
-      "credit": 0.99,
+      "credit": 0.995,
       "judgement": "strong"
     },
     "conventions": {
@@ -152,9 +152,9 @@
       "inverted": false,
       "returned": {
         "type": "noul",
-        "noul": 0.42
+        "noul": 0.45
       },
-      "credit": 0.42,
+      "credit": 0.45,
       "judgement": "thin, unsure"
     },
     "setup_commands": {
@@ -212,10 +212,10 @@
       "inverted": false,
       "returned": {
         "type": "noul",
-        "noul": 0.86
+        "noul": 0.85
       },
-      "credit": 0.86,
-      "judgement": "strong"
+      "credit": 0.85,
+      "judgement": "adequate to strong"
     },
     "security_notes": {
       "label": "security notes",
@@ -272,9 +272,9 @@
       "inverted": true,
       "returned": {
         "type": "noul",
-        "noul": 0.03
+        "noul": 0.04
       },
-      "credit": 0.97,
+      "credit": 0.96,
       "judgement": "clean"
     }
   }

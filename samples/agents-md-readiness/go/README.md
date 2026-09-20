@@ -76,7 +76,17 @@ Weights live in questions.yml, so raise the one you care about and re-run.
 17 questions, 6,410 input tokens, 355 ms, $0.00027 at $0.042 per million input tokens.
 ```
 
-The printed output matches the Python sample line for line, and the JSON report carries the same keys, so the `jq` lines in the sample README work against either.
+The printed blocks, the table and the judgement words match the Python sample, and the JSON report carries the same keys, so the `jq` lines in the sample README work against either. Two differences on purpose: the Python writes a report on every run, where the binary writes one when `-json` names a directory, and each column pads to its own widest cell, so two runs of the same file can differ in table width.
+
+## The deadband
+
+Jev is a statistical model, so the same question about the same document comes back with a slightly different number each time. A credit of 0.851 and a credit of 0.849 straddle the 0.85 floor between `adequate` and `strong`, and a reader who ran the tool twice would see a different word each time.
+
+`bandWord` in `score.go` names both bands when a value sits within 0.02 of an edge, so that credit reads `adequate to strong` on both runs. The same 0.02 widens the two unsure markers: a Choice or a Score flags unsure under 0.52 confidence, and a Noul flags it from 0.33 to 0.67.
+
+Gate on the numbers rather than on the words. `-fail-under` compares readiness, and `-fail-on-credential` matches the judgement by prefix so a compound reading such as `likely present to suspect` still fires.
+
+The deadband came from the Python sample, and the two implementations agree exactly: a sweep of 1,001 values through all three band sets, and 6,006 judgement cases across a Noul, an inverted Noul, three Score levels and a Choice, produce identical strings in both.
 
 ## Gate a pull request
 
@@ -118,7 +128,7 @@ Edit the Python sample's `questions.yml` and rebuild. Edit the copy here and the
 
 ## What the code is
 
-Seven files, 1,214 lines of Go, one dependency. `gopkg.in/yaml.v3` reads the payload; the Jev call is a `net/http` POST to `https://api.typesafe.ai/v1/systemone` with a Bearer token, so no SDK ships here.
+Seven files, 1,991 lines, one dependency. `gopkg.in/yaml.v3` reads the payload; the Jev call is a `net/http` POST to `https://api.typesafe.ai/v1/systemone` with a Bearer token, so no SDK ships here. Roughly half those lines are comments: the files explain the Go machinery as they go, so a reader who works in Python can follow the port.
 
 | File | Job |
 | --- | --- |

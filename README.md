@@ -17,7 +17,7 @@ More samples to come, one folder each.
 
 ## Jev on two pages
 
-The three question types, the shape of a request and its response, where Jev sits against a frontier model on latency, the failure modes, and the patterns worth copying. Both pages live in [my-ai-assets](https://github.com/aarora79/my-ai-assets/tree/main/explainers/jev/poster), and this README embeds them from there, so one copy serves both repos.
+The poster covers the three question types, the shape of a request and its response, where Jev sits against a frontier model on latency, the failure modes, and the patterns worth copying. Both pages live in [my-ai-assets](https://github.com/aarora79/my-ai-assets/tree/main/explainers/jev/poster), and this README embeds them from there, so one copy serves both repos.
 
 <p>
   <img src="https://raw.githubusercontent.com/aarora79/my-ai-assets/main/explainers/jev/poster/jev-poster-front.png" width="49%" alt="Poster front: most model calls are decisions rather than essays, the three question types, one support ticket answered three ways with a threshold written beside each action, and the three design choices behind the speed.">
