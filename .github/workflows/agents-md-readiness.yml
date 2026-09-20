@@ -22,7 +22,7 @@ jobs:
       # Readiness sits at 0.92 with a spread of 0.01 across repeat runs, so 0.85
       # leaves room for the model's own variance and still fails a real
       # regression.
-      BAR: "0.85"
+      BAR: "0.99"
       VERSION: "0.2.0"
     steps:
       - uses: actions/checkout@v4
