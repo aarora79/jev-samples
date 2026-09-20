@@ -31,7 +31,7 @@ Each sample folder is its own uv project, so the root needs no install and sampl
 ```bash
 # Samples read TYPESAFE_API_KEY from the environment, then fall back to .env
 # beside the sample or at the repo root. Export it to override the file.
-export TYPESAFE_API_KEY="your-key"   # optional once .env exists
+export TYPESAFE_API_KEY="..."   # optional once .env exists
 
 cd samples/readme-check
 uv run readme_check.py --help     # run a sample

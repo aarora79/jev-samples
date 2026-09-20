@@ -157,7 +157,7 @@ The score is 1.71 and the summary rounds it to 1.7, so compare against the raw n
 
 **A `Noul` has no separate confidence.** The probability is the confidence, so the sample turns it into a word through the `NOUL_WORDS` bands: 0.99 reads as yes, 0.85 as probably yes, 0.29 as probably no. A value near 0.50 says the document argues both ways or never addresses the statement.
 
-**The same document scores a little differently on each call.** Six calls against `psf/requests` on 19 September 2026 put `sounds stale` between 0.29 and 0.31, which straddles the 0.30 band edge and flips the printed word between "probably no" and "unsettled". Sampling noise of a couple of hundredths will cross any threshold you park on a round number, so measure the spread before you pick one.
+**The same document moves by a few hundredths on each call.** Six calls against `psf/requests` on 19 September 2026 put `sounds stale` between 0.29 and 0.31, which straddles the 0.30 band edge and flips the printed word between "probably no" and "unsettled". Sampling noise of a couple of hundredths will cross any threshold you park on a round number, so measure the spread before you pick one.
 
 ## Two experiments worth running
 

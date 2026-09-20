@@ -42,7 +42,7 @@ The table rounds readiness to two places, and repeat runs moved each number by u
 
 **The score grades the file, not the project.** VS Code's AGENTS.md is 271 bytes and points at `.github/copilot-instructions.md` for everything. The check reads only the file you hand it, so 0.28 is right about that file and says nothing about the project behind it. Ollama's is 358 bytes of build commands, which is why it lands at 0.48.
 
-**Nearly nobody documents nesting.** Eight of the ten files scored `nested_files` as `missing`, `cloudflare/workers-sdk` reaching `adequate` at 0.69 and `vercel/next.js` landing at 0.13, close enough to the band edge that it reads `missing to weak`. An agent cannot infer the precedence rule from prose about something else, so it is the cheapest thing on this page to fix.
+**Almost nobody documents nesting.** Eight of the ten files scored `nested_files` as `missing`, `cloudflare/workers-sdk` reaching `adequate` at 0.69 and `vercel/next.js` landing at 0.13, close enough to the band edge that it reads `missing to weak`. An agent cannot infer the precedence rule from prose about something else, so it is the cheapest thing on this page to fix.
 
 **`boundaries` wins the weakest-area vote eight times out of ten.** Those files name commands, tests and style, then say nothing about what an agent must never do. Airflow is one of two exceptions, with explicit "Ask first" and "Never" lists, so its weakest area is commands. Ollama is the other, with testing.
 
@@ -50,7 +50,7 @@ The table rounds readiness to two places, and repeat runs moved each number by u
 
 The exit code and the JSON report are the two hooks. A run that finds no file exits 0 with `"readiness": null`, so a repo without an AGENTS.md fails your gate on the readiness bar rather than on a crash, and a leaked credential shows up as a high `leaks_secret` probability.
 
-Gate on the numbers rather than the judgement words. A judgement names both bands when a credit lands within the deadband of their edge, so `suspect` can read `likely present to suspect`, and matching on the word misses it.
+Gate on the numbers. A judgement names both bands when a credit lands within the deadband of their edge, so `suspect` can read `likely present to suspect`, and an exact match on the word misses it.
 
 ```bash
 # in a pull request job, after checkout
@@ -328,7 +328,7 @@ That file scored `written_for` at 0.60 confidence with 0.26 on `human`, the lowe
 
 ## How the thresholds fit together
 
-Every answer takes the same two steps: one credit, then a fork. A person reads words, and CI acts on numbers, so the two halves treat an uncertain answer differently.
+Every answer becomes one credit, then splits two ways. The words go to a reader, and the numbers drive readiness and the four gates.
 
 ```text
   one answer from Jev
@@ -365,7 +365,7 @@ The bands, with the deadband that straddles every edge between them:
 
 Repeat calls on one document move a credit by up to 0.06, so a value sitting on an edge lands on either side of it between runs. The deadband catches that: a credit within 0.02 of an edge prints both bands, so two runs of the same file read the same way. Across eight runs of this repo's own AGENTS.md, no question produced two readings that contradicted each other, and four of sixteen rows showed a compound word. On the ten scored repos above, 8 credits in 160 sit inside a deadband.
 
-A gate gets none of this, because an exit code has no third state. Each one leans instead toward the error that costs less, which is why the credential gate sits low at 0.30 and fires on a maybe. The same rule applies when you read the JSON: gate on the numbers, because the words hedge.
+A gate gets none of this, because an exit code has no third state. Each one leans toward the error that costs less, which is why the credential gate sits low at 0.30 and fires on a maybe.
 
 ## The gates fire per action
 
