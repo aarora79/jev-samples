@@ -2,6 +2,8 @@
 
 A coding agent is only as good as the instructions it finds in your repo. [AGENTS.md](https://agents.md) is where those instructions go, and its homepage claimed "over 60k open-source projects" when I read it on 19 September 2026, counted by [this GitHub code search](https://github.com/search?q=path%3AAGENTS.md+NOT+is%3Afork+NOT+is%3Aarchived&type=code). The file decides whether an agent runs your real test command or guesses, edits the generated file you told it never to touch, or opens a pull request in the wrong format.
 
+An agent with no command to copy runs a plausible one, reads the failure, greps for the real command, opens two config files, and tries again. Each step is a tool call whose output lands in the context window you pay for. The same search repeats on the next task, and it grows with whatever the file leaves out.
+
 Legacy repos have no AGENTS.md at all. Repos that have one wrote it against a format they skimmed, and the same sections go missing from one repo to the next. Eight of the ten files scored below never say which file wins for a directory, and `boundaries` is the weakest area in eight of them. Review misses both, because nobody reads AGENTS.md in a diff.
 
 This sample scores that file for readiness, then turns the score into something CI can check. Wire it into the job that runs when a pull request opens, score the AGENTS.md or CLAUDE.md the branch would merge, and fail the build when readiness drops below the bar you set or when the file leaks a credential. Each check is one call carrying 17 questions, and on the eleven repos measured here it cost between $0.00004 and $0.00034.
