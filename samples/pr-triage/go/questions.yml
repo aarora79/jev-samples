@@ -83,7 +83,7 @@ questions:
     weight: 0.14
     instructions: How many judgment calls a reviewer would have to agree with
     criteria:
-      - None: the same edit repeated, or a value changed
+      - "None: the same edit repeated, or a value changed"
       - Local choices inside one function or file
       - New abstractions, interfaces, or control flow
 
