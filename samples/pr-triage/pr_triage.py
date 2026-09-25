@@ -593,18 +593,22 @@ def _reading(
     return f"{wording}, unsure" if unsure else wording
 
 
-def _print_padded(
+def _padded_lines(
     header: list[str],
     rows: list[list[str]],
-) -> None:
-    """Print one table padded to its widest cell per column.
+) -> list[str]:
+    """Build one table padded to its widest cell per column.
 
     The padding makes it readable in a terminal, and the pipes keep it valid
-    markdown, so the same text pastes into a pull request.
+    markdown, so the same text pastes into a pull request and the same lines go
+    into the markdown report.
 
     Args:
         header: Column titles.
         rows: Cells per row, matching header.
+
+    Returns:
+        The header, the rule, then one line per row.
     """
     widths = [max(len(cell) for cell in column) for column in zip(header, *rows, strict=True)]
 
@@ -612,10 +616,22 @@ def _print_padded(
         padded = (cell.ljust(width) for cell, width in zip(cells, widths, strict=True))
         return f"| {' | '.join(padded)} |"
 
-    print(line(header))
-    print(f"| {' | '.join('-' * width for width in widths)} |")
-    for row in rows:
-        print(line(row))
+    rule = f"| {' | '.join('-' * width for width in widths)} |"
+    return [line(header), rule] + [line(row) for row in rows]
+
+
+def _print_padded(
+    header: list[str],
+    rows: list[list[str]],
+) -> None:
+    """Print one padded table.
+
+    Args:
+        header: Column titles.
+        rows: Cells per row, matching header.
+    """
+    for text in _padded_lines(header, rows):
+        print(text)
 
 
 def _triage_one(
@@ -944,6 +960,111 @@ def _write_report(
     return path
 
 
+def _markdown_lines(
+    repo: str,
+    results: list[dict],
+    specs: dict,
+    settings: dict,
+) -> list[str]:
+    """Build the markdown report: the same table and groups the run printed.
+
+    Args:
+        repo: The repository as `owner/repo`.
+        results: Triage results.
+        specs: Question entries from questions.yml, keyed by id.
+        settings: Settings from questions.yml.
+
+    Returns:
+        Markdown lines, without trailing newlines.
+    """
+    ordered = sorted(results, key=lambda item: item["load"], reverse=True)
+    tokens = sum(result["response"].usage.input_tokens for result in results)
+    stamp = datetime.datetime.now(datetime.UTC).strftime("%d %B %Y")
+
+    lines = [
+        f"# Triage: {repo}",
+        "",
+        (
+            f"{len(results)} pull requests, {len(specs)} questions each, one call apiece, "
+            f"on {stamp} with `{settings['model']}`."
+        ),
+        (
+            f"{tokens:,} input tokens, ${_cost_usd(results, settings):.5f} at "
+            f"${settings['input_usd_per_million']} per million."
+        ),
+        "",
+        *_padded_lines(TRIAGE_HEADER, [_triage_row(result) for result in ordered]),
+        "",
+        (
+            "Load is the weighted average of nine questions, 0 to 1. Tier comes from that "
+            f"load, raised when size demands it: over {SIZE_FLOORS[0][0]} files or "
+            f"{SIZE_FLOORS[0][1]:,} lines is high whatever Jev returned."
+        ),
+    ]
+    return lines + _markdown_groups(results)
+
+
+def _markdown_groups(results: list[dict]) -> list[str]:
+    """Build one markdown section per tier, heaviest tier first.
+
+    Args:
+        results: Triage results.
+
+    Returns:
+        Markdown lines, without trailing newlines.
+    """
+    lines: list[str] = []
+    for tier in reversed(TIERS):
+        members = sorted(
+            (result for result in results if result["tier"] == tier),
+            key=lambda item: item["load"],
+            reverse=True,
+        )
+        if not members:
+            continue
+
+        lines += ["", f"## {tier} ({len(members)})", "", TIER_ADVICE[tier], ""]
+        for result in members:
+            pull = result["pull"]
+            drivers = ", ".join(result["drivers"]) or "nothing above the driver floor"
+            size_note = ", raised by the size floor" if result["raised_by_size"] else ""
+            lines.append(
+                f"- [#{pull['number']}]({pull['url']}) load {result['load']:.2f}{size_note}: "
+                f"{pull['title']}"
+            )
+            lines.append(f"  - drivers: {drivers}")
+            if result["coverage"] < LOW_COVERAGE_BELOW:
+                lines.append(
+                    f"  - read from {result['coverage']:.0%} of the changed files, so the load "
+                    "is a read on part of the diff"
+                )
+    return lines
+
+
+def _write_markdown(
+    repo: str,
+    selector: dict,
+    results: list[dict],
+    specs: dict,
+    settings: dict,
+) -> pathlib.Path:
+    """Write the markdown report beside the JSON one, same stem.
+
+    Args:
+        repo: The repository as `owner/repo`.
+        selector: The selector recorded in the dataset.
+        results: Triage results.
+        specs: Question entries from questions.yml, keyed by id.
+        settings: Settings from questions.yml.
+
+    Returns:
+        The path written.
+    """
+    path = _report_path(repo, selector).with_suffix(".md")
+    path.write_text("\n".join(_markdown_lines(repo, results, specs, settings)) + "\n", "utf-8")
+    return path
+
+
 def _load_dataset(path: pathlib.Path) -> dict:
     """Read a dataset written by fetch_prs.py.
 
@@ -1016,7 +1137,9 @@ def triage(
             _print_detail(wanted[0], specs)
 
     _print_totals(results, specs, settings)
-    print(f"Report: {_write_report(repo, dataset.get('selector', {}), results, specs, settings)}")
+    selector = dataset.get("selector", {})
+    print(f"Report: {_write_report(repo, selector, results, specs, settings)}")
+    print(f"Markdown: {_write_markdown(repo, selector, results, specs, settings)}")
 
 
 def main() -> None:
