@@ -45,6 +45,9 @@ samples/pr-triage/data/*
 samples/agents-md-readiness/go/dist/
 samples/agents-md-readiness/go/agents-md-readiness
 samples/agents-md-readiness/go/go
+samples/pr-triage/go/dist/
+samples/pr-triage/go/pr-triage
+samples/pr-triage/go/go
 *.exe
 
 # OS

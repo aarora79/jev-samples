@@ -26,6 +26,9 @@ jev-samples/
       fetch_prs.py        builds the dataset from the GitHub API, needs no Jev key
       pr_triage.py        the Jev call, the tiers, the tables
       data/               triage reports, committed; the datasets they scored, gitignored
+      assets/             the pipeline diagram: HTML source, rendered PNG, renderer
+      go/                 both halves in one static binary, github.com and GHES
+      vend/               a SKILL.md and an installer, so any repo can use it
 ```
 
 ## Setup and commands
@@ -54,7 +57,7 @@ One check runs in CI: `.github/workflows/agents-md-readiness.yml` scores this fi
 2. `uvx ruff check .` and `uvx ruff format --check .` both report clean.
 3. The sample runs against a live key, and every code path you changed runs at least once. For readme-check that means a local file, a GitHub repo root, a `/blob/` file page, and an `http://` URL it should refuse. For agents-md-readiness add a repo holding neither AGENTS.md nor CLAUDE.md, and a directory with neither. For pr-triage that means a live fetch, a `--dataset` replay, `--explain` on a number in the dataset and on one that is absent, and a repo whose pull requests include a diff too large to send whole.
 4. Any output shown in a README comes from a run you just did, with the date next to it.
-5. `samples/agents-md-readiness/go/` compiles that sample into one static binary, so a change to its `questions.yml` or its Go files means `gofmt -l .`, `go vet ./...`, `go test ./...` and `./build.sh <version>` in that folder, then one live run of the binary you built. The Python stays canonical, and `payload_test.go` fails when the embedded copy of the payload drifts.
+5. `samples/agents-md-readiness/go/` and `samples/pr-triage/go/` each compile a sample into one static binary, so a change to a `questions.yml` or to any Go file in those folders means `gofmt -l .`, `go vet ./...`, `go test ./...` and `./build.sh <version>` in that folder, then one live run of the binary you built. The Python stays canonical, and `payload_test.go` fails when the embedded copy of the payload drifts.
 
 Run the whole list before you open a pull request, because CI covers the AGENTS.md check and nothing else. If you add a test suite, use pytest, mock the client rather than calling the API, and wire it into that workflow.
 

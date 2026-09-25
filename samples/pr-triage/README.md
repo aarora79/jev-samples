@@ -57,6 +57,47 @@ uv run pr_triage.py --dataset data/owner-repo-open-all.json --explain 1693
 
 `pr_triage.py` needs a Jev key in `TYPESAFE_API_KEY`, from the environment or from `.env` beside the sample or at the repo root.
 
+### The same check without Python
+
+[`go/`](go/) holds a Go port that compiles both halves into one static binary, which is what the skill installs and what a CI runner wants. It works against github.com and a GitHub Enterprise Server host.
+
+The Python stays canonical. `go/questions.yml` is a copy, `build.sh` refreshes it before every build, and `payload_test.go` fails when the two drift, so the two tools cannot score one pull request differently in silence.
+
+
+## Install it as a Claude Code skill
+
+One command puts the tool and the skill on the machine. After that the skill does the work, and nobody has to learn the flags.
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/aarora79/jev-samples/main/samples/pr-triage/vend/install.sh | sh
+```
+
+That installs two things:
+
+| What | Where | Why |
+| --- | --- | --- |
+| the `pr-triage` binary | `/usr/local/bin`, or `~/.local/bin` | fetches the pull requests and triages them, no Python needed |
+| `SKILL.md` | `~/.claude/skills/pr-triage/` | tells the agent when to triage and how to read the result |
+
+Set `BINDIR` or `SKILL_DIR` to put either somewhere else. The installer checks both credentials and names the one you are missing rather than failing halfway through a run:
+
+```bash
+export GITHUB_TOKEN=...        # or GH_TOKEN, GH_ENTERPRISE_TOKEN, or run gh auth login
+export TYPESAFE_API_KEY=...
+```
+
+Then start a new Claude Code session and ask for a triage in your own words:
+
+> triage the open pull requests on apache/airflow
+>
+> which of our open PRs need a real review this week?
+>
+> triage https://ghe.example.com/platform/gateway and tell me what to read first
+
+The skill picks the flags, runs the binary, reads the report and tells you which pull requests need an hour and which clear on a glance. It writes a JSON report and a markdown one you can paste into an issue.
+
+For CI rather than a conversation, [`go/README.md`](go/README.md) covers the binary on its own, including `-fail-on-tier` for failing a job and the three ways to point it at a GitHub Enterprise Server host.
+
 ## What it prints
 
 From a run on 25 September 2026 against the twenty-six open pull requests of [agentic-community/mcp-gateway-registry](https://github.com/agentic-community/mcp-gateway-registry), trimmed to the ends of the table:
@@ -117,17 +158,17 @@ The inverted rows are where a good answer lowers the load. `has_tests` came back
 
 The two unweighted labels came back `feature` at 0.99 confidence and `security` at 0.95. They tell a reviewer what kind of change this is and where to start, and neither moves the number.
 
-The size floor changed nothing here. Nineteen files sets a floor of medium, under the high the load already earned. Airflow #73713 is the case where it bites: 54 files of one repeated locale-formatting edit score a load of 0.38, which alone would read low, and the floor raises it to high.
+The size floor changed nothing here. Nineteen files sets a floor of medium, under the high the load already earned. Airflow #73713 is the case where it bites: 54 files of one repeated locale-formatting edit score a load of 0.37, which alone would read low, and the floor raises it to high.
 
 ## What to notice
 
-**All four tiers get used.** Eighteen recent open pull requests from [apache/airflow](https://github.com/apache/airflow) came out 3 high, 5 medium, 8 low and 2 trivial. The smallest is #73722, a two-line clarification of `max_db_retries` doc wording, which scores 0.20 and lands in trivial. How a queue spreads across the tiers is a fact about the repository, so read your own distribution before you move a cut.
+**All four tiers get used.** Eighteen recent open pull requests from [apache/airflow](https://github.com/apache/airflow) came out 3 high, 5 medium, 8 low and 2 trivial. The smallest is #73722, a two-line clarification of `max_db_retries` doc wording, which scores 0.19 and lands in trivial. How a queue spreads across the tiers is a fact about the repository, so read your own distribution before you move a cut.
 
-**Nine files can outrank fifty-four.** #73704 changes 89 lines across 9 files and lands in medium at 0.51, because it fixes socket leaks and adds request timeouts across providers: `security_surface` came back 0.84 and `has_tests` 0.03. #73713 changes 598 lines across 54 files and scores 0.38, because `mechanical` came back 0.80 on one locale-formatting edit repeated through the UI, and the change ships tests. The eleven questions sort by what a review has to catch, and the driver line names the question that did it.
+**Nine files can outrank fifty-four.** #73704 changes 89 lines across 9 files and lands in medium at 0.50, because it fixes socket leaks and adds request timeouts across providers: `security_surface` came back 0.85 and `has_tests` 0.03. #73713 changes 598 lines across 54 files and scores 0.37, because `mechanical` came back 0.80 on one locale-formatting edit repeated through the UI, and the change ships tests. The eleven questions sort by what a review has to catch, and the driver line names the question that did it.
 
 **Arithmetic stays in Python.** Jev cannot count, so the file and line totals reach it as a sentence for context, and every threshold on a number lives in [pr_triage.py](pr_triage.py). `SIZE_FLOORS` names the lowest tier a change of a given size can land in: over 30 files or 1,500 lines is high whatever Jev returned. The floor only ever raises a tier, and the output marks the rows where it did, so a reader can see the disagreement instead of inheriting it.
 
-**Say how much of the diff the model read.** Five of those eighteen hold more patch than the 24,000-character budget, so Jev read some files whole and the rest as paths and line counts. `_diff_text` fills the budget with the smallest patches first, because triage asks how far a change reaches and whether one edit repeats, and both of those want breadth. Coverage lands in the report as `diff_coverage` and in the grouped output as a line under any pull request below 70%. The 0.38 on #73713 came from 44% of its diff, which is a weaker claim than the same number across all of it, and the size floor guards those rows.
+**Say how much of the diff the model read.** Five of those eighteen hold more patch than the 24,000-character budget, so Jev read some files whole and the rest as paths and line counts. `_diff_text` fills the budget with the smallest patches first, because triage asks how far a change reaches and whether one edit repeats, and both of those want breadth. Coverage lands in the report as `diff_coverage` and in the grouped output as a line under any pull request below 70%. The 0.37 on #73713 came from 44% of its diff, which is a weaker claim than the same number across all of it, and the size floor guards those rows.
 
 **Weights are a data change.** Raising `security_surface` to 0.25 means editing one line of `questions.yml`. Moving a tier cut means editing `LOAD_FLOORS`. Both sit in a diff, and neither hides inside a question's wording.
 
