@@ -22,6 +22,10 @@ jev-samples/
       readme_check.py     the sample
     agents-md-readiness/  the second sample
       go/                 a Go port of that sample, one static binary for CI
+    pr-triage/            the third sample, one Jev call per pull request
+      fetch_prs.py        builds the dataset from the GitHub API, needs no Jev key
+      pr_triage.py        the Jev call, the tiers, the tables
+      data/               triage reports, committed; the datasets they scored, gitignored
 ```
 
 ## Setup and commands
@@ -48,7 +52,7 @@ One check runs in CI: `.github/workflows/agents-md-readiness.yml` scores this fi
 
 1. `uv run python -m py_compile <file>` on every Python file you touched.
 2. `uvx ruff check .` and `uvx ruff format --check .` both report clean.
-3. The sample runs against a live key, and every code path you changed runs at least once. For readme-check that means a local file, a GitHub repo root, a `/blob/` file page, and an `http://` URL it should refuse. For agents-md-readiness add a repo holding neither AGENTS.md nor CLAUDE.md, and a directory with neither.
+3. The sample runs against a live key, and every code path you changed runs at least once. For readme-check that means a local file, a GitHub repo root, a `/blob/` file page, and an `http://` URL it should refuse. For agents-md-readiness add a repo holding neither AGENTS.md nor CLAUDE.md, and a directory with neither. For pr-triage that means a live fetch, a `--dataset` replay, `--explain` on a number in the dataset and on one that is absent, and a repo whose pull requests include a diff too large to send whole.
 4. Any output shown in a README comes from a run you just did, with the date next to it.
 5. `samples/agents-md-readiness/go/` compiles that sample into one static binary, so a change to its `questions.yml` or its Go files means `gofmt -l .`, `go vet ./...`, `go test ./...` and `./build.sh <version>` in that folder, then one live run of the binary you built. The Python stays canonical, and `payload_test.go` fails when the embedded copy of the payload drifts.
 
@@ -92,7 +96,7 @@ These are the habits the samples exist to teach, so breaking one in a sample tea
 
 1. Create `samples/<sample-name>/` with kebab-case naming.
 2. Give it its own `pyproject.toml`, depending on `typesafe-sdk` and `pyyaml`.
-3. Put the whole Jev payload in `questions.yml`: `model`, `max_state_chars`, then `questions`, each entry carrying `type`, `label`, `instructions` and any `criteria`. Question order in the file is print order.
+3. Put the whole Jev payload in `questions.yml`: `model`, the state budget, then `questions`, each entry carrying `type`, `label`, `instructions` and any `criteria`. Question order in the file is print order. One state field takes one `max_state_chars`; a state with several fields takes one budget per field, as `pr-triage` does, so a long diff cannot crowd out a description.
 4. Write the sample as a single module where possible. Reach for a second file only when one stops being readable.
 5. Write the sample README to answer three questions in this order: what it does, how to run it, what to notice.
 6. Add a row to the table in the root README.

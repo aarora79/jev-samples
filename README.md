@@ -10,6 +10,7 @@ Every sample is a small self-contained project under [samples/](samples/), and y
 | --- | --- |
 | [readme-check](samples/readme-check/) | Reads a README from disk or a GitHub URL, asks five questions about it in one call, and explains every number it prints. Uses all three primitives: `Choice`, `Score` and `Noul`. |
 | [agents-md-readiness](samples/agents-md-readiness/) | Scores an AGENTS.md or CLAUDE.md against the [agents.md](https://agents.md) format: seventeen questions in one call, a padded markdown table, one weighted readiness score, and a JSON report per document. Ships scored runs for eleven open-source repos in [data/](samples/agents-md-readiness/data/), plus a [Go port](samples/agents-md-readiness/go/) that compiles the same check into one static binary for a CI runner without Python. |
+| [pr-triage](samples/pr-triage/) | Sorts a repository's open pull requests into four review tiers, one call each: eleven questions about the title, the description, the file list and the diff, nine of them weighted into a review load, and a size floor in Python for the diffs too large to send whole. Builds its dataset from the GitHub API, prints a triage table grouped by tier with the advice for each one, and ships the scored runs for two repositories in [data/](samples/pr-triage/data/). Twenty-six pull requests took four seconds and $0.0077. |
 
 Each sample keeps its Jev payload in `questions.yml`: the model pin, the state budget, every question with the label it prints under, and what each answer is worth toward the score. The Python reads that file and does the arithmetic, so changing a question or a weight is a data change and changing a threshold is a code change.
 
@@ -144,7 +145,13 @@ uv run readme_check.py https://github.com/psf/requests
 cd ../agents-md-readiness
 uv run agents_md_readiness.py --help
 uv run agents_md_readiness.py https://github.com/apache/airflow
+
+cd ../pr-triage
+uv run pr_triage.py --help
+uv run pr_triage.py apache/airflow --limit 10
 ```
+
+`pr-triage` reads the GitHub API as well, so it wants `GITHUB_TOKEN`, `GH_TOKEN`, or a logged-in `gh` CLI for the fetch.
 
 ## The three primitives
 
