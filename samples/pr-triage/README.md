@@ -12,37 +12,9 @@ The sample prints the triage and writes a report. Merging stays with you.
 
 Eleven questions go to Jev in one call: how far the change reaches, whether it touches auth or secrets, how many judgment calls a reviewer has to agree with, and eight more. Nine of them carry a weight in [questions.yml](questions.yml), and their weighted average is the load. The table after the diagram names all eleven.
 
-```mermaid
-flowchart TD
-    PR["one pull request<br/>title, description, file list, as much of the diff as fits"]
-    CALL["one Jev call, eleven questions"]
-    NINE["nine scored criteria<br/>how far the change reaches, whether it touches auth or secrets,<br/>how many judgment calls it holds, and six more"]
-    TWO["two labels, printed beside the tier and never scored<br/>what kind of change: bugfix, feature, refactor, and four more<br/>what to check first: security, correctness, deployment, and three more"]
-    LOAD["load = the weighted average of those nine<br/>0.00 to 1.00"]
-    BAND{"which band does<br/>the load land in?"}
-    HIGH["high"]
-    MED["medium"]
-    LOW["low"]
-    TRIV["trivial"]
-    SIZE["the file and line counts can raise the tier<br/>over 30 files or 1,500 lines lands in high, whatever Jev said<br/>this only ever raises a tier, never lowers one"]
-    OUT["one line per pull request<br/>the tier, its advice, and the questions that drove the load"]
+![The pr-triage pipeline: read one pull request, ask eleven questions in one call, average nine of the answers into a review load, read that load as a tier, let the file and line counts raise the tier, then print one line per pull request.](assets/pipeline.png)
 
-    PR --> CALL
-    CALL --> NINE
-    CALL --> TWO
-    NINE --> LOAD
-    LOAD --> BAND
-    BAND -->|0.62 and up| HIGH
-    BAND -->|0.42 to 0.62| MED
-    BAND -->|0.22 to 0.42| LOW
-    BAND -->|under 0.22| TRIV
-    HIGH --> SIZE
-    MED --> SIZE
-    LOW --> SIZE
-    TRIV --> SIZE
-    SIZE --> OUT
-    TWO --> OUT
-```
+That diagram is built from [assets/pipeline.html](assets/pipeline.html). Edit the HTML and run `python3 assets/render.py` to rebuild the PNG.
 
 | Question | Type | Weight | What a high answer means |
 | --- | --- | --- | --- |
@@ -120,7 +92,7 @@ LOW  (1)  -> one reviewer, one pass, no meeting
 the rest. Those are the ones the size floor guards.
 ```
 
-Every run also writes a JSON report to [data/](data/), holding each answer as Jev sent it next to the credit and the tier the sample derived from it.
+Every run writes two reports into [data/](data/). The JSON one holds each answer as Jev sent it, next to the credit and the tier the sample derived from it. The markdown one carries the same table and the same tier sections, so a triage pastes into a pull request or an issue without reformatting. This repo commits the `apache-airflow` pair as the worked example and ignores the rest, because triaging somebody's open pull requests is their business.
 
 ### One pull request, from eleven answers to one tier
 
@@ -145,17 +117,17 @@ The inverted rows are where a good answer lowers the load. `has_tests` came back
 
 The two unweighted labels came back `feature` at 0.99 confidence and `security` at 0.95. They tell a reviewer what kind of change this is and where to start, and neither moves the number.
 
-The size floor changed nothing here. Nineteen files sets a floor of medium, under the high the load already earned. Airflow #73713 is the case where it bites: 54 files of one repeated locale-formatting edit score a load of 0.37, which alone would read low, and the floor raises it to high.
+The size floor changed nothing here. Nineteen files sets a floor of medium, under the high the load already earned. Airflow #73713 is the case where it bites: 54 files of one repeated locale-formatting edit score a load of 0.38, which alone would read low, and the floor raises it to high.
 
 ## What to notice
 
-**All four tiers get used.** Eighteen recent open pull requests from [apache/airflow](https://github.com/apache/airflow) came out 3 high, 5 medium, 8 low and 2 trivial. The smallest is #73722, a two-line clarification of `max_db_retries` doc wording, which scores 0.21 and lands in trivial. How a queue spreads across the tiers is a fact about the repository, so read your own distribution before you move a cut.
+**All four tiers get used.** Eighteen recent open pull requests from [apache/airflow](https://github.com/apache/airflow) came out 3 high, 5 medium, 8 low and 2 trivial. The smallest is #73722, a two-line clarification of `max_db_retries` doc wording, which scores 0.20 and lands in trivial. How a queue spreads across the tiers is a fact about the repository, so read your own distribution before you move a cut.
 
-**Nine files can outrank fifty-four.** #73704 changes 89 lines across 9 files and lands in medium at 0.51, because it fixes socket leaks and adds request timeouts across providers: `security_surface` came back 0.84 and `has_tests` 0.03. #73713 changes 598 lines across 54 files and scores 0.37, because `mechanical` came back 0.80 on one locale-formatting edit repeated through the UI, and the change ships tests. The eleven questions sort by what a review has to catch, and the driver line names the question that did it.
+**Nine files can outrank fifty-four.** #73704 changes 89 lines across 9 files and lands in medium at 0.51, because it fixes socket leaks and adds request timeouts across providers: `security_surface` came back 0.84 and `has_tests` 0.03. #73713 changes 598 lines across 54 files and scores 0.38, because `mechanical` came back 0.80 on one locale-formatting edit repeated through the UI, and the change ships tests. The eleven questions sort by what a review has to catch, and the driver line names the question that did it.
 
 **Arithmetic stays in Python.** Jev cannot count, so the file and line totals reach it as a sentence for context, and every threshold on a number lives in [pr_triage.py](pr_triage.py). `SIZE_FLOORS` names the lowest tier a change of a given size can land in: over 30 files or 1,500 lines is high whatever Jev returned. The floor only ever raises a tier, and the output marks the rows where it did, so a reader can see the disagreement instead of inheriting it.
 
-**Say how much of the diff the model read.** Five of those eighteen hold more patch than the 24,000-character budget, so Jev read some files whole and the rest as paths and line counts. `_diff_text` fills the budget with the smallest patches first, because triage asks how far a change reaches and whether one edit repeats, and both of those want breadth. Coverage lands in the report as `diff_coverage` and in the grouped output as a line under any pull request below 70%. The 0.37 on #73713 came from 44% of its diff, which is a weaker claim than the same number across all of it, and the size floor guards those rows.
+**Say how much of the diff the model read.** Five of those eighteen hold more patch than the 24,000-character budget, so Jev read some files whole and the rest as paths and line counts. `_diff_text` fills the budget with the smallest patches first, because triage asks how far a change reaches and whether one edit repeats, and both of those want breadth. Coverage lands in the report as `diff_coverage` and in the grouped output as a line under any pull request below 70%. The 0.38 on #73713 came from 44% of its diff, which is a weaker claim than the same number across all of it, and the size floor guards those rows.
 
 **Weights are a data change.** Raising `security_surface` to 0.25 means editing one line of `questions.yml`. Moving a tier cut means editing `LOAD_FLOORS`. Both sit in a diff, and neither hides inside a question's wording.
 

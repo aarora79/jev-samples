@@ -1,0 +1,187 @@
+<!doctype html>
+<!--
+  The pipeline diagram in this sample's README. Edit this file, then re-render:
+
+    python3 assets/render.py
+
+  Fonts stay on the system stack, because the proxy blocks web fonts and the PNG
+  has to look the same wherever it is built.
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<style>
+  :root {
+    --ink: #14181c;
+    --ink2: #4a5560;
+    --ink3: #7b8794;
+    --line: #d7dee5;
+    --paper: #fffdf7;
+    --card: #ffffff;
+    --accent: #0f766e;
+    --accent-soft: #e6f2f1;
+    --trivial: #3f9d5a;
+    --low: #7fae2e;
+    --medium: #d99016;
+    --high: #c8452f;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    padding: 34px 38px 30px;
+    width: 1120px;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+  .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+
+  h1 { font-size: 21px; margin: 0 0 3px; letter-spacing: -0.2px; }
+  .sub { font-size: 13px; color: var(--ink3); margin: 0 0 22px; }
+
+  .step { display: grid; grid-template-columns: 30px 1fr; gap: 14px; align-items: start; }
+  .num {
+    width: 30px; height: 30px; border-radius: 50%;
+    background: var(--accent); color: #fff;
+    font-size: 14px; font-weight: 700;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .card {
+    background: var(--card); border: 1px solid var(--line);
+    border-radius: 9px; padding: 13px 16px;
+    box-shadow: 0 1px 2px rgba(20, 24, 28, 0.05);
+  }
+  .card h2 { font-size: 15px; margin: 0 0 5px; font-weight: 650; }
+  .card p { font-size: 13px; line-height: 1.5; margin: 0; color: var(--ink2); }
+
+  .rail { margin-left: 14px; border-left: 2px solid var(--line); height: 17px; }
+  .rail.arrow { position: relative; }
+  .rail.arrow::after {
+    content: ""; position: absolute; left: -5px; bottom: -1px;
+    border-left: 5px solid transparent; border-right: 5px solid transparent;
+    border-top: 7px solid var(--line);
+  }
+
+  .two { display: grid; grid-template-columns: 1fr 1.2fr; gap: 14px; }
+  .tagline { font-size: 11.5px; color: var(--ink3); text-transform: uppercase;
+             letter-spacing: 0.6px; margin: 0 0 6px; font-weight: 650; }
+  .muted { border-style: dashed; background: #fcfcfa; }
+
+  .bands { display: grid; grid-template-columns: repeat(4, 1fr); gap: 9px; margin-top: 11px; }
+  .band { border-radius: 7px; padding: 9px 11px; color: #fff; }
+  .band .range { font-size: 11.5px; opacity: 0.9; }
+  .band .name { font-size: 14px; font-weight: 700; margin-bottom: 1px; }
+  .b-high { background: var(--high); }
+  .b-medium { background: var(--medium); }
+  .b-low { background: var(--low); }
+  .b-trivial { background: var(--trivial); }
+
+  .floor { display: grid; grid-template-columns: repeat(3, 1fr); gap: 9px; margin-top: 10px; }
+  .floor div {
+    background: var(--accent-soft); border: 1px solid #cfe3e1;
+    border-radius: 7px; padding: 7px 10px; font-size: 12.5px; color: #12554f;
+  }
+  .note { font-size: 12px; color: var(--ink3); margin: 6px 0 0; }
+  .out { border-left: 4px solid var(--accent); }
+</style>
+</head>
+<body>
+
+<h1>pr-triage: one pull request, one call, one tier</h1>
+<p class="sub">Jev answers eleven questions in a single call. Python does every piece of arithmetic.</p>
+
+<div class="step">
+  <div class="num">1</div>
+  <div class="card">
+    <h2>Read one pull request</h2>
+    <p>Title, description, the file list, and as much of the diff as the budget holds. A patch
+       too large to send whole arrives as whole files first, then paths and line counts.</p>
+  </div>
+</div>
+
+<div class="rail arrow"></div>
+
+<div class="step">
+  <div class="num">2</div>
+  <div class="card">
+    <h2>Ask eleven questions, in one call</h2>
+    <p>Every question sees the same pull request. None sees another's answer, so the eleven
+       cost the tokens of eleven and the wall clock of about one.</p>
+    <div class="two" style="margin-top:11px">
+      <div class="card" style="box-shadow:none">
+        <p class="tagline">Nine scored, and weighted</p>
+        <p>How far the change reaches, whether it touches auth or secrets, how many judgment
+           calls it holds, whether it breaks a caller, whether it ships tests, and four more.</p>
+      </div>
+      <div class="card muted" style="box-shadow:none">
+        <p class="tagline">Two labels, never scored</p>
+        <p><b>What kind of change:</b> docs, tests, dependency, config, bugfix, feature or
+           refactor.<br>
+           <b>What to check first:</b> correctness, security, compatibility, tests, deployment
+           or readability.<br>
+           Both print beside the tier.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="rail arrow"></div>
+
+<div class="step">
+  <div class="num">3</div>
+  <div class="card">
+    <h2>Average the nine into a review load</h2>
+    <p>Each answer counts for the weight <span class="mono">questions.yml</span> gives it, and
+       three of them count inverted, so a mechanical diff, a tested change and a thorough
+       description each pull the load down. The weights sum to 1, so the load runs 0.00 to 1.00.</p>
+  </div>
+</div>
+
+<div class="rail arrow"></div>
+
+<div class="step">
+  <div class="num">4</div>
+  <div class="card">
+    <h2>Read the load as a tier</h2>
+    <div class="bands">
+      <div class="band b-high"><div class="name">high</div><div class="range mono">0.62 and up</div></div>
+      <div class="band b-medium"><div class="name">medium</div><div class="range mono">0.42 to 0.62</div></div>
+      <div class="band b-low"><div class="name">low</div><div class="range mono">0.22 to 0.42</div></div>
+      <div class="band b-trivial"><div class="name">trivial</div><div class="range mono">under 0.22</div></div>
+    </div>
+    <p class="note">A load within 0.02 of a cut prints <span class="mono">(on a cut)</span>, because
+       repeat calls move it by that much.</p>
+  </div>
+</div>
+
+<div class="rail arrow"></div>
+
+<div class="step">
+  <div class="num">5</div>
+  <div class="card">
+    <h2>Let the file and line counts raise it</h2>
+    <div class="floor">
+      <div>over 30 files or 1,500 lines &rarr; <b>high</b></div>
+      <div>over 12 files or 500 lines &rarr; <b>medium</b></div>
+      <div>over 4 files or 150 lines &rarr; <b>low</b></div>
+    </div>
+    <p class="note">Jev reads a truncated diff, so a 54-file change can read as one repeated edit.
+       Size is arithmetic, Python owns it, and it only ever raises a tier.</p>
+  </div>
+</div>
+
+<div class="rail arrow"></div>
+
+<div class="step">
+  <div class="num">6</div>
+  <div class="card out">
+    <h2>Print one line per pull request</h2>
+    <p>The tier, the advice that goes with it, and the questions that drove the load. Every run
+       also writes a JSON report and a markdown one into
+       <span class="mono">data/</span>.</p>
+  </div>
+</div>
+
+</body>
+</html>
