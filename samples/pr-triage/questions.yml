@@ -1,0 +1,149 @@
+# Everything this sample sends to Jev, plus the weights it triages with: the
+# model pin, the state budgets, and all eleven questions.
+#
+# Nine questions carry a `weight`, and review load is the weighted average of
+# what they returned. Load runs 0 to 1, where 1 means a human should read every
+# line. The weights here sum to 1, and the sample divides by their total anyway,
+# so an edited weight needs no rebalancing.
+#
+# Weights say what a missed problem costs. Security surface and blast radius
+# outrank everything, because a wrong merge there is an incident rather than a
+# revert. Design decisions come next, because that is the part review exists for.
+# A missing test and a thin description cost least: they slow a reviewer down
+# without hiding a fault.
+#
+# `change_kind` and `review_focus` carry no weight. They route the review rather
+# than sizing it.
+#
+# Adding a question means adding an entry here. Nothing else changes.
+
+# The SDKs default to jev-latest, and a silent upgrade would move answers under
+# thresholds calibrated against an older version.
+model: jev-1.13.0
+
+# One budget per state field, so a 5,000-line lockfile diff cannot crowd out the
+# description and a rambling description cannot crowd out the diff. These sum to
+# about 8,000 tokens. Eleven questions each see the whole state plus themselves,
+# which keeps every one of them inside the 32,000-token per-question limit.
+max_description_chars: 4000
+max_file_list_chars: 4000
+max_diff_chars: 24000
+
+# TypeSafe's published price for input tokens, September 2026. Output tokens are
+# counted and not charged, and the reports use this to price each run.
+input_usd_per_million: 0.042
+
+# Each question asks about one thing, so no answer has to cover two claims. The
+# order here is the order the sample prints them.
+questions:
+  # No weight: this one names what kind of change it is, which reads next to the
+  # tier rather than feeding it. A docs change and a schema migration can carry
+  # the same load for different reasons.
+  change_kind:
+    type: choice
+    label: change kind
+    instructions: What kind of change this pull request makes
+    criteria:
+      docs: Documentation, comments, or README text
+      tests: Test files, fixtures, or test infrastructure
+      dependency: Dependency versions, lockfiles, or build tooling
+      config: Configuration, deployment manifests, or CI workflows
+      bugfix: A correction to behaviour that was wrong
+      feature: New behaviour that did not exist before
+      refactor: Rearranged code that behaves the same way afterward
+
+  # No weight either: this one says where a reviewer should start.
+  review_focus:
+    type: choice
+    label: review focus
+    instructions: What a reviewer should check first on this pull request
+    criteria:
+      correctness: Whether the new logic does what it claims
+      security: Authentication, authorization, secrets, or input handling
+      compatibility: Whether existing callers and deployments keep working
+      tests: Whether the change is covered, and whether the tests assert anything
+      deployment: Whether this rolls out and rolls back safely
+      readability: Naming, structure, and whether the next reader follows it
+
+  # Each score rubric runs 0 to 2 with evenly spaced steps, so dividing by the
+  # top level gives an honest fraction.
+  blast_radius:
+    type: score
+    label: blast radius
+    weight: 0.15
+    instructions: How far the effects of this change reach through the codebase
+    criteria:
+      - Confined to one file, or to documentation
+      - Confined to one module or feature area
+      - Reaches shared code paths that many callers depend on
+
+  design_decisions:
+    type: score
+    label: design decisions
+    weight: 0.14
+    instructions: How many judgment calls a reviewer would have to agree with
+    criteria:
+      - None: the same edit repeated, or a value changed
+      - Local choices inside one function or file
+      - New abstractions, interfaces, or control flow
+
+  # Inverted: a good description lowers the load, because the reviewer starts
+  # with the author's reasoning instead of reconstructing it from the diff.
+  description_quality:
+    type: score
+    label: description quality
+    weight: 0.08
+    invert: true
+    instructions: How well the description accounts for the change
+    criteria:
+      - Empty, or says nothing about what changed
+      - Names what changed
+      - Explains what changed, why, and how the author verified it
+
+  security_surface:
+    type: noul
+    label: security surface
+    weight: 0.15
+    instructions: The change touches authentication, authorization, secrets, tokens, or input validation
+
+  # Inverted: a mechanical diff is the cheapest kind to merge, because checking
+  # one instance checks them all.
+  #
+  # Asking whether the change is "simple" asks Jev to judge difficulty, which
+  # varies by reader. This asks about the shape of the diff instead, which the
+  # diff settles.
+  mechanical:
+    type: noul
+    label: mechanical
+    weight: 0.12
+    invert: true
+    instructions: The diff repeats one kind of edit, with no separate decision per file
+
+  breaking_change:
+    type: noul
+    label: breaking change
+    weight: 0.11
+    instructions: The change alters a public API, config key, command-line flag, or stored data shape that existing callers depend on
+
+  # A diff doing more than it says costs a reviewer their bearings, and it is the
+  # one problem the description cannot warn them about.
+  scope_creep:
+    type: noul
+    label: scope creep
+    weight: 0.09
+    instructions: The diff changes things the title and description never mention
+
+  infra_surface:
+    type: noul
+    label: infra surface
+    weight: 0.08
+    instructions: The change touches deployment, infrastructure, container images, or CI configuration
+
+  # Inverted: tests that exercise the change lower the load, because the reviewer
+  # can read what the author expected instead of guessing at it.
+  has_tests:
+    type: noul
+    label: has tests
+    weight: 0.08
+    invert: true
+    instructions: The diff adds or updates tests that exercise the behaviour it changes

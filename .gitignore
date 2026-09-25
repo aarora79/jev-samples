@@ -25,6 +25,16 @@ dist/
 samples/agents-md-readiness/*.json
 samples/agents-md-readiness/data/jev-samples-agents-md.json
 
+# pr-triage writes a dataset and a triage report per selector, and the repo keeps
+# the two reports the sample's README quotes. The datasets stay out: one mirrors
+# 26 contributors' diffs at a couple of megabytes, and one command rebuilds it
+# (`uv run fetch_prs.py owner/repo --all`). Other reports stay out too, because a
+# --since window names a date that is stale the next day. Naming the two keeps the
+# invariant visible: these are the runs behind the README's numbers.
+samples/pr-triage/data/*.json
+!samples/pr-triage/data/agentic-community-mcp-gateway-registry-open-all-triage.json
+!samples/pr-triage/data/apache-airflow-open-latest-18-triage.json
+
 # Compiled binaries from samples/agents-md-readiness/go/. build.sh writes dist/,
 # `go build -o agents-md-readiness .` writes that name beside the source, and a
 # plain `go build` names its output after the directory, which is `go`. A release
