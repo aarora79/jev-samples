@@ -57,6 +57,24 @@ uv run pr_triage.py --dataset data/owner-repo-open-all.json --explain 1693
 
 `pr_triage.py` needs a Jev key in `TYPESAFE_API_KEY`, from the environment or from `.env` beside the sample or at the repo root.
 
+### One binary, and a skill that drives it
+
+A machine with no Python can run the same check from a single static executable. [`go/`](go/) holds a Go port that does both halves in one command, against github.com or a GitHub Enterprise Server host:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/aarora79/jev-samples/main/samples/pr-triage/go/install.sh | sh
+pr-triage apache/airflow -all -fail-on-tier high
+pr-triage https://ghe.example.com/owner/repo
+```
+
+[`vend/`](vend/) turns that into something any repository can adopt: a `SKILL.md` telling an agent when to reach for the triage and how to read it, and an installer that fetches the binary and drops the skill beside it.
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/aarora79/jev-samples/main/samples/pr-triage/vend/install.sh | sh
+```
+
+The Python stays canonical. `go/questions.yml` is a copy, `build.sh` refreshes it before every build, and `payload_test.go` fails when the two drift, so the two tools cannot score one pull request differently in silence.
+
 ## What it prints
 
 From a run on 25 September 2026 against the twenty-six open pull requests of [agentic-community/mcp-gateway-registry](https://github.com/agentic-community/mcp-gateway-registry), trimmed to the ends of the table:
