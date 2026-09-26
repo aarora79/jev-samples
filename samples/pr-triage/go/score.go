@@ -73,6 +73,64 @@ var sizeFloors = []struct {
 	{4, 150, "low"},
 }
 
+// consequenceQuestions are the four that say what breaks if this change is wrong,
+// as opposed to how long it takes to read. Consequence is the MAX of these, never
+// the mean: a change that is safe in three ways and dangerous in one is a
+// dangerous change, and averaging lets three absences of risk vote down one
+// confident yes.
+var consequenceQuestions = []string{
+	"security_surface",
+	"breaking_change",
+	"blast_radius",
+	"infra_surface",
+}
+
+// routes name what evidence is enough, cheapest first.
+//
+// Nothing here says "merge". TypeSafe publishes 67.8% accuracy on their own
+// benchmark, which is fine for deciding how much evidence to demand and nowhere
+// near enough to be the last gate before main.
+var routes = []string{
+	"green-is-enough",
+	"tests-are-enough",
+	"ai-review-is-enough",
+	"human-required",
+	"human-plus-author",
+}
+
+// consequenceFloors say what consequence buys which route, highest floor first.
+// The cuts come from the cost of being wrong: a change that probably touches auth
+// cannot be waved through on a green tick, whatever else is true of it.
+var consequenceFloors = []struct {
+	floor float64
+	route string
+}{
+	{0.60, "human-required"},
+	{0.35, "ai-review-is-enough"},
+	{0.15, "tests-are-enough"},
+	{0.00, "green-is-enough"},
+}
+
+// effortRaises let a long read raise the route, never lower it. A long read wants
+// a second pair of eyes even when nothing dangerous is in it.
+var effortRaises = []struct {
+	floor float64
+	route string
+}{
+	{0.62, "ai-review-is-enough"},
+	{0.42, "tests-are-enough"},
+}
+
+// routeAdvice says what each route asks of a team, so the advice travels with the
+// route rather than living in a README.
+var routeAdvice = map[string]string{
+	"green-is-enough":     "merge when CI is green: nothing here needs a person",
+	"tests-are-enough":    "merge when CI is green and a test exercises the change",
+	"ai-review-is-enough": "an AI review that finds nothing is sufficient, plus green CI and tests",
+	"human-required":      "a person reads this before it merges, whatever the machines say",
+	"human-plus-author":   "a person reads it line by line, and the author walks them through it",
+}
+
 // tierAdvice says what to do with a pull request in each tier. The advice is the
 // point of the triage, so it travels with the tier rather than living in a README.
 var tierAdvice = map[string]string{
@@ -143,10 +201,20 @@ type result struct {
 	Tier         string
 	RaisedBySize bool
 	Coverage     float64
-	Drivers      []string
-	Usage        usage
-	LatencyMS    int64
-	Raw          json.RawMessage
+	Consequence  float64
+	// ConsequenceLabel names the question that set the consequence, so a reader
+	// knows which of the four is the reason.
+	ConsequenceLabel string
+	Route            string
+	// RouteDecidedBy is "consequence", "effort" or "both".
+	RouteDecidedBy string
+	// Downgrade is the one signal that would move this to a cheaper route, or ""
+	// when it is already on the cheapest.
+	Downgrade string
+	Drivers   []string
+	Usage     usage
+	LatencyMS int64
+	Raw       json.RawMessage
 }
 
 // buildState assembles the state for one pull request, each part in its own named
@@ -341,18 +409,25 @@ func ask(key string, set settings, specs []spec, repo string, pull pullRequest) 
 
 	load := reviewLoad(parsed.Answers, specs)
 	tier, raised := tierFor(load, pull.ChangedFiles, pull.Additions+pull.Deletions)
+	consequenceValue, consequenceLabel := consequence(parsed.Answers, specs)
+	route, decided := routeFor(consequenceValue, load)
 
 	return result{
-		Pull:         pull,
-		Answers:      parsed.Answers,
-		Load:         load,
-		Tier:         tier,
-		RaisedBySize: raised,
-		Coverage:     coverage,
-		Drivers:      drivers(parsed.Answers, specs),
-		Usage:        parsed.Usage,
-		LatencyMS:    latency,
-		Raw:          raw,
+		Pull:             pull,
+		Answers:          parsed.Answers,
+		Load:             load,
+		Tier:             tier,
+		RaisedBySize:     raised,
+		Coverage:         coverage,
+		Consequence:      consequenceValue,
+		ConsequenceLabel: consequenceLabel,
+		Route:            route,
+		RouteDecidedBy:   decided,
+		Downgrade:        downgradeFor(parsed.Answers, specs, route, decided),
+		Drivers:          drivers(parsed.Answers, specs),
+		Usage:            parsed.Usage,
+		LatencyMS:        latency,
+		Raw:              raw,
 	}, nil
 }
 
@@ -442,6 +517,110 @@ func drivers(answers map[string]answer, specs []spec) []string {
 	return named
 }
 
+// consequenceOf reads one answer as consequence, which is not the same as credit.
+//
+// A noul reads as its probability. A score reads as the probability it put on its
+// top level, rather than as the normalised score, because only the top level of
+// these rubrics describes something consequential. blast_radius level 1 is
+// "confined to one module or feature area", which is ordinary work, and dividing a
+// score of 1.0 by 2 would report ordinary work as half a catastrophe.
+func consequenceOf(s spec, a answer) float64 {
+	if s.Q.Type != "score" {
+		return credit(s, a)
+	}
+
+	top := len(a.Legend) - 1
+	// The wire keys probabilities by the level as a string.
+	return a.Probabilities[fmt.Sprintf("%d", top)]
+}
+
+// consequence reads what breaks if this change is wrong, and names what said so.
+//
+// The max rather than the mean, because risk does not average. A smoke alarm that
+// averages four rooms is useless.
+func consequence(answers map[string]answer, specs []spec) (float64, string) {
+	byID := make(map[string]spec, len(specs))
+	for _, s := range specs {
+		byID[s.ID] = s
+	}
+
+	worst, label := 0.0, ""
+	for _, qid := range consequenceQuestions {
+		s, ok := byID[qid]
+		if !ok {
+			continue
+		}
+		a, ok := answers[qid]
+		if !ok {
+			continue
+		}
+		if value := consequenceOf(s, a); value >= worst {
+			worst, label = value, s.Q.Label
+		}
+	}
+	return worst, label
+}
+
+// routeIndex says where a route sits in the order, cheapest first, or -1 for a
+// name that is not a route.
+func routeIndex(route string) int {
+	for index, name := range routes {
+		if name == route {
+			return index
+		}
+	}
+	return -1
+}
+
+// routeFor says what evidence is enough before this merges, and what decided that.
+//
+// Consequence sets the floor and effort can only raise it. Neither lowers the
+// other, so a small diff cannot talk its way past an auth change and a quiet auth
+// surface cannot wave through a thousand-line refactor.
+func routeFor(consequenceValue, load float64) (string, string) {
+	index, decided := 0, "consequence"
+	for _, band := range consequenceFloors {
+		if consequenceValue >= band.floor {
+			index = routeIndex(band.route)
+			break
+		}
+	}
+
+	for _, band := range effortRaises {
+		if load >= band.floor && routeIndex(band.route) > index {
+			index, decided = routeIndex(band.route), "effort"
+			break
+		}
+	}
+
+	// A long read of something dangerous is the one case that wants the author
+	// walking a human through it.
+	if consequenceValue >= consequenceFloors[0].floor && load >= effortRaises[0].floor {
+		return routes[len(routes)-1], "both"
+	}
+	return routes[index], decided
+}
+
+// downgradeFor names the one signal that would move this to a cheaper route.
+//
+// A tier tells an author nothing to do. This tells them exactly what to do.
+func downgradeFor(answers map[string]answer, specs []spec, route, decided string) string {
+	if route == routes[0] {
+		return ""
+	}
+	if decided == "effort" {
+		named := drivers(answers, specs)
+		biggest := "the weighted questions"
+		if len(named) > 0 {
+			biggest = named[0]
+		}
+		return fmt.Sprintf("a shorter read, or splitting it: %s is carrying the load", biggest)
+	}
+
+	_, label := consequence(answers, specs)
+	return fmt.Sprintf("evidence that %s is covered, a test or a reviewer who owns it", label)
+}
+
 // tierIndex says where a tier sits in the order, cheapest review first, or -1 for
 // a name that is not a tier.
 func tierIndex(tier string) int {
@@ -491,6 +670,27 @@ func nearACut(load float64) bool {
 			continue
 		}
 		delta := load - band.floor
+		if delta < 0 {
+			delta = -delta
+		}
+		if delta <= deadband+1e-9 {
+			return true
+		}
+	}
+	return false
+}
+
+// nearARouteCut says whether a consequence sits close enough to a route cut to
+// move between runs.
+//
+// The same deadband the tier uses. Two runs of one queue would otherwise disagree
+// about a route for a value sitting on a line.
+func nearARouteCut(consequenceValue float64) bool {
+	for _, band := range consequenceFloors {
+		if band.floor <= 0 {
+			continue
+		}
+		delta := consequenceValue - band.floor
 		if delta < 0 {
 			delta = -delta
 		}

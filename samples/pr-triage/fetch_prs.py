@@ -316,10 +316,53 @@ def _pull_record(
     }
 
 
+def _pull_one(
+    repo: str,
+    number: int,
+    token: str | None,
+) -> dict:
+    """Fetch a single pull request by number, for a caller who pasted its URL.
+
+    The detail endpoint carries the metadata the list endpoint carries and the
+    counts it leaves out, so one call covers both and no listing has to walk the
+    queue looking for the number.
+
+    Args:
+        repo: The repository as `owner/repo`.
+        number: The pull request number.
+        token: Bearer token, or None.
+
+    Returns:
+        One dataset record.
+    """
+    logger.info(f"Fetching #{number} directly")
+    detail = _get_json(f"{API_ROOT}/repos/{repo}/pulls/{number}", token)
+    files, files_truncated = _pull_files(repo, number, token)
+
+    return {
+        "number": detail["number"],
+        "title": detail["title"],
+        "body": detail.get("body") or "",
+        "author": (detail.get("user") or {}).get("login", ""),
+        "created_at": detail["created_at"],
+        "updated_at": detail["updated_at"],
+        "draft": bool(detail.get("draft")),
+        "labels": [label["name"] for label in detail.get("labels", [])],
+        "base": detail["base"]["ref"],
+        "url": detail["html_url"],
+        "changed_files": detail["changed_files"],
+        "additions": detail["additions"],
+        "deletions": detail["deletions"],
+        "files": files,
+        "files_truncated": files_truncated,
+    }
+
+
 def _selector_slug(
     state: str,
     limit: int | None,
     since: datetime.date | None,
+    pull: int | None = None,
 ) -> str:
     """Name the selector, so two datasets for one repo sit in separate files.
 
@@ -327,10 +370,13 @@ def _selector_slug(
         state: open, closed or all.
         limit: How many were kept, or None.
         since: The date cutoff, or None.
+        pull: One pull request number, when the dataset holds only that one.
 
     Returns:
         A filename fragment.
     """
+    if pull is not None:
+        return f"pull-{pull}"
     if since is not None:
         return f"{state}-since-{since.isoformat()}"
     if limit is None:
@@ -343,6 +389,7 @@ def _dataset_path(
     state: str,
     limit: int | None,
     since: datetime.date | None,
+    pull: int | None = None,
 ) -> pathlib.Path:
     """Name the dataset file after the repository and the selector.
 
@@ -357,16 +404,54 @@ def _dataset_path(
     """
     DATASET_DIR.mkdir(exist_ok=True)
     slug = re.sub(r"[^a-z0-9]+", "-", repo.lower()).strip("-")
-    return DATASET_DIR / f"{slug}-{_selector_slug(state, limit, since)}.json"
+    return DATASET_DIR / f"{slug}-{_selector_slug(state, limit, since, pull)}.json"
+
+
+def parse_target(target: str) -> tuple[str, int | None]:
+    """Read `owner/repo`, and a pull request number when the caller gave one.
+
+    Accepts the bare form, a repository URL, and a pull request URL, so a pasted
+    browser address works with no flags. GitHub serves the API under `/pulls` and
+    the browser uses `/pull`, and people paste either.
+
+    Args:
+        target: `owner/repo`, or an https URL naming a repository or one of its
+            pull requests.
+
+    Returns:
+        Tuple of (repository, pull request number or None).
+
+    Raises:
+        SystemExit: If the target names no repository, or names a pull request
+            whose number will not parse.
+    """
+    cleaned = target.strip().rstrip("/")
+    number: int | None = None
+
+    if cleaned.startswith(("https://", "http://")):
+        # Everything after the host is owner/repo and possibly /pull/<number>.
+        path = cleaned.split("://", 1)[1].split("/", 1)
+        parts = path[1].split("/") if len(path) > 1 else []
+        if len(parts) >= 2:
+            cleaned = f"{parts[0]}/{parts[1]}"
+        if len(parts) >= 4 and parts[2] in ("pull", "pulls"):
+            if not parts[3].isdigit():
+                sys.exit(f"expected a pull request number in {target!r}")
+            number = int(parts[3])
+
+    if not REPO_PATTERN.match(cleaned):
+        sys.exit(f"expected owner/repo, got {target!r}")
+    return cleaned, number
 
 
 def parse_repo(target: str) -> str:
-    """Read `owner/repo` out of whatever the caller passed.
+    """Read `owner/repo` out of whatever the caller passed, dropping any number.
 
-    Accepts the bare form and a GitHub URL, so a pasted browser address works.
+    Kept for callers that only want the repository. Use parse_target when a pull
+    request URL should fetch that one pull request.
 
     Args:
-        target: `owner/repo` or an https GitHub URL naming one.
+        target: `owner/repo` or an https URL naming one.
 
     Returns:
         The repository as `owner/repo`.
@@ -374,15 +459,7 @@ def parse_repo(target: str) -> str:
     Raises:
         SystemExit: If the target names no repository.
     """
-    cleaned = target.strip().rstrip("/")
-    if cleaned.startswith("https://github.com/"):
-        parts = cleaned.removeprefix("https://github.com/").split("/")
-        if len(parts) >= 2:
-            cleaned = f"{parts[0]}/{parts[1]}"
-
-    if not REPO_PATTERN.match(cleaned):
-        sys.exit(f"expected owner/repo, got {target!r}")
-    return cleaned
+    return parse_target(target)[0]
 
 
 def parse_since(value: str | None) -> datetime.date | None:
@@ -416,6 +493,7 @@ def build_dataset(
     limit: int | None = DEFAULT_LIMIT,
     since: datetime.date | None = None,
     out: pathlib.Path | None = None,
+    pull: int | None = None,
 ) -> pathlib.Path:
     """Fetch pull requests and write one dataset file.
 
@@ -426,27 +504,35 @@ def build_dataset(
             selector allows.
         since: Keep only pull requests opened on or after this date.
         out: Where to write, or None to name the file after the selector.
+        pull: One pull request number to fetch on its own. When set, the listing is
+            skipped and state, limit and since have nothing to select from.
 
     Returns:
         The path written.
     """
     token = _token()
-    entries = _list_pulls(repo, token, state, limit, since)
-    logger.info(f"Selected {len(entries)} pull requests, now reading each one")
 
-    records = [_pull_record(repo, entry, token) for entry in entries]
-    dataset = {
-        "repo": repo,
-        "fetched_at": datetime.datetime.now(datetime.UTC).isoformat(timespec="seconds"),
-        "selector": {
+    if pull is not None:
+        records = [_pull_one(repo, pull, token)]
+        selector = {"state": state, "limit": None, "since": None, "pull": pull}
+    else:
+        entries = _list_pulls(repo, token, state, limit, since)
+        logger.info(f"Selected {len(entries)} pull requests, now reading each one")
+        records = [_pull_record(repo, entry, token) for entry in entries]
+        selector = {
             "state": state,
             "limit": limit,
             "since": since.isoformat() if since else None,
-        },
+        }
+
+    dataset = {
+        "repo": repo,
+        "fetched_at": datetime.datetime.now(datetime.UTC).isoformat(timespec="seconds"),
+        "selector": selector,
         "pull_requests": records,
     }
 
-    path = out or _dataset_path(repo, state, limit, since)
+    path = out or _dataset_path(repo, state, limit, since, pull)
     path.write_text(json.dumps(dataset, indent=2) + "\n", encoding="utf-8")
     size_kb = path.stat().st_size / 1024
     logger.info(f"Wrote {len(records)} pull requests to {path} ({size_kb:.0f} KB)")
@@ -518,12 +604,15 @@ key: pr_triage.py does the Jev call against the file this writes.
     if args.debug:
         logging.getLogger().setLevel(logging.DEBUG)
 
+    # A pull request URL carries its own number, which fetches that one on its own.
+    repo, pull = parse_target(args.repo)
     build_dataset(
-        repo=parse_repo(args.repo),
+        repo=repo,
         state=args.state,
         limit=None if args.all else args.limit,
         since=parse_since(args.since),
         out=args.out,
+        pull=pull,
     )
 
 

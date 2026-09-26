@@ -35,8 +35,8 @@ samples/agents-md-readiness/data/jev-samples-agents-md.json
 # name keeps the invariant visible: the committed reports are the runs behind the
 # README's numbers.
 samples/pr-triage/data/*
-!samples/pr-triage/data/apache-airflow*-triage.json
-!samples/pr-triage/data/apache-airflow*-triage.md
+!samples/pr-triage/data/apache-airflow-open-latest-18-triage.json
+!samples/pr-triage/data/apache-airflow-open-latest-18-triage.md
 
 # Compiled binaries from samples/agents-md-readiness/go/. build.sh writes dist/,
 # `go build -o agents-md-readiness .` writes that name beside the source, and a

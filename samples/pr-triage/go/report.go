@@ -30,22 +30,29 @@ type questionReport struct {
 
 // pullReport is one pull request in the JSON report.
 type pullReport struct {
-	Number       int                       `json:"number"`
-	Title        string                    `json:"title"`
-	URL          string                    `json:"url"`
-	Author       string                    `json:"author"`
-	ChangedFiles int                       `json:"changed_files"`
-	Additions    int                       `json:"additions"`
-	Deletions    int                       `json:"deletions"`
-	ReviewLoad   float64                   `json:"review_load"`
-	Tier         string                    `json:"tier"`
-	SizeFloor    string                    `json:"size_floor"`
-	RaisedBySize bool                      `json:"raised_by_size"`
-	DiffCoverage float64                   `json:"diff_coverage"`
-	Drivers      []string                  `json:"drivers"`
-	Usage        usage                     `json:"usage"`
-	LatencyMS    int64                     `json:"latency_ms"`
-	Questions    map[string]questionReport `json:"questions"`
+	Number       int     `json:"number"`
+	Title        string  `json:"title"`
+	URL          string  `json:"url"`
+	Author       string  `json:"author"`
+	ChangedFiles int     `json:"changed_files"`
+	Additions    int     `json:"additions"`
+	Deletions    int     `json:"deletions"`
+	ReviewLoad   float64 `json:"review_load"`
+	// Consequence and the route come from the second axis: what breaks if this is
+	// wrong, rather than how long it takes to read.
+	Consequence     float64                   `json:"consequence"`
+	ConsequenceFrom string                    `json:"consequence_from"`
+	Route           string                    `json:"route"`
+	RouteDecidedBy  string                    `json:"route_decided_by"`
+	Downgrade       string                    `json:"downgrade"`
+	Tier            string                    `json:"tier"`
+	SizeFloor       string                    `json:"size_floor"`
+	RaisedBySize    bool                      `json:"raised_by_size"`
+	DiffCoverage    float64                   `json:"diff_coverage"`
+	Drivers         []string                  `json:"drivers"`
+	Usage           usage                     `json:"usage"`
+	LatencyMS       int64                     `json:"latency_ms"`
+	Questions       map[string]questionReport `json:"questions"`
 }
 
 // triageReport is the whole JSON report.
@@ -56,8 +63,11 @@ type triageReport struct {
 	Model          string         `json:"model"`
 	QuestionsAsked int            `json:"questions_asked"`
 	TierCounts     map[string]int `json:"tier_counts"`
-	CostUSD        float64        `json:"cost_usd"`
-	PullRequests   []pullReport   `json:"pull_requests"`
+	// RouteCounts rolls the queue up, so a job can read its shape without walking
+	// every entry.
+	RouteCounts  map[string]int `json:"route_counts"`
+	CostUSD      float64        `json:"cost_usd"`
+	PullRequests []pullReport   `json:"pull_requests"`
 }
 
 // writeReports writes both files and returns their paths.
@@ -95,8 +105,13 @@ func buildReport(data dataset, results []result, specs []spec, set settings) tri
 	for _, tier := range tiers {
 		counts[tier] = 0
 	}
+	routeCounts := make(map[string]int, len(routes))
+	for _, route := range routes {
+		routeCounts[route] = 0
+	}
 	for _, r := range results {
 		counts[r.Tier]++
+		routeCounts[r.Route]++
 	}
 
 	pulls := make([]pullReport, 0, len(results))
@@ -125,22 +140,27 @@ func buildReport(data dataset, results []result, specs []spec, set settings) tri
 		}
 
 		pulls = append(pulls, pullReport{
-			Number:       r.Pull.Number,
-			Title:        r.Pull.Title,
-			URL:          r.Pull.URL,
-			Author:       r.Pull.Author,
-			ChangedFiles: r.Pull.ChangedFiles,
-			Additions:    r.Pull.Additions,
-			Deletions:    r.Pull.Deletions,
-			ReviewLoad:   round4(r.Load),
-			Tier:         r.Tier,
-			SizeFloor:    sizeFloor(r.Pull.ChangedFiles, r.Pull.Additions+r.Pull.Deletions),
-			RaisedBySize: r.RaisedBySize,
-			DiffCoverage: round4(r.Coverage),
-			Drivers:      r.Drivers,
-			Usage:        r.Usage,
-			LatencyMS:    r.LatencyMS,
-			Questions:    questions,
+			Number:          r.Pull.Number,
+			Title:           r.Pull.Title,
+			URL:             r.Pull.URL,
+			Author:          r.Pull.Author,
+			ChangedFiles:    r.Pull.ChangedFiles,
+			Additions:       r.Pull.Additions,
+			Deletions:       r.Pull.Deletions,
+			ReviewLoad:      round4(r.Load),
+			Consequence:     round4(r.Consequence),
+			ConsequenceFrom: r.ConsequenceLabel,
+			Route:           r.Route,
+			RouteDecidedBy:  r.RouteDecidedBy,
+			Downgrade:       r.Downgrade,
+			Tier:            r.Tier,
+			SizeFloor:       sizeFloor(r.Pull.ChangedFiles, r.Pull.Additions+r.Pull.Deletions),
+			RaisedBySize:    r.RaisedBySize,
+			DiffCoverage:    round4(r.Coverage),
+			Drivers:         r.Drivers,
+			Usage:           r.Usage,
+			LatencyMS:       r.LatencyMS,
+			Questions:       questions,
 		})
 	}
 
@@ -151,6 +171,7 @@ func buildReport(data dataset, results []result, specs []spec, set settings) tri
 		Model:          set.Model,
 		QuestionsAsked: len(specs),
 		TierCounts:     counts,
+		RouteCounts:    routeCounts,
 		CostUSD:        round8(costUSD(results, set)),
 		PullRequests:   pulls,
 	}
@@ -168,8 +189,9 @@ func markdownLines(data dataset, results []result, specs []spec, set settings) [
 		fmt.Sprintf("# Triage: %s", data.Repo),
 		"",
 		fmt.Sprintf(
-			"%d pull requests, %d questions each, one call apiece, on %s with `%s`.",
-			len(results), len(specs), time.Now().UTC().Format("2 January 2006"), set.Model,
+			"%s, %d questions each, one call apiece, on %s with `%s`.",
+			plural(len(results), "pull request"), len(specs),
+			time.Now().UTC().Format("2 January 2006"), set.Model,
 		),
 		fmt.Sprintf(
 			"%s input tokens, $%.5f at $%v per million.",

@@ -1,18 +1,28 @@
 # pr-triage
 
-Sort a repository's open pull requests into four review tiers, one Jev call each.
+Say what evidence each open pull request needs before it merges, one Jev call each.
 
-A maintainer with twenty-six open pull requests wants to know which ones a glance clears and which ones need an hour. The sample sends Jev the title, the description, the file list and as much of the diff as fits, then asks eleven questions about each pull request in one call. Nine of the answers carry a weight, and their average is a review load from 0 to 1. The load picks a tier, Python raises the tier when the change is too big to take Jev's word for it, and each tier carries the advice that goes with it.
+A maintainer with a queue of open pull requests wants to know which ones a glance clears and which ones need an hour. The sample sends Jev the title, the description, the file list and as much of the diff as fits, then asks eleven questions about each pull request in one call.
 
-Twenty-six pull requests cost $0.0077 and four seconds.
+Nine of the answers become two numbers, because effort and consequence are different questions. **Effort** is their weighted mean: how long this takes to read. **Consequence** is the *max* of the four that say what breaks if it is wrong, never the mean, because a change that is safe in three ways and dangerous in one is a dangerous change.
 
-The sample prints the triage and writes a report. Merging stays with you.
+The pair picks a route, which names what evidence is sufficient before the change merges. Nothing here says "merge": TypeSafe reports 67.8% accuracy on their own benchmark, published September 2026, which is enough to decide how much evidence to demand and nowhere near enough to be the last gate before main.
+
+| Route | Sufficient evidence |
+| --- | --- |
+| `green-is-enough` | CI passing |
+| `tests-are-enough` | CI passing, and a test that exercises the change |
+| `ai-review-is-enough` | the above, and an AI review that finds nothing |
+| `human-required` | a person reads it, whatever the machines say |
+| `human-plus-author` | a person reads it line by line, with the author walking them through |
+
+Consequence sets the floor and effort can only raise it. Eighteen pull requests cost $0.0037 and three seconds.
 
 ## What it asks
 
-Eleven questions go to Jev in one call: how far the change reaches, whether it touches auth or secrets, how many judgment calls a reviewer has to agree with, and eight more. Nine of them carry a weight in [questions.yml](questions.yml), and their weighted average is the load. The table after the diagram names all eleven.
+Eleven questions go to Jev in one call: how far the change reaches, whether it touches auth or secrets, how many judgment calls a reviewer has to agree with, and eight more. Nine carry a weight in [questions.yml](questions.yml). Four of those nine also feed the consequence axis, marked below.
 
-![The pr-triage pipeline: read one pull request, ask eleven questions in one call, average nine of the answers into a review load, read that load as a tier, let the file and line counts raise the tier, then print one line per pull request.](assets/pipeline.png)
+![The pr-triage pipeline: read one pull request, ask eleven questions in one call, read the answers on two axes as an effort mean and a consequence max, turn the pair into a route naming what evidence is sufficient, let the file and line counts raise the effort tier, then print the route with the one thing that would change it.](assets/pipeline.png)
 
 That diagram is built from [assets/pipeline.html](assets/pipeline.html). Edit the HTML and run `python3 assets/render.py` to rebuild the PNG.
 
@@ -20,17 +30,17 @@ That diagram is built from [assets/pipeline.html](assets/pipeline.html). Edit th
 | --- | --- | --- | --- |
 | `change_kind` | Choice | | docs, tests, dependency, config, bugfix, feature or refactor |
 | `review_focus` | Choice | | where a reviewer should start |
-| `blast_radius` | Score | 0.15 | the change reaches shared code paths |
+| `blast_radius` **(c)** | Score | 0.15 | the change reaches shared code paths |
 | `design_decisions` | Score | 0.14 | a reviewer has judgment calls to agree with |
-| `security_surface` | Noul | 0.15 | it touches auth, secrets, tokens or input validation |
+| `security_surface` **(c)** | Noul | 0.15 | it touches auth, secrets, tokens or input validation |
 | `mechanical` | Noul (inverted) | 0.12 | one edit repeated, so checking one instance checks them all |
-| `breaking_change` | Noul | 0.11 | an existing caller stops working |
+| `breaking_change` **(c)** | Noul | 0.11 | an existing caller stops working |
 | `scope_creep` | Noul | 0.09 | the diff does things the description never mentions |
-| `infra_surface` | Noul | 0.08 | it touches deployment, images or CI |
+| `infra_surface` **(c)** | Noul | 0.08 | it touches deployment, images or CI |
 | `has_tests` | Noul (inverted) | 0.08 | the change comes with tests that exercise it |
 | `description_quality` | Score (inverted) | 0.08 | the author explained what, why and how they checked |
 
-`questions.yml` inverts three of them, so a mechanical diff, a covered change and a thorough description each lower the load.
+`questions.yml` inverts three of them, so a mechanical diff, a covered change and a thorough description each lower the effort. The four marked **(c)** also feed consequence, where the *max* of them is taken rather than the mean: `security_surface` at 0.98 is not offset by `infra_surface` at 0.04. A score feeding consequence reads the probability on its *top* level rather than its normalised score, because `blast_radius` level 1 is "confined to one module", which is ordinary work rather than half a catastrophe.
 
 ## Running it
 
@@ -100,82 +110,109 @@ For CI rather than a conversation, [`go/README.md`](go/README.md) covers the bin
 
 ## What it prints
 
-From a run on 25 September 2026 against the twenty-six open pull requests of [agentic-community/mcp-gateway-registry](https://github.com/agentic-community/mcp-gateway-registry), trimmed to the ends of the table:
+From a run against the eighteen most recent open pull requests of [apache/airflow](https://github.com/apache/airflow) on 26 September 2026, trimmed to the ends of the table:
 
-```
-| PR    | Files | Lines      | Kind    | Load | Tier              | Review focus | Title                                                      |
-| ----- | ----- | ---------- | ------- | ---- | ----------------- | ------------ | ---------------------------------------------------------- |
-| #610  | 19    | +533/-74   | feature | 0.82 | high              | security     | ALB-direct deployment mode - Public Endpoint with IP fi... |
-| #1671 | 12    | +791/-71   | feature | 0.75 | high              | deployment   | feat(charts): keycloak official image                      |
-| #1693 | 51    | +3052/-626 | feature | 0.75 | high              | security     | feat(security): Asymmetric (ES256) internal JWT signing    |
-| ...                                                                                                                                       |
-| #1598 | 1     | +39/-3     | feature | 0.45 | medium            | security     | feat: add static bearer token fast-path for egress auth    |
-| #1765 | 6     | +421/-26   | bugfix  | 0.44 | medium            | correctness  | fix(mcpgw): return the custom records and asset metadat... |
-| #1713 | 4     | +84/-1     | bugfix  | 0.38 | low               | correctness  | fix(auth): normalize IdP group names before matching sc... |
-```
-
-Then the same pull requests grouped by tier, each with the questions that drove its load:
-
-```
-HIGH  (13)  -> a human reads this line by line, and the author walks them through it
-  #610    load 0.82  ALB-direct deployment mode - Public Endpoint with IP filtering
-          blast radius, security surface, design decisions
-          https://github.com/agentic-community/mcp-gateway-registry/pull/610
-
-LOW  (1)  -> one reviewer, one pass, no meeting
-  #1713   load 0.38  fix(auth): normalize IdP group names before matching scope mappings
-          security surface, blast radius, design decisions
-          https://github.com/agentic-community/mcp-gateway-registry/pull/1713
-
-26 pull requests, 11 questions each, one call apiece. 183,426 input tokens, 4,230 ms total,
-163 ms per call on average, $0.00770 at $0.042 per million input tokens.
-10 of 26 had patches too large to send whole, so Jev read part of the diff and the paths of
-the rest. Those are the ones the size floor guards.
+```text
+| PR     | Files | Lines      | Kind    | Load            | Cons | Route                          | Title                                                      |
+| ------ | ----- | ---------- | ------- | --------------- | ---- | ------------------------------ | ---------------------------------------------------------- |
+| #73698 | 8     | +626/-73   | bugfix  | 0.63 (on a cut) | 0.99 | human-plus-author              | Bind the AWS auth manager SAML response to the browser ... |
+| #73696 | 7     | +136/-5    | bugfix  | 0.53            | 0.99 | human-required                 | Check admin-only views against a dedicated Keycloak res... |
+| #73704 | 9     | +57/-32    | bugfix  | 0.51            | 0.84 | human-required                 | Fix socket leaks and add missing request timeouts acros... |
+| #73706 | 17    | +2634/-117 | bugfix  | 0.50 (size)     | 0.77 | human-required                 | Account for AgentOperator spend on failed runs and acro... |
+| #73701 | 4     | +360/-39   | feature | 0.47            | 0.54 | ai-review-is-enough            | Add durable reconnect option to EmrServerlessStartJobOp... |
+| #73703 | 5     | +64/-0     | feature | 0.44            | 0.87 | human-required                 | [chart/v1-2x-test] Helm: Allow hostAliases and log groo... |
+| #73723 | 10    | +558/-121  | feature | 0.43 (on a cut) | 0.77 | human-required                 | TS SDK: embed one source region per native Dag file        |
+| #73702 | 4     | +291/-3    | bugfix  | 0.41 (on a cut) | 0.36 | ai-review-is-enough (on a cut) | Stop AWS Glue job run when a deferred task is cleared      |
+| #73724 | 4     | +209/-12   | bugfix  | 0.38            | 0.32 | tests-are-enough               | Fix Grid and Graph 500 errors for cyclic TaskGroup depe... |
+| #73713 | 54    | +467/-131  | feature | 0.37 (size)     | 0.97 | human-required                 | UI: Group digits of counters according to the selected ... |
+| #73720 | 2     | +98/-6     | bugfix  | 0.36            | 0.60 | human-required (on a cut)      | [v3-3-test] Raise DeadlockImminentError for sync comms ... |
+| #73719 | 4     | +103/-8    | bugfix  | 0.36            | 0.32 | tests-are-enough               | Fix masked failure reason for deferrable EMR Serverless... |
+| #73718 | 2     | +14/-2     | bugfix  | 0.30            | 0.84 | human-required                 | Fix merge_dicts crash when overwriting a non-dict value... |
+| #73709 | 2     | +113/-30   | bugfix  | 0.29            | 0.10 | green-is-enough                | Avoid repeated KubernetesExecutor pod deletion for dupl... |
+| #73717 | 3     | +16/-6     | feature | 0.29            | 0.22 | tests-are-enough               | add bundle_name to dag processor timeouts metric           |
+| #73711 | 2     | +89/-0     | bugfix  | 0.27            | 0.09 | green-is-enough                | Emit queued_duration metric when a task enters RUNNING ... |
+| #73722 | 1     | +2/-1      | docs    | 0.19            | 0.04 | green-is-enough                | Clarify max_db_retries doc wording to avoid off-by-one ... |
+| #73725 | 4     | +32/-8     | bugfix  | 0.18            | 0.14 | green-is-enough (on a cut)     | Fix Elasticsearch and OpenSearch response wrapper bugs     |
 ```
 
-Every run writes two reports into [data/](data/). The JSON one holds each answer as Jev sent it, next to the credit and the tier the sample derived from it. The markdown one carries the same table and the same tier sections, so a triage pastes into a pull request or an issue without reformatting. This repo commits the `apache-airflow` pair as the worked example and ignores the rest, because triaging somebody's open pull requests is their business.
+`Load` is effort and `Cons` is consequence. A load marked `(size)` was raised by the file and line counts. Either number marked `(on a cut)` sits within 0.02 of a threshold, which is about how far repeat calls move it, so read it as either side.
 
-### One pull request, from eleven answers to one tier
+Then the same pull requests grouped by route, cheapest evidence last:
 
-Pull request #610 adds an ALB-direct deployment mode with IP filtering, across 19 files and +533/-74 lines. Jev read 84% of its diff and answered all eleven questions in one call. Nine of them carry weight, and `credit` is what each answer contributed after inversion:
+```text
+GREEN-IS-ENOUGH  (4)  -> merge when CI is green: nothing here needs a person
+  #73725  consequence 0.14 (blast radius), effort 0.18  Fix Elasticsearch and OpenSearch response wrapper bugs
+          drivers: blast radius
+          https://github.com/apache/airflow/pull/73725
+  #73709  consequence 0.10 (blast radius), effort 0.29  Avoid repeated KubernetesExecutor pod deletion for duplicate events
+          drivers: design decisions, blast radius, mechanical
+          https://github.com/apache/airflow/pull/73709
+  #73711  consequence 0.09 (breaking change), effort 0.27  Emit queued_duration metric when a task enters RUNNING via the execution API
+          drivers: design decisions, blast radius, mechanical
+          https://github.com/apache/airflow/pull/73711
+  #73722  consequence 0.04 (breaking change), effort 0.19  Clarify max_db_retries doc wording to avoid off-by-one confusion
+          drivers: has tests
+          https://github.com/apache/airflow/pull/73722
 
-| Question | Jev returned | Weight | Credit | Adds to load |
-| --- | --- | --- | --- | --- |
-| `blast_radius` | 2.00 / 2 | 0.15 | 1.00 | 0.1500 |
-| `security_surface` | 0.99 | 0.15 | 0.99 | 0.1485 |
-| `design_decisions` | 1.98 / 2 | 0.14 | 0.99 | 0.1386 |
-| `infra_surface` | 0.99 | 0.08 | 0.99 | 0.0792 |
-| `has_tests` (inverted) | 0.03 | 0.08 | 0.97 | 0.0776 |
-| `mechanical` (inverted) | 0.39 | 0.12 | 0.61 | 0.0732 |
-| `breaking_change` | 0.66 | 0.11 | 0.66 | 0.0726 |
-| `scope_creep` | 0.58 | 0.09 | 0.58 | 0.0522 |
-| `description_quality` (inverted) | 1.18 / 2 | 0.08 | 0.41 | 0.0328 |
-| | | **1.00** | | **0.8247** |
+HUMAN-PLUS-AUTHOR  (1)  -> a person reads it line by line, and the author walks them through it
+  #73698  consequence 0.99 (security surface), effort 0.63  Bind the AWS auth manager SAML response to the browser that started the login
+          drivers: security surface, design decisions, mechanical
+          would drop a route with: evidence that security surface is covered, a test or a reviewer who owns it
+          https://github.com/apache/airflow/pull/73698
+```
 
-The weights sum to 1.00, so the load is that column added up: 0.8247, which the table above prints as 0.82. It sits in the 0.62-and-up band, so #610 lands in high, and the run names its three heaviest rows as the drivers: blast radius, security surface, design decisions.
+Four of the eighteen need nothing but a green tick. One needs a person and the author in the room, and the line under it names the single thing that would drop it a route.
 
-The inverted rows are where a good answer lowers the load. `has_tests` came back 0.03, so Jev found almost nothing exercising the change, and its credit is 1 minus 0.03. That row adds 0.078, and the same row on a tested change would add close to nothing. `mechanical` at 0.39 says the diff is not one edit repeated, so a reviewer cannot check one instance and stop. `description_quality` is the one row holding the load down: the author explained enough to reach 1.18 out of 2, which leaves a credit of 0.41 where a bare description would have left 0.9 or more.
+```text
+18 pull requests, 11 questions each, one call apiece. 87,483 input tokens, 2,907 ms total, 162 ms per call on average, $0.00367 at $0.042 per million input tokens.
+2 of 18 had patches too large to send whole, so Jev read part of the diff and the paths of the rest. Those are the ones the size floor guards.
+```
 
-The two unweighted labels came back `feature` at 0.99 confidence and `security` at 0.95. They tell a reviewer what kind of change this is and where to start, and neither moves the number.
+Every run writes two reports into [data/](data/). The JSON one holds each answer as Jev sent it, next to the credit, the consequence, the route and the tier the sample derived from it, plus a `route_counts` roll-up so a job can read the shape of a queue without walking every entry. The markdown one carries the same table and route sections, so a triage pastes into a pull request or an issue without reformatting. This repo commits the `apache-airflow` pair as the worked example and ignores the rest, because triaging somebody's open pull requests is their business.
 
-The size floor changed nothing here. Nineteen files sets a floor of medium, under the high the load already earned. Airflow #73713 is the case where it bites: 54 files of one repeated locale-formatting edit score a load of 0.37, which alone would read low, and the floor raises it to high.
+### One pull request, from eleven answers to one route
+
+Airflow #73698 binds the AWS auth manager's SAML response to the browser that started the login: 8 files, +626/-73, and Jev read 88% of the diff. The nine weighted answers, with the four that also feed consequence marked **(c)**:
+
+| Question | Jev returned | Weight | Credit | Adds to effort | Feeds consequence |
+| --- | --- | --- | --- | --- | --- |
+| `security_surface` **(c)** | 0.99 | 0.15 | 0.99 | 0.1485 | **0.99** |
+| `design_decisions` | 2.00 / 2 | 0.14 | 1.00 | 0.1400 | |
+| `mechanical` (inverted) | 0.29 | 0.12 | 0.71 | 0.0852 | |
+| `blast_radius` **(c)** | 1.02 / 2 | 0.15 | 0.51 | 0.0765 | 0.02 |
+| `breaking_change` **(c)** | 0.69 | 0.11 | 0.69 | 0.0759 | 0.69 |
+| `infra_surface` **(c)** | 0.70 | 0.08 | 0.70 | 0.0560 | 0.70 |
+| `scope_creep` | 0.48 | 0.09 | 0.48 | 0.0432 | |
+| `has_tests` (inverted) | 0.95 | 0.08 | 0.05 | 0.0040 | |
+| `description_quality` (inverted) | 1.98 / 2 | 0.08 | 0.01 | 0.0008 | |
+| | | **1.00** | | **0.6301** | **max 0.99** |
+
+Effort is that column added up: 0.6301, a long read. Consequence is the max of the four marked entries: 0.99, set by `security_surface`. Both clear their top cut, so the route is `human-plus-author`, decided by both axes.
+
+Two rows show why the axes need different arithmetic. `has_tests` came back 0.95, so the change ships tests, and inverted that contributes almost nothing to effort: a tested change is quicker to review. It does not touch consequence at all, because tests are evidence against regression and not against an authentication mistake.
+
+`blast_radius` is the sharper case. It scored 1.02 out of 2, which is 0.51 of credit toward effort, a middling read. But its probability on the *top* level, "reaches shared code paths that many callers depend on", is only 0.02: Jev is confident this stays inside one module. So it contributes 0.51 to effort and 0.02 to consequence, from one answer. Reading the normalised score into consequence would have called a contained change half a catastrophe, which is the bug that made every airflow pull request look dangerous in an earlier run.
 
 ## What to notice
 
-**All four tiers get used.** Eighteen recent open pull requests from [apache/airflow](https://github.com/apache/airflow) came out 3 high, 5 medium, 8 low and 2 trivial. The smallest is #73722, a two-line clarification of `max_db_retries` doc wording, which scores 0.19 and lands in trivial. How a queue spreads across the tiers is a fact about the repository, so read your own distribution before you move a cut.
+**All five routes get used, and half the queue skips a human.** Those eighteen came out 4 `green-is-enough`, 3 `tests-are-enough`, 2 `ai-review-is-enough`, 8 `human-required` and 1 `human-plus-author`. Nine of eighteen need no person. The cheapest is #73722, a two-line clarification of `max_db_retries` doc wording, at consequence 0.04.
 
-**Nine files can outrank fifty-four.** #73704 changes 89 lines across 9 files and lands in medium at 0.50, because it fixes socket leaks and adds request timeouts across providers: `security_surface` came back 0.85 and `has_tests` 0.03. #73713 changes 598 lines across 54 files and scores 0.37, because `mechanical` came back 0.80 on one locale-formatting edit repeated through the UI, and the change ships tests. The eleven questions sort by what a review has to catch, and the driver line names the question that did it.
+**The spread is a fact about the repository, not about the thresholds.** The same cuts over 710 airflow pull requests opened in the last 100 days took 342 of them, 48%, off the human queue. Run against a repository where every change touches authentication or deployment credentials, they took none of 24, because that queue contains no low-consequence work to find. Airflow's cheap tail is its 48 docs pull requests, 20 dependency bumps and 22 test-only changes. A repository without those has no cheap tail, and a router that invented one would be wrong.
 
-**Arithmetic stays in Python.** Jev cannot count, so the file and line totals reach it as a sentence for context, and every threshold on a number lives in [pr_triage.py](pr_triage.py). `SIZE_FLOORS` names the lowest tier a change of a given size can land in: over 30 files or 1,500 lines is high whatever Jev returned. The floor only ever raises a tier, and the output marks the rows where it did, so a reader can see the disagreement instead of inheriting it.
+**Nine files can outrank fifty-four.** #73704 changes 89 lines across 9 files and routes `human-required` at consequence 0.84, because it fixes socket leaks and adds request timeouts across providers and `security_surface` came back 0.84. #73713 changes 598 lines across 54 files and its effort is only 0.37, because `mechanical` came back 0.81 on one locale-formatting edit repeated through the UI. Size is not review cost, and neither is line count.
+
+**Arithmetic stays in code.** Jev cannot count, so the file and line totals reach it as a sentence for context, and every threshold on a number lives in [pr_triage.py](pr_triage.py) and its Go twin. `SIZE_FLOORS` names the lowest effort tier a change of a given size can land in: over 30 files or 1,500 lines is high whatever Jev returned. `CONSEQUENCE_FLOORS` and `EFFORT_RAISES` turn the two axes into a route. Every one of them only ever raises, and the output marks the rows where it did, so a reader sees the disagreement instead of inheriting it.
 
 **Say how much of the diff the model read.** Five of those eighteen hold more patch than the 24,000-character budget, so Jev read some files whole and the rest as paths and line counts. `_diff_text` fills the budget with the smallest patches first, because triage asks how far a change reaches and whether one edit repeats, and both of those want breadth. Coverage lands in the report as `diff_coverage` and in the grouped output as a line under any pull request below 70%. The 0.37 on #73713 came from 44% of its diff, which is a weaker claim than the same number across all of it, and the size floor guards those rows.
 
-**Weights are a data change.** Raising `security_surface` to 0.25 means editing one line of `questions.yml`. Moving a tier cut means editing `LOAD_FLOORS`. Both sit in a diff, and neither hides inside a question's wording.
+**Weights are a data change, thresholds are a code change.** Raising `security_surface` to 0.25 means editing one line of `questions.yml`. Moving a route cut means editing `CONSEQUENCE_FLOORS`. Both sit in a diff, and neither hides inside a question's wording.
 
 **The description is evidence, and the author wrote it.** An author who opens with "trivial, please merge" is arguing for their own triage. The state names that field `description_written_by_the_author` and `scope_creep` asks whether the diff matches it, which turns the claim into something to check.
 
-**Answers move between runs.** Two runs of the same dataset moved a load by up to 0.03. The tier column marks any load within 0.02 of a cut as `(on a cut)` rather than picking a side, so a pull request sitting on the boundary reads the same way twice.
+**Answers move between runs, so both axes carry a deadband.** Two runs of one dataset moved a load by up to 0.03 and a consequence by up to 0.07. Either number within 0.02 of its cut prints `(on a cut)` rather than picking a side. Running the Python and the Go binary over the same eighteen agreed on 16 routes, and both disagreements were pull requests sitting on a cut, which both outputs said so.
 
-## Calibrate before you trust a tier
+## Calibrate before you trust a route
 
-TypeSafe reports 67.8% accuracy on their own benchmark, published September 2026. These tiers are advice about where to spend attention, and nothing here gates a merge. Point the sample at fifty pull requests your team already reviewed, compare the tiers against what those reviews cost, and move the cuts in `LOAD_FLOORS` until they match your repository. [jevcal](https://github.com/abhixhek/jevcal) turns that comparison into a measurement.
+TypeSafe reports 67.8% accuracy on their own benchmark, published September 2026. A router can live with that, because its errors are bounded: send something to a human who did not need to look and you waste twenty minutes, while CI, the tests and an AI review all still stand behind a cheaper route. A merge decision cannot live with it, because nothing stands behind that.
+
+So the number to measure is not accuracy across the queue. It is **precision on `green-is-enough`**, where a false "this is safe" is the only expensive mistake the tool can make. Replay fifty pull requests your team already merged, count how many the sample would have sent to `green-is-enough`, and check how many of those were later reverted or hot-fixed. Move `CONSEQUENCE_FLOORS` until that count is zero. [jevcal](https://github.com/abhixhek/jevcal) turns that comparison into a measurement.

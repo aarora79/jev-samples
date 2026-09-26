@@ -62,29 +62,32 @@ Add `-quiet` when you are going to read the output rather than show it, which dr
 
 Every run prints a table, then the same pull requests grouped by tier with the advice for each, then what the run cost. It also writes two files into `-out` (default `./data`): a JSON report holding every answer, and a markdown report that pastes into an issue or a pull request without reformatting.
 
-Four tiers, cheapest review first:
+Each pull request gets a **route**, naming what evidence is sufficient before it merges, cheapest first:
 
-| Tier | What to do |
+| Route | Sufficient evidence |
 | --- | --- |
-| `trivial` | merge on a glance: title, skim, green CI |
-| `low` | one reviewer, one pass, no meeting |
-| `medium` | one reviewer who knows the area, reading the whole diff |
-| `high` | a human reads it line by line, and the author walks them through it |
+| `green-is-enough` | CI passing |
+| `tests-are-enough` | CI passing, and a test that exercises the change |
+| `ai-review-is-enough` | the above, and an AI review that finds nothing |
+| `human-required` | a person reads it, whatever the machines say |
+| `human-plus-author` | a person reads it line by line, with the author walking them through |
+
+The route comes from two numbers: **consequence**, the max of the four questions about what breaks if this is wrong, and **effort**, the weighted mean of nine. Consequence sets the floor and effort can only raise it. Nothing here says merge.
 
 Three things in that output need reading with care.
 
-**A tier marked `(size)` came from the file and line counts, not from Jev.** Jev reads a truncated diff, so a 54-file change can read as one repeated edit. The size floor raises a tier and never lowers one, and the mark says where it did.
+**A number marked `(size)` came from the file and line counts, not from Jev.** Jev reads a truncated diff, so a 54-file change can read as one repeated edit. The size floor raises a tier and never lowers one, and the mark says where it did.
 
-**A tier marked `(on a cut)` sits within 0.02 of a band edge.** Repeat calls move a load by about that much, so it could land either side on the next run. Treat it as either of the two tiers it straddles.
+**Anything marked `(on a cut)` sits within 0.02 of a threshold.** Repeat calls move a load by about 0.03 and a consequence by about 0.07, so it could land either side next run. Treat it as either of the two it straddles.
 
 **A line saying it read part of the diff means the patch overflowed the budget.** A load drawn from 44% of a change is a weaker claim than the same number drawn from all of it.
 
 ## Gating a branch
 
-`-fail-on-tier` exits 2 when any pull request lands in that tier or above, which turns the triage into a check:
+`-fail-on-route` exits 2 when any pull request needs that route or a costlier one, which turns the triage into a check:
 
 ```bash
-pr-triage owner/repo -all -fail-on-tier high -quiet
+pr-triage owner/repo -all -fail-on-route human-required -quiet
 ```
 
 Exit codes: 0 finished clean, 1 could not finish, 2 a gate fired.
@@ -93,4 +96,4 @@ Exit codes: 0 finished clean, 1 could not finish, 2 a gate fired.
 
 It reads the pull request, and nothing else. It has no view of the repository around the diff, so it cannot tell whether a command the description names really exists, and it never says a change is correct. Nothing here approves, merges or comments.
 
-The tiers are advice about where to spend attention. TypeSafe reports 67.8% accuracy on their own benchmark, published September 2026, so before anyone trusts a tier, point it at pull requests your team already reviewed and compare the tiers against what those reviews cost. Move the cuts until they match the repository.
+The routes are advice about how much evidence to demand. TypeSafe reports 67.8% accuracy on their own benchmark, published September 2026, so before anyone trusts a route, point it at pull requests your team already merged and check how many the tool would have sent to `green-is-enough` that later needed a revert. Move the cuts until that count is zero.

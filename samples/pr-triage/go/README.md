@@ -22,6 +22,7 @@ pr-triage apache/airflow -all                 # every open one
 pr-triage apache/airflow -since 30            # opened in the last 30 days
 pr-triage apache/airflow -since 2026-08-01    # opened on or after a date
 pr-triage apache/airflow -explain 73713       # one pull request in full
+pr-triage https://github.com/apache/airflow/pull/73713   # just that one, by URL
 pr-triage apache/airflow -fetch-only          # build the dataset, skip Jev
 pr-triage -dataset data/apache-airflow-open-all.json
 ```
@@ -70,11 +71,13 @@ Both match the Python sample's reports field for field, and the dataset matches 
 
 ## Gating CI
 
-`-fail-on-tier` exits 2 when any pull request lands in that tier or above:
+`-fail-on-route` exits 2 when any pull request needs that route or a costlier one:
 
 ```bash
-pr-triage owner/repo -all -fail-on-tier high -quiet
+pr-triage owner/repo -all -fail-on-route human-required -quiet
 ```
+
+`-fail-on-tier` does the same on the effort tier, for a job that cares about review time rather than about what evidence is required.
 
 | Exit | Meaning |
 | --- | --- |
@@ -112,7 +115,7 @@ Without that test the two tools would score the same pull request differently, f
 
 ## Where this differs from the Python
 
-Nothing in the judgment: the same eleven questions, the same weights, the same tier cuts, the same 0.02 deadband, the same size floor. Two differences worth knowing:
+Nothing in the judgment: the same eleven questions, the same weights, the same two axes, the same route cuts, the same 0.02 deadband on both, and the same size floor. Two differences worth knowing:
 
 **The legend is read loosely.** Jev echoes each rubric level back in a `legend`, and one level in the current payload arrives as an object rather than a string, because `- None: some text` is YAML for a mapping. The Go side accepts any value there, so a released binary keeps working against an older payload.
 

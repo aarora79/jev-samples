@@ -122,6 +122,10 @@ type selector struct {
 	Limit *int `json:"limit"`
 	// Since is a pointer for the same reason: null means no date cutoff.
 	Since *string `json:"since"`
+	// Pull names the single pull request this dataset holds, when a caller passed
+	// its URL. omitempty leaves the key out for a dataset that holds a queue, so a
+	// dataset written by the Python sample keeps the shape it always had.
+	Pull *int `json:"pull,omitempty"`
 }
 
 // dataset is the whole file: which repository, when, which selector, and the pull
@@ -133,12 +137,17 @@ type dataset struct {
 	PullRequests []pullRequest `json:"pull_requests"`
 }
 
-// target names a repository and the API that serves it.
+// target names a repository, the API that serves it, and optionally one pull
+// request inside it.
 type target struct {
 	// Repo is `owner/repo`.
 	Repo string
 	// APIBase is the root every endpoint hangs off, with no trailing slash.
 	APIBase string
+	// Number is one pull request to triage on its own, or 0 for the whole queue.
+	// A URL pasted from a browser carries it, as in
+	// https://github.com/owner/repo/pull/1803.
+	Number int
 }
 
 // parseTarget reads `owner/repo` out of whatever the caller passed, and works out
@@ -152,6 +161,7 @@ type target struct {
 func parseTarget(raw, apiBaseFlag string) (target, error) {
 	cleaned := strings.TrimRight(strings.TrimSpace(raw), "/")
 	base := ""
+	number := 0
 
 	// A URL carries its own host, which is the only hint available about whether
 	// this is github.com or an enterprise install.
@@ -167,6 +177,16 @@ func parseTarget(raw, apiBaseFlag string) (target, error) {
 			return target{}, fmt.Errorf("expected owner/repo in the URL, got %q", raw)
 		}
 		cleaned = parts[0] + "/" + parts[1]
+
+		// A browser URL for one pull request reads /owner/repo/pull/1803. GitHub
+		// serves the API under /pulls, and people paste either, so accept both.
+		if len(parts) >= 4 && (parts[2] == "pull" || parts[2] == "pulls") {
+			parsedNumber, err := strconv.Atoi(parts[3])
+			if err != nil || parsedNumber <= 0 {
+				return target{}, fmt.Errorf("expected a pull request number in %q", raw)
+			}
+			number = parsedNumber
+		}
 
 		if parsed.Host == "github.com" || parsed.Host == "www.github.com" {
 			base = defaultAPIBase
@@ -188,7 +208,7 @@ func parseTarget(raw, apiBaseFlag string) (target, error) {
 	default:
 		base = apiBaseFromEnv()
 	}
-	return target{Repo: cleaned, APIBase: strings.TrimRight(base, "/")}, nil
+	return target{Repo: cleaned, APIBase: strings.TrimRight(base, "/"), Number: number}, nil
 }
 
 // apiBaseFromEnv reads the API base out of the environment, falling back to
@@ -498,11 +518,77 @@ func pullRecord(tgt target, token string, entry listEntry) (pullRequest, error) 
 	}, nil
 }
 
+// pullOne fetches a single pull request by number, for a caller who pasted its
+// URL.
+//
+// The detail endpoint returns the metadata the list endpoint returns and the
+// counts it leaves out, so one call covers both and no listing has to walk the
+// queue looking for the number.
+func pullOne(tgt target, token string) (pullRequest, error) {
+	endpoint := fmt.Sprintf("%s/repos/%s/pulls/%d", tgt.APIBase, tgt.Repo, tgt.Number)
+	logf("fetching #%d directly", tgt.Number)
+
+	var combined struct {
+		listEntry
+		pullDetail
+	}
+	if err := getJSON(endpoint, token, &combined); err != nil {
+		return pullRequest{}, err
+	}
+	if combined.Number == 0 {
+		return pullRequest{}, fmt.Errorf("%s has no pull request #%d", tgt.Repo, tgt.Number)
+	}
+
+	files, truncated, err := pullFiles(tgt, token, tgt.Number)
+	if err != nil {
+		return pullRequest{}, err
+	}
+
+	labels := make([]string, 0, len(combined.Labels))
+	for _, label := range combined.Labels {
+		labels = append(labels, label.Name)
+	}
+
+	return pullRequest{
+		Number:         combined.Number,
+		Title:          combined.Title,
+		Body:           combined.Body,
+		Author:         combined.User.Login,
+		CreatedAt:      combined.CreatedAt,
+		UpdatedAt:      combined.UpdatedAt,
+		Draft:          combined.Draft,
+		Labels:         labels,
+		Base:           combined.Base.Ref,
+		URL:            combined.HTMLURL,
+		ChangedFiles:   combined.ChangedFiles,
+		Additions:      combined.Additions,
+		Deletions:      combined.Deletions,
+		Files:          files,
+		FilesTruncated: truncated,
+	}, nil
+}
+
 // buildDataset fetches pull requests and returns the dataset.
 //
 // limit of 0 means no limit, and an empty since means no date cutoff, which is
 // how the flags express "everything the other selector allows".
 func buildDataset(tgt target, token, state string, limit int, since string) (dataset, error) {
+	// A URL naming one pull request skips the listing entirely, so -limit, -since
+	// and -state have nothing to select from and are ignored.
+	if tgt.Number > 0 {
+		record, err := pullOne(tgt, token)
+		if err != nil {
+			return dataset{}, err
+		}
+		number := tgt.Number
+		return dataset{
+			Repo:         tgt.Repo,
+			FetchedAt:    time.Now().UTC().Format(time.RFC3339),
+			Selector:     selector{State: state, Pull: &number},
+			PullRequests: []pullRequest{record},
+		}, nil
+	}
+
 	entries, err := listPulls(tgt, token, state, limit, since)
 	if err != nil {
 		return dataset{}, err
@@ -534,6 +620,27 @@ func buildDataset(tgt target, token, state string, limit int, since string) (dat
 		Selector:     sel,
 		PullRequests: records,
 	}, nil
+}
+
+// datasetSlug names the selector a dataset already records, so the dataset and
+// both reports agree on one filename.
+func datasetSlug(sel selector) string {
+	state := sel.State
+	if state == "" {
+		state = "open"
+	}
+	if sel.Pull != nil {
+		return fmt.Sprintf("pull-%d", *sel.Pull)
+	}
+	limit := 0
+	if sel.Limit != nil {
+		limit = *sel.Limit
+	}
+	since := ""
+	if sel.Since != nil {
+		since = *sel.Since
+	}
+	return selectorSlug(state, limit, since)
 }
 
 // selectorSlug names the selector, so two datasets for one repository sit in
