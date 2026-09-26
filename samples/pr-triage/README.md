@@ -20,7 +20,7 @@ Those three states took ten of eighteen out of the queue before Jev saw a single
 
 The pair picks a route, and the route answers one question: **what would be enough to merge this change?** Enough for a green tick to settle it, or enough that it wants a test, an AI review, or a person.
 
-None of them says merge it now, and none of them merges anything. TypeSafe reports 67.8% accuracy on their own benchmark, published September 2026, which is enough to decide how much evidence to demand and nowhere near enough to be the last gate before main.
+The tool merges nothing and tells nobody to merge now. TypeSafe reports 67.8% accuracy on their own benchmark, published September 2026, which is enough to decide how much evidence to demand and nowhere near enough to be the last gate before main.
 
 | Route | Enough to merge on |
 | --- | --- |
@@ -32,19 +32,17 @@ None of them says merge it now, and none of them merges anything. TypeSafe repor
 
 Consequence sets the floor and effort can only raise it. Of those eighteen, 8 were reviewable and cost about two tenths of a cent to route.
 
-## Why a small model routes and a large one reviews
+## What each stage costs
 
-Of the eighteen pull requests below, a frontier review is the deciding evidence on **one**. Ten never reach a model at all, removed by plain rules about drafts and check runs. Jev reads the remaining eight, at 3,039 input tokens and 164 ms each.
+Of the eighteen pull requests below, a frontier review is the deciding evidence on one. Ten never reach a model, removed by rules about drafts and check runs. Jev reads the remaining eight, at 3,039 input tokens and 164 ms each.
 
-Three things produce that funnel.
+Pre-triage is `if` statements over the checks API. No model can do that stage, because no model knows whether CI passed.
 
-**The cheapest call is the one nobody makes.** Pre-triage is `if` statements over the checks API. It took ten of eighteen out of the queue before any model ran, and no model could have done it, because no model knows whether CI passed.
+Routing the eight is a closed question: eleven judgements, two numbers, one route. A frontier model can answer it, reading the same diff and returning the same eleven answers at its own price. Routing one pull request costs about 3,000 input tokens whoever does it, which is $0.00013 at TypeSafe's $0.042 per million, published September 2026. Divide your model's input price by 0.042 for the multiple.
 
-**Deciding what a human sees is itself a model call, and it should be the cheap one.** That decision is a closed question with a small answer: eleven judgements, two numbers, one route. A frontier model can make it. It would read the same diff, return the same eleven answers, and charge frontier prices for the privilege. Routing one pull request costs about 3,000 input tokens whoever does it, which is $0.00013 at TypeSafe's $0.042 per million, published September 2026. Divide your own model's input price by 0.042 and that is the multiple you pay to have the expensive model make the same decision.
+Reading code for defects needs a model that can read code, which on this queue is one pull request in eighteen. Routing one takes 164 ms, so 710 of them took two minutes.
 
-**The expensive model then does the job only it can do.** Reading code for defects needs a model that can read code. On this queue a review is the deciding evidence on one pull request in eighteen, so that is how often it runs. Latency follows the same shape: 164 ms a pull request to route, so 710 of them took two minutes.
-
-One condition on all of it. The saving is real only while the cheap routes are right. A pull request sent to `green-is-enough` that needed reading is false economy, however little it cost, which is why the number to measure is precision on that route rather than accuracy across the queue.
+The saving holds while the cheap routes are right. A pull request sent to `green-is-enough` that needed reading was false economy whatever it cost, so the number to measure is precision on that route.
 
 ## What it asks
 
@@ -52,7 +50,7 @@ Eleven questions go to Jev in one call: how far the change reaches, whether it t
 
 ![The pr-triage flow: a pull request goes through pre-triage, which is plain rules and no model. Any of draft, a failing check or a running check stops there and reports that state. Otherwise one Jev call asks eleven questions, nine weighted and two labels, the nine become an effort and consequence pair, and the pair picks one route saying what the repo owner should do. Two worked examples end the diagram.](assets/flow.png)
 
-That diagram is built from [assets/flow.html](assets/flow.html). Edit the HTML and run `python3 assets/render.py` to rebuild the PNG.
+[assets/flow.html](assets/flow.html) is the source. Edit the HTML and run `python3 assets/render.py` to rebuild the PNG.
 
 | Question | Type | Weight | What a high answer means |
 | --- | --- | --- | --- |
@@ -68,7 +66,7 @@ That diagram is built from [assets/flow.html](assets/flow.html). Edit the HTML a
 | `has_tests` | Noul (inverted) | 0.08 | the change comes with tests that exercise it |
 | `description_quality` | Score (inverted) | 0.08 | the author explained what, why and how they checked |
 
-`questions.yml` inverts three of them, so a mechanical diff, a covered change and a thorough description each lower the effort. The four marked **(c)** also feed consequence, where the *max* of them is taken rather than the mean: `security_surface` at 0.98 is not offset by `infra_surface` at 0.04. A score feeding consequence reads the probability on its *top* level rather than its normalised score, because `blast_radius` level 1 is "confined to one module", which is ordinary work rather than half a catastrophe.
+`questions.yml` inverts three of them, so a mechanical diff, a covered change and a thorough description each lower the effort. The four marked **(c)** also feed consequence, which takes the *max* of them rather than the mean: `security_surface` at 0.98 survives an `infra_surface` of 0.04, where a mean would drag it to the middle. A score feeding consequence reads the probability on its *top* level rather than its normalised score, because `blast_radius` level 1 is "confined to one module", which is ordinary work rather than half a catastrophe.
 
 ## Running it
 
@@ -264,7 +262,7 @@ The run also prints the one thing that would move it: a test exercising that sec
 
 **One set of cuts produces two different distributions.** The same cuts over 710 airflow pull requests opened in the last 100 days took 342 of them, 48%, off the human queue. Run against a repository where every change touches authentication or deployment credentials, they took none of 24, because that queue contains no low-consequence work to find. Airflow's cheap tail is its 48 docs pull requests, 20 dependency bumps and 22 test-only changes. A repository without those has no cheap tail, and a router that invented one would be wrong.
 
-**Nine files can outrank fifty-four.** #73704 changes 89 lines across 9 files and routes `human-required` at consequence 0.84, because it fixes socket leaks and adds request timeouts across providers and `security_surface` came back 0.84. #73713 changes 598 lines across 54 files and its effort is only 0.37, because `mechanical` came back 0.81 on one locale-formatting edit repeated through the UI. Size is not review cost, and neither is line count.
+**Nine files can outrank fifty-four.** #73704 changes 89 lines across 9 files and routes `human-required` at consequence 0.84, because it fixes socket leaks and adds request timeouts across providers and `security_surface` came back 0.84. #73713 changes 598 lines across 54 files and its effort is only 0.37, because `mechanical` came back 0.81 on one locale-formatting edit repeated through the UI. The eleven questions sort by what a review has to catch, and the driver line names the one that did it.
 
 **Arithmetic stays in code.** Jev cannot count, so the file and line totals reach it as a sentence for context, and every threshold on a number lives in [pr_triage.py](pr_triage.py) and its Go twin. `SIZE_FLOORS` names the lowest effort tier a change of a given size can land in: over 30 files or 1,500 lines is high whatever Jev returned. `CONSEQUENCE_FLOORS` and `EFFORT_RAISES` turn the two axes into a route. Every one of them only ever raises, and the output marks the rows where it did, so a reader sees the disagreement instead of inheriting it.
 
@@ -280,4 +278,4 @@ The run also prints the one thing that would move it: a test exercising that sec
 
 TypeSafe reports 67.8% accuracy on their own benchmark, published September 2026. A router survives that, because a routing mistake costs little: send something to a human who did not need to look and you waste twenty minutes, while CI, the tests and an AI review all still stand behind a cheaper route. A merge decision cannot live with it, because nothing stands behind that.
 
-So the number to measure is not accuracy across the queue. It is **precision on `green-is-enough`**, where a false "this is safe" is the only expensive mistake the tool can make. Replay fifty pull requests your team already merged, count how many the sample would have sent to `green-is-enough`, and check how many of those were later reverted or hot-fixed. Move `CONSEQUENCE_FLOORS` until that count is zero. [jevcal](https://github.com/abhixhek/jevcal) turns that comparison into a measurement.
+The number to measure is **precision on `green-is-enough`**, where a false "this is safe" is the only expensive mistake the tool can make. Replay fifty pull requests your team already merged, count how many the sample would have sent to `green-is-enough`, and check how many of those were later reverted or hot-fixed. Move `CONSEQUENCE_FLOORS` until that count is zero. [jevcal](https://github.com/abhixhek/jevcal) turns that comparison into a measurement.

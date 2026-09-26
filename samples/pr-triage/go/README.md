@@ -44,7 +44,7 @@ Without a GitHub token the API allows sixty requests an hour, and one pull reque
 
 ## GitHub Enterprise Server
 
-The API base is a variable, not a glued-together path, so an enterprise host needs no patch. Three ways to set it, highest precedence first:
+Every endpoint hangs off one base URL that the caller can set, so an enterprise host needs no patch. Three ways to set it, highest precedence first:
 
 ```bash
 pr-triage owner/repo -api-base https://ghe.example.com/api/v3   # the flag
