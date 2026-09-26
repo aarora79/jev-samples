@@ -55,6 +55,18 @@
   .stop { background: var(--stop-soft); border-color: #eec7bf; }
   .stop .t { color: var(--stop); }
 
+  /* The one box where a model runs. Everything else on this page is plain code,
+     and the fill says so at a glance. */
+  .jev { background: var(--accent); border-color: var(--accent); }
+  .jev .t { color: #fff; }
+  .jev .s { color: #cfe8e5; }
+  .jev .s b { color: #fff; }
+  .badge {
+    display: inline-block; background: #fff; color: var(--accent);
+    font-size: 10px; font-weight: 800; letter-spacing: 0.7px; text-transform: uppercase;
+    border-radius: 999px; padding: 3px 9px; margin-bottom: 6px;
+  }
+
   .pair { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px; }
   .pair div { border: 1px solid var(--line); border-radius: 7px; padding: 8px 10px; font-size: 12.5px; }
   .pair b { display: block; font-size: 13px; margin-bottom: 2px; }
@@ -118,7 +130,8 @@
   </div>
   <div>
     <div class="leg leg-go">all of them no</div>
-    <div class="box">
+    <div class="box jev">
+      <div class="badge">the only model call</div>
       <div class="t">One Jev call, eleven questions</div>
       <div class="s"><b>9 weighted</b> feed the numbers:<br>
         blast radius, security surface, has tests, and six more<br>

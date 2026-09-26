@@ -16,7 +16,7 @@ Before any of that, a pull request has to be worth reading. One call to the chec
 
 `ci-failing` is a fact rather than a verdict. On the eighteen airflow pull requests below, eight were failing and **five of those failed only on a check that also fails on unrelated pull requests**, including a boto3 version bump that cannot break Postgres serialization. That is the check being broken, not each change breaking it, and the output says so. Detecting it costs nothing extra, because the names are already in the dataset.
 
-Skipping those states took ten of eighteen out of the queue before a single question was asked.
+Those three states took ten of eighteen out of the queue before Jev saw a single one.
 
 The pair picks a route, and the route answers one question: **what would be enough to merge this change?** Enough for a green tick to settle it, or enough that it wants a test, an AI review, or a person.
 
@@ -31,6 +31,20 @@ None of them says merge it now, and none of them merges anything. TypeSafe repor
 | `human-plus-author` | a person reads it line by line, with the author walking them through |
 
 Consequence sets the floor and effort can only raise it. Of those eighteen, 8 were reviewable and cost about two tenths of a cent to route.
+
+## Why a small model routes and a large one reviews
+
+Of the eighteen pull requests below, a frontier review is the deciding evidence on **one**. Ten never reach a model at all, removed by plain rules about drafts and check runs. Jev reads the remaining eight, at 3,039 input tokens and 164 ms each.
+
+Three things produce that funnel.
+
+**The cheapest call is the one nobody makes.** Pre-triage is `if` statements over the checks API. It took ten of eighteen out of the queue before any model ran, and no model could have done it, because no model knows whether CI passed.
+
+**Deciding what a human sees is itself a model call, and it should be the cheap one.** That decision is a closed question with a small answer: eleven judgements, two numbers, one route. A frontier model can make it. It would read the same diff, return the same eleven answers, and charge frontier prices for the privilege. Routing one pull request costs about 3,000 input tokens whoever does it, which is $0.00013 at TypeSafe's $0.042 per million, published September 2026. Divide your own model's input price by 0.042 and that is the multiple you pay to have the expensive model make the same decision.
+
+**The expensive model then does the job only it can do.** Reading code for defects needs a model that can read code. On this queue a review is the deciding evidence on one pull request in eighteen, so that is how often it runs. Latency follows the same shape: 164 ms a pull request to route, so 710 of them took two minutes.
+
+One condition on all of it. The saving is real only while the cheap routes are right. A pull request sent to `green-is-enough` that needed reading is false economy, however little it cost, which is why the number to measure is precision on that route rather than accuracy across the queue.
 
 ## What it asks
 
@@ -77,7 +91,7 @@ uv run pr_triage.py --dataset data/owner-repo-open-all.json
 uv run pr_triage.py --dataset data/owner-repo-open-all.json --explain 1693
 ```
 
-`fetch_prs.py` needs a GitHub token and no Jev key. It reads `GITHUB_TOKEN` or `GH_TOKEN`, and falls back to `gh auth token`. Unauthenticated callers get sixty requests an hour and one pull request costs two of them, so twenty-six pull requests want a token.
+`fetch_prs.py` needs a GitHub token and no Jev key. It reads `GITHUB_TOKEN` or `GH_TOKEN`, and falls back to `gh auth token`. Unauthenticated callers get sixty requests an hour, and one pull request costs three of them: the listing, its files, and its check runs. Any real queue wants a token.
 
 `pr_triage.py` needs a Jev key in `TYPESAFE_API_KEY`, from the environment or from `.env` beside the sample or at the repo root.
 
@@ -85,7 +99,7 @@ uv run pr_triage.py --dataset data/owner-repo-open-all.json --explain 1693
 
 [`go/`](go/) holds a Go port that compiles both halves into one static binary, which is what the skill installs and what a CI runner wants. It works against github.com and a GitHub Enterprise Server host.
 
-The Python stays canonical. `go/questions.yml` is a copy, `build.sh` refreshes it before every build, and `payload_test.go` fails when the two drift, so the two tools cannot score one pull request differently in silence.
+The Python stays canonical. `go/questions.yml` is a copy, `build.sh` refreshes it before every build, and `payload_test.go` fails when the two drift, so the two tools cannot disagree about one pull request in silence.
 
 
 ## Install it as a Claude Code skill
@@ -120,7 +134,7 @@ Then start a new Claude Code session and ask for a triage in your own words:
 
 The skill picks the flags, runs the binary, reads the report and tells you which pull requests need an hour and which clear on a glance. It writes a JSON report and a markdown one you can paste into an issue.
 
-For CI rather than a conversation, [`go/README.md`](go/README.md) covers the binary on its own, including `-fail-on-tier` for failing a job and the three ways to point it at a GitHub Enterprise Server host.
+For CI rather than a conversation, [`go/README.md`](go/README.md) covers the binary on its own, including `-fail-on-route` for failing a job and the three ways to point it at a GitHub Enterprise Server host.
 
 ## What it prints
 
@@ -184,7 +198,7 @@ The eight that were reviewable:
 | #73722 | 1     | +2/-1    | docs       | 0.20 | 0.04 | green-is-enough             | Clarify max_db_retries doc wording to avoid off-by-one ... |
 ```
 
-`Load` is effort and `Cons` is consequence. A load marked `(size)` was raised by the file and line counts. Either number marked `(on a cut)` sits within 0.02 of a threshold, which is about how far repeat calls move it, so read it as either side.
+`Load` is effort and `Cons` is consequence. A load marked `(size)` means the file and line counts raised it. Either number marked `(on a cut)` sits within 0.02 of a threshold, which is about how far repeat calls move it, so read it as either side.
 
 Then the same pull requests grouped by route, cheapest evidence last:
 
@@ -221,32 +235,34 @@ Every run writes two reports into [data/](data/). The JSON one holds each answer
 
 ### One pull request, from eleven answers to one route
 
-Airflow #73698 binds the AWS auth manager's SAML response to the browser that started the login: 8 files, +626/-73, and Jev read 88% of the diff. The nine weighted answers, with the four that also feed consequence marked **(c)**:
+Airflow #73741 improves the error a DAG tag length check raises. Two files, +11/-3, and Jev read all of the diff. The nine weighted answers, heaviest contribution first, with the four that also feed consequence marked **(c)**:
 
 | Question | Jev returned | Weight | Credit | Adds to effort | Feeds consequence |
 | --- | --- | --- | --- | --- | --- |
-| `security_surface` **(c)** | 0.99 | 0.15 | 0.99 | 0.1485 | **0.99** |
-| `design_decisions` | 2.00 / 2 | 0.14 | 1.00 | 0.1400 | |
-| `mechanical` (inverted) | 0.29 | 0.12 | 0.71 | 0.0852 | |
-| `blast_radius` **(c)** | 1.02 / 2 | 0.15 | 0.51 | 0.0765 | 0.02 |
-| `breaking_change` **(c)** | 0.69 | 0.11 | 0.69 | 0.0759 | 0.69 |
-| `infra_surface` **(c)** | 0.70 | 0.08 | 0.70 | 0.0560 | 0.70 |
-| `scope_creep` | 0.48 | 0.09 | 0.48 | 0.0432 | |
-| `has_tests` (inverted) | 0.95 | 0.08 | 0.05 | 0.0040 | |
-| `description_quality` (inverted) | 1.98 / 2 | 0.08 | 0.01 | 0.0008 | |
-| | | **1.00** | | **0.6301** | **max 0.99** |
+| `security_surface` **(c)** | 0.97 | 0.15 | 0.97 | 0.1455 | **0.97** |
+| `blast_radius` **(c)** | 1.21 / 2 | 0.15 | 0.60 | 0.0907 | 0.22 |
+| `mechanical` (inverted) | 0.39 | 0.12 | 0.61 | 0.0732 | |
+| `design_decisions` | 0.98 / 2 | 0.14 | 0.49 | 0.0686 | |
+| `breaking_change` **(c)** | 0.07 | 0.11 | 0.07 | 0.0077 | 0.07 |
+| `scope_creep` | 0.08 | 0.09 | 0.08 | 0.0072 | |
+| `has_tests` (inverted) | 0.97 | 0.08 | 0.03 | 0.0024 | |
+| `infra_surface` **(c)** | 0.02 | 0.08 | 0.02 | 0.0016 | 0.02 |
+| `description_quality` (inverted) | 2.00 / 2 | 0.08 | 0.00 | 0.0000 | |
+| | | **1.00** | | **0.3969** | **max 0.97** |
 
-Effort is that column added up: 0.6301, a long read. Consequence is the max of the four marked entries: 0.99, set by `security_surface`. Both clear their top cut, so the route is `human-plus-author`, decided by both axes.
+Effort is that column added up: 0.3969, a short read of two files. The report records 0.3970, because it rounds the total rather than adding up nine rounded rows. Consequence is the max of the four marked entries: 0.97, set by `security_surface`. Effort clears no raise, consequence clears its top cut, so the route is `human-required` and the consequence axis decided it alone.
 
-Two rows show why the axes need different arithmetic. `has_tests` came back 0.95, so the change ships tests, and inverted that contributes almost nothing to effort: a tested change is quicker to review. It does not touch consequence at all, because tests are evidence against regression and not against an authentication mistake.
+The title reads like an error-message tweak, and the diff is eleven added lines. It still needs a person, because a length check on user input is input validation, and `security_surface` came back 0.97. That is the case a single blended score buries: averaging the nine puts this at 0.40, in the middle of the queue, where nobody would look twice.
 
-`blast_radius` is the sharper case. It scored 1.02 out of 2, which is 0.51 of credit toward effort, a middling read. But its probability on the *top* level, "reaches shared code paths that many callers depend on", is only 0.02: Jev is confident this stays inside one module. So it contributes 0.51 to effort and 0.02 to consequence, from one answer. Reading the normalised score into consequence would have called a contained change half a catastrophe, which is the bug that made every airflow pull request look dangerous in an earlier run.
+Three rows show the axes reading one answer two ways. `blast_radius` scored 1.21 out of 2, so it contributes 0.60 of credit to effort, a fair chunk of a short read. Its probability on the top level, "reaches shared code paths that many callers depend on", is 0.22, so it contributes 0.22 to consequence and stops there. `has_tests` came back 0.97, and inverted that adds 0.0024 to effort, because a tested change is quicker to read. It feeds consequence not at all, since tests are evidence against regression and not against a validation mistake. `description_quality` at 2.00 out of 2 contributes 0.0000, which is what a thorough description earns.
+
+The run also prints the one thing that would move it: a test exercising that security surface, or a reviewer who owns the path.
 
 ## What to notice
 
-**Most of a queue is not waiting on review at all.** Of those eighteen, ten never reached Jev: one draft, eight with a failing check, one still running. The eight that were reviewable came out 2 `green-is-enough`, 3 `tests-are-enough`, 1 `ai-review-is-enough`, 2 `human-required`. The cheapest pull requests in a queue are usually the ones nobody needs to read, and the loudest are usually waiting on the build rather than on a person.
+**Ten of eighteen were waiting on a build or their author.** One draft, eight with a failing check, one still running, and none of them reached Jev. The eight that were reviewable came out 2 `green-is-enough`, 3 `tests-are-enough`, 1 `ai-review-is-enough`, 2 `human-required`. A queue hides two cheap groups: the changes nobody needs to read, and the ones stuck behind a build.
 
-**The spread is a fact about the repository, not about the thresholds.** The same cuts over 710 airflow pull requests opened in the last 100 days took 342 of them, 48%, off the human queue. Run against a repository where every change touches authentication or deployment credentials, they took none of 24, because that queue contains no low-consequence work to find. Airflow's cheap tail is its 48 docs pull requests, 20 dependency bumps and 22 test-only changes. A repository without those has no cheap tail, and a router that invented one would be wrong.
+**One set of cuts produces two different distributions.** The same cuts over 710 airflow pull requests opened in the last 100 days took 342 of them, 48%, off the human queue. Run against a repository where every change touches authentication or deployment credentials, they took none of 24, because that queue contains no low-consequence work to find. Airflow's cheap tail is its 48 docs pull requests, 20 dependency bumps and 22 test-only changes. A repository without those has no cheap tail, and a router that invented one would be wrong.
 
 **Nine files can outrank fifty-four.** #73704 changes 89 lines across 9 files and routes `human-required` at consequence 0.84, because it fixes socket leaks and adds request timeouts across providers and `security_surface` came back 0.84. #73713 changes 598 lines across 54 files and its effort is only 0.37, because `mechanical` came back 0.81 on one locale-formatting edit repeated through the UI. Size is not review cost, and neither is line count.
 
@@ -262,6 +278,6 @@ Two rows show why the axes need different arithmetic. `has_tests` came back 0.95
 
 ## Calibrate before you trust a route
 
-TypeSafe reports 67.8% accuracy on their own benchmark, published September 2026. A router can live with that, because its errors are bounded: send something to a human who did not need to look and you waste twenty minutes, while CI, the tests and an AI review all still stand behind a cheaper route. A merge decision cannot live with it, because nothing stands behind that.
+TypeSafe reports 67.8% accuracy on their own benchmark, published September 2026. A router survives that, because a routing mistake costs little: send something to a human who did not need to look and you waste twenty minutes, while CI, the tests and an AI review all still stand behind a cheaper route. A merge decision cannot live with it, because nothing stands behind that.
 
 So the number to measure is not accuracy across the queue. It is **precision on `green-is-enough`**, where a false "this is safe" is the only expensive mistake the tool can make. Replay fifty pull requests your team already merged, count how many the sample would have sent to `green-is-enough`, and check how many of those were later reverted or hot-fixed. Move `CONSEQUENCE_FLOORS` until that count is zero. [jevcal](https://github.com/abhixhek/jevcal) turns that comparison into a measurement.

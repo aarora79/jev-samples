@@ -60,12 +60,26 @@ The progress line says which API it chose, so a wrong guess shows up before any 
 repository acme/widgets through https://ghe.example.com/api/v3
 ```
 
+## It stops before Jev on anything not reviewable
+
+One call to the checks API per pull request settles three states, and none of them spends a question:
+
+| State | Means | Waiting on |
+| --- | --- | --- |
+| `ci-failing` | a check concluded failure, timed out, or wants action | the checks, or the branch |
+| `ci-pending` | a check is still running | nobody, come back later |
+| `draft` | the author marked it draft | the author, who is not asking |
+
+`ci-failing` states a fact and never judges the author. A check name that fails on several unrelated pull requests is the check being broken rather than each change breaking it, so the binary counts the names across the queue and says which failures belong to the checks. That costs no extra call, because the names are already in the dataset.
+
+On the eighteen most recent open `apache/airflow` pull requests this skipped ten.
+
 ## What it writes
 
 Two files per run, into `-out` (default `./data`), plus the dataset when it fetched one:
 
-- `<repo>-<selector>-triage.json`, every answer as Jev sent it, beside the credit, the tier and the size floor
-- `<repo>-<selector>-triage.md`, the table and the tier sections, ready to paste into a pull request
+- `<repo>-<selector>-triage.json`, every answer as Jev sent it, beside the credit, the effort, the consequence, the route and the size floor, with `route_counts` and `state_counts` rolling the queue up so a job reads its shape without walking every entry
+- `<repo>-<selector>-triage.md`, the table and the route sections, ready to paste into a pull request
 
 Both match the Python sample's reports field for field, and the dataset matches too, so a dataset or report written by either tool reads in the other.
 
@@ -77,7 +91,7 @@ Both match the Python sample's reports field for field, and the dataset matches 
 pr-triage owner/repo -all -fail-on-route human-required -quiet
 ```
 
-`-fail-on-tier` does the same on the effort tier, for a job that cares about review time rather than about what evidence is required.
+`-fail-on-tier` does the same on the effort tier, for a job that cares about review time rather than about what a merge would need.
 
 | Exit | Meaning |
 | --- | --- |
@@ -109,7 +123,7 @@ go build -o pr-triage . && ./pr-triage -version
 ../questions.yml and the embedded copy differ: run ./build.sh, which copies the canonical file in
 ```
 
-Without that test the two tools would score the same pull request differently, for a reason nobody could see from either side.
+Without that test the two tools would disagree about one pull request, for a reason nobody could see from either side.
 
 `-questions path.yml` points at a payload on disk instead, which is how you try a different weight without rebuilding.
 
@@ -117,6 +131,6 @@ Without that test the two tools would score the same pull request differently, f
 
 Nothing in the judgment: the same eleven questions, the same weights, the same two axes, the same route cuts, the same 0.02 deadband on both, and the same size floor. Two differences worth knowing:
 
-**The legend is read loosely.** Jev echoes each rubric level back in a `legend`, and one level in the current payload arrives as an object rather than a string, because `- None: some text` is YAML for a mapping. The Go side accepts any value there, so a released binary keeps working against an older payload.
+**The legend takes any value.** Jev echoes each rubric level back in a `legend`, and one level in the current payload arrives as an object rather than a string, because `- None: some text` is YAML for a mapping. The Go side accepts any value there, so a released binary keeps working against an older payload.
 
-**Repeat runs move a load by about 0.02**, the same as the Python. A tier within the deadband of a cut prints `(on a cut)` rather than picking a side, so two runs of one queue agree with each other.
+**Repeat runs move an effort by about 0.03 and a consequence by about 0.07**, the same as the Python. Either number within 0.02 of a cut prints `(on a cut)` rather than picking a side, so two runs of one queue do not contradict each other. Running both implementations over one dataset agreed on 16 of 18 routes, and both disagreements sat on a cut.
