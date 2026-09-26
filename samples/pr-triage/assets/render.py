@@ -1,4 +1,4 @@
-"""Render pipeline.html into the PNG the sample README embeds.
+"""Render flow.html into the PNG the sample README embeds.
 
 The HTML is the source. Edit it, run this, and commit both files.
 
@@ -25,8 +25,8 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 ASSETS: pathlib.Path = pathlib.Path(__file__).parent
-SOURCE: pathlib.Path = ASSETS / "pipeline.html"
-TARGET: pathlib.Path = ASSETS / "pipeline.png"
+SOURCE: pathlib.Path = ASSETS / "flow.html"
+TARGET: pathlib.Path = ASSETS / "flow.png"
 
 # The body sets its own width, so the viewport only has to be wide enough not to
 # wrap it. Two device pixels per CSS pixel keeps the text crisp on a retina screen

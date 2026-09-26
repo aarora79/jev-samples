@@ -1,0 +1,192 @@
+<!doctype html>
+<!--
+  The diagram the sample README embeds: the shape of the pipeline, not the detail.
+  The numbers in the worked examples at the foot come from the committed reports in
+  data/, so they move when those are regenerated.
+
+  Render with:
+
+    python3 assets/render.py
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<style>
+  :root {
+    --ink: #14181c; --ink2: #4a5560; --ink3: #7b8794;
+    --line: #cfd8e0; --paper: #fffdf7; --card: #ffffff;
+    --accent: #0f766e; --accent-soft: #e6f2f1;
+    --stop: #c8452f; --stop-soft: #fdf1ef;
+    --go: #3f9d5a;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; padding: 30px 34px 26px; width: 920px;
+    background: var(--paper); color: var(--ink);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+  .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+  h1 { font-size: 19px; margin: 0 0 20px; letter-spacing: -0.2px; }
+
+  .box {
+    background: var(--card); border: 1px solid var(--line); border-radius: 8px;
+    padding: 11px 14px; text-align: center;
+  }
+  .box .t { font-size: 14.5px; font-weight: 650; }
+  .box .s { font-size: 12.5px; color: var(--ink3); margin-top: 3px; }
+
+  .down { width: 2px; height: 16px; background: var(--line); margin: 0 auto; position: relative; }
+  .down::after {
+    content: ""; position: absolute; left: -4px; bottom: -1px;
+    border-left: 5px solid transparent; border-right: 5px solid transparent;
+    border-top: 7px solid var(--line);
+  }
+
+  .gate { background: var(--accent-soft); border-color: #bcd9d6; }
+  .gate .t { color: #12554f; }
+
+  .split { display: grid; grid-template-columns: 1fr 1fr; gap: 26px; margin-top: 16px; }
+  .leg { font-size: 11.5px; text-transform: uppercase; letter-spacing: 0.6px;
+         font-weight: 700; margin-bottom: 7px; text-align: center; }
+  .leg-stop { color: var(--stop); }
+  .leg-go { color: var(--go); }
+
+  .stop { background: var(--stop-soft); border-color: #eec7bf; }
+  .stop .t { color: var(--stop); }
+
+  /* The one box where a model runs. Everything else on this page is plain code,
+     and the fill says so at a glance. */
+  .jev { background: var(--accent); border-color: var(--accent); }
+  .jev .t { color: #fff; }
+  .jev .s { color: #cfe8e5; }
+  .jev .s b { color: #fff; }
+  .badge {
+    display: inline-block; background: #fff; color: var(--accent);
+    font-size: 10px; font-weight: 800; letter-spacing: 0.7px; text-transform: uppercase;
+    border-radius: 999px; padding: 3px 9px; margin-bottom: 6px;
+  }
+
+  .pair { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px; }
+  .pair div { border: 1px solid var(--line); border-radius: 7px; padding: 8px 10px; font-size: 12.5px; }
+  .pair b { display: block; font-size: 13px; margin-bottom: 2px; }
+  /* The two operations are the point of the pair, so each gets its own colour:
+     averaging is the calm one, the max is the alarm. */
+  .op-mean { color: var(--accent); font-weight: 800; }
+  .op-max { color: var(--stop); font-weight: 800; }
+
+  table { border-collapse: collapse; width: 100%; margin-top: 4px; font-size: 13px; }
+  th { text-align: left; font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.5px;
+       color: var(--ink3); padding: 0 10px 5px; font-weight: 700; }
+  td { padding: 7px 10px; border-top: 1px solid var(--line); color: var(--ink2); }
+  td:first-child { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+                   font-weight: 600; white-space: nowrap; }
+  .r1 td:first-child { color: #3f9d5a; }
+  .r2 td:first-child { color: #7fae2e; }
+  .r3 td:first-child { color: #d99016; }
+  .r4 td:first-child, .r5 td:first-child { color: #c8452f; }
+  .wide { margin-top: 16px; }
+
+  .example { margin-top: 18px; border: 1px solid #bcd9d6; background: var(--accent-soft);
+             border-radius: 8px; padding: 12px 15px; }
+  .example .cap { font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.6px;
+                  font-weight: 700; color: #12554f; margin-bottom: 7px; }
+  .example .line { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+                   font-size: 12.5px; color: var(--ink2); line-height: 1.6; }
+  .example .line b { color: var(--ink); }
+  .example .row { padding: 8px 0; }
+  .example .row + .row { border-top: 1px solid #bcd9d6; }
+  .example .labels { color: #12554f; }
+  .arrow { color: var(--ink); font-weight: 800; font-size: 14px; padding: 0 5px; }
+  .tuple { color: var(--ink); font-weight: 700; }
+  .r-tests { color: #6d9726; font-weight: 700; }
+  .r-both { color: var(--stop); font-weight: 700; }
+</style>
+</head>
+<body>
+
+<h1>pr-triage: from a pull request to one instruction</h1>
+
+<div class="box">
+  <div class="t">A pull request</div>
+  <div class="s">title, description, file list, diff, and its check runs</div>
+</div>
+
+<div class="down"></div>
+
+<div class="box gate">
+  <div class="t">Pre-triage: plain rules, no model</div>
+  <div class="s">Is it a draft? Is a check failing? Is a check still running?</div>
+</div>
+
+<div class="split">
+  <div>
+    <div class="leg leg-stop">any of them yes</div>
+    <div class="box stop">
+      <div class="t">Stop. Report the state.</div>
+      <div class="s"><span class="mono">draft</span> &middot; <span class="mono">ci-failing</span> &middot; <span class="mono">ci-pending</span><br>
+        No model call, nothing spent, nothing to review yet.</div>
+    </div>
+  </div>
+  <div>
+    <div class="leg leg-go">all of them no</div>
+    <div class="box jev">
+      <div class="badge">the only model call</div>
+      <div class="t">One Jev call, eleven questions</div>
+      <div class="s"><b>9 weighted</b> feed the numbers:<br>
+        blast radius, security surface, has tests, and six more<br>
+        <b>2 labels</b> are reported, never scored:<br>
+        what kind of change it is, and what to check first</div>
+    </div>
+  </div>
+</div>
+
+<div class="down" style="margin-left: 73%"></div>
+
+<div class="box" style="width: 54%; margin-left: 46%">
+  <div class="t">The nine become a pair</div>
+  <div class="pair">
+    <div><b>effort</b><span class="op-mean">mean</span> of all nine<br>how long to read</div>
+    <div><b>consequence</b><span class="op-max">max</span> of four<br>what breaks if wrong</div>
+  </div>
+</div>
+
+<div class="down" style="margin-left: 73%"></div>
+
+<div class="box wide" style="text-align: left">
+  <div class="t" style="text-align: center; margin-bottom: 8px">The pair picks one route, and the route is the instruction</div>
+  <table>
+    <tr><th>Route</th><th>What the repo owner does</th></tr>
+    <tr class="r1"><td>green-is-enough</td><td>merge it on a green tick, nobody needs to read it</td></tr>
+    <tr class="r2"><td>tests-are-enough</td><td>merge it once a test covers the change</td></tr>
+    <tr class="r3"><td>ai-review-is-enough</td><td>run an AI review; if it finds nothing, merge it</td></tr>
+    <tr class="r4"><td>human-required</td><td>put it in front of a person before it merges</td></tr>
+    <tr class="r5"><td>human-plus-author</td><td>a person reads it with the author walking them through</td></tr>
+  </table>
+</div>
+
+<div class="example">
+  <div class="cap">What the skill reports, from two real runs</div>
+  <div class="line">
+    <div class="row">
+      <b>apache/airflow #73729</b> &nbsp;"Fix clearing with upstream and downstream selecting unrelated tasks"<br>
+      <span class="labels">bugfix &middot; check correctness first</span> &nbsp;|&nbsp; 2 files, +51/-2<br>
+      security surface 0.06 &middot; blast radius 1.1/2 &middot; has tests 0.98
+      <span class="arrow">&#10230;</span> <span class="tuple">(0.27, 0.15)</span>
+      <span class="arrow">&#10230;</span> <span class="r-tests">tests-are-enough</span>
+    </div>
+    <div class="row">
+      <b>mcp-gateway-registry #1693</b> &nbsp;"feat(security): Asymmetric (ES256) internal JWT signing"<br>
+      <span class="labels">feature &middot; check security first</span> &nbsp;|&nbsp; 51 files, +3052/-626<br>
+      security surface 1.00 &middot; blast radius 2.0/2 &middot; has tests 0.96
+      <span class="arrow">&#10230;</span> <span class="tuple">(0.74, 1.00)</span>
+      <span class="arrow">&#10230;</span> <span class="r-both">human-plus-author</span>
+    </div>
+    <div style="font-size:11.5px;color:var(--ink3);padding-top:7px">
+      the tuple is (effort, consequence)
+    </div>
+  </div>
+</div>
+
+</body>
+</html>
