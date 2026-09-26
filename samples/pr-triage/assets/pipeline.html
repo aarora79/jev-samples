@@ -117,14 +117,40 @@
 <div class="step">
   <div class="num">2</div>
   <div class="card">
+    <h2>Stop early on anything that is not reviewable</h2>
+    <p>One call to the checks API per pull request, before any Jev call. Three states are
+       terminal: no questions asked, no route computed, nothing spent. On eighteen
+       apache/airflow pull requests this skipped ten of them.</p>
+    <table class="routes">
+      <tr><th>State</th><th>Means</th><th>Waiting on</th></tr>
+      <tr class="r-human"><td>ci-failing</td><td>a check concluded failure, timed out, or wants action</td><td>the checks, or the branch</td></tr>
+      <tr class="r-ai"><td>ci-pending</td><td>a check is still running</td><td>nobody, come back later</td></tr>
+      <tr class="r-tests"><td>draft</td><td>the author marked it draft</td><td>the author, who is not asking</td></tr>
+    </table>
+    <p class="note">A name that fails on several unrelated pull requests is the check being
+       broken rather than each change breaking it: a boto3 bump cannot break Postgres
+       serialization. Five of eight failures were shared that way, and the output says so,
+       because the state is a fact and never a verdict on the author.</p>
+  </div>
+</div>
+
+<div class="rail arrow"></div>
+
+<div class="step">
+  <div class="num">3</div>
+  <div class="card">
     <h2>Ask eleven questions, in one call</h2>
     <p>Every question sees the same pull request. None sees another's answer, so the eleven
        cost the tokens of eleven and the wall clock of about one.</p>
     <div class="two" style="margin-top:11px">
       <div class="card" style="box-shadow:none">
         <p class="tagline">Nine scored, and weighted</p>
-        <p>How far the change reaches, whether it touches auth or secrets, how many judgment
-           calls it holds, whether it breaks a caller, whether it ships tests, and four more.</p>
+        <p><b>blast radius</b> how far it reaches &middot; <b>security surface</b> auth, secrets,
+           tokens, input validation &middot; <b>breaking change</b> a caller stops working &middot;
+           <b>infra surface</b> deploy, images, CI &middot; <b>design decisions</b> judgment calls to
+           agree with &middot; <b>mechanical</b> one edit repeated &middot; <b>scope creep</b> the diff
+           exceeds the description &middot; <b>has tests</b> the change is covered &middot;
+           <b>description quality</b> what, why, and how they checked</p>
       </div>
       <div class="card muted" style="box-shadow:none">
         <p class="tagline">Two labels, never scored</p>
@@ -141,24 +167,31 @@
 <div class="rail arrow"></div>
 
 <div class="step">
-  <div class="num">3</div>
+  <div class="num">4</div>
   <div class="card">
     <h2>Read the answers on two axes, not one</h2>
     <p>Effort and consequence are different questions, and they take different arithmetic.</p>
     <div class="two" style="margin-top:11px">
       <div class="card" style="box-shadow:none">
         <p class="tagline">Effort: the weighted mean of nine</p>
-        <p>How long this takes to read. Averaging is right here, because a diff that
-           is long in one way and short in three really is a medium read. Three of the
-           nine count inverted, so a repeated edit, a tested change and a thorough
-           description each pull it down.</p>
+        <p>All nine, at the weights in <span class="mono">questions.yml</span>: blast radius
+           0.15, security surface 0.15, design decisions 0.14, mechanical 0.12, breaking
+           change 0.11, scope creep 0.09, infra surface 0.08, has tests 0.08, description
+           quality 0.08.</p>
+        <p style="margin-top:7px">Averaging is right here, because a diff that is long in one
+           way and short in three really is a medium read. Mechanical, has tests and
+           description quality count <b>inverted</b>, so a repeated edit, a covered change and
+           a thorough description each pull it down.</p>
       </div>
       <div class="card" style="box-shadow:none;border-color:#e3b9b1;background:#fffaf9">
         <p class="tagline" style="color:var(--high)">Consequence: the max of four</p>
-        <p>What breaks if it is wrong: does it touch <b>auth or secrets</b>, does it
-           <b>break a caller</b>, how far does it <b>reach</b>, does it touch
-           <b>deploy or CI</b>. The max, never the mean, because a change that is safe
-           in three ways and dangerous in one is a dangerous change.</p>
+        <p>Four of the same nine, read differently: <b>security surface</b> (auth, secrets,
+           tokens), <b>breaking change</b> (an existing caller stops working), <b>blast
+           radius</b> (reaches shared code paths), <b>infra surface</b> (deploy, images, CI).</p>
+        <p style="margin-top:7px">The <b>max</b>, never the mean, because a change that is safe
+           in three ways and dangerous in one is a dangerous change. A score reads the
+           probability on its <b>top</b> level only: blast radius level 1 is "one module",
+           which is ordinary work.</p>
       </div>
     </div>
   </div>
@@ -167,14 +200,14 @@
 <div class="rail arrow"></div>
 
 <div class="step">
-  <div class="num">4</div>
+  <div class="num">5</div>
   <div class="card">
-    <h2>Turn the pair into a route: what evidence is enough</h2>
+    <h2>Turn the pair into a route: what would be enough to merge</h2>
     <p>Consequence sets the floor. Effort can raise it and never lower it. Nothing here
        says "merge", because a model reported at 67.8% accuracy can decide how much
        evidence to demand and cannot be the last gate before main.</p>
     <table class="routes">
-      <tr><th>Route</th><th>Sufficient evidence</th><th>Reached when</th></tr>
+      <tr><th>Route</th><th>Enough to merge on</th><th>Reached when</th></tr>
       <tr class="r-green"><td>green-is-enough</td><td>CI passing</td><td>consequence under 0.15</td></tr>
       <tr class="r-tests"><td>tests-are-enough</td><td>CI, and a test that exercises it</td><td>consequence 0.15, or effort 0.42</td></tr>
       <tr class="r-ai"><td>ai-review-is-enough</td><td>the above, and an AI review finding nothing</td><td>consequence 0.35, or effort 0.62</td></tr>
@@ -187,7 +220,7 @@
 <div class="rail arrow"></div>
 
 <div class="step">
-  <div class="num">5</div>
+  <div class="num">6</div>
   <div class="card">
     <h2>Let the file and line counts raise the effort tier</h2>
     <div class="floor">
@@ -203,7 +236,7 @@
 <div class="rail arrow"></div>
 
 <div class="step">
-  <div class="num">6</div>
+  <div class="num">7</div>
   <div class="card out">
     <h2>Print the route, the reason, and the one thing that would change it</h2>
     <p>Grouped by route, with what set the consequence, the questions carrying the effort,

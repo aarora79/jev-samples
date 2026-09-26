@@ -6,9 +6,23 @@ A maintainer with a queue of open pull requests wants to know which ones a glanc
 
 Nine of the answers become two numbers, because effort and consequence are different questions. **Effort** is their weighted mean: how long this takes to read. **Consequence** is the *max* of the four that say what breaks if it is wrong, never the mean, because a change that is safe in three ways and dangerous in one is a dangerous change.
 
-The pair picks a route, which names what evidence is sufficient before the change merges. Nothing here says "merge": TypeSafe reports 67.8% accuracy on their own benchmark, published September 2026, which is enough to decide how much evidence to demand and nowhere near enough to be the last gate before main.
+Before any of that, a pull request has to be worth reading. One call to the checks API per pull request settles three terminal states, and none of them spends a Jev call:
 
-| Route | Sufficient evidence |
+| State | Means | Waiting on |
+| --- | --- | --- |
+| `ci-failing` | a check concluded failure, timed out, or wants action | the checks, or the branch |
+| `ci-pending` | a check is still running | nobody, come back later |
+| `draft` | the author marked it draft | the author, who is not asking |
+
+`ci-failing` is a fact rather than a verdict. On the eighteen airflow pull requests below, eight were failing and **five of those failed only on a check that also fails on unrelated pull requests**, including a boto3 version bump that cannot break Postgres serialization. That is the check being broken, not each change breaking it, and the output says so. Detecting it costs nothing extra, because the names are already in the dataset.
+
+Skipping those states took ten of eighteen out of the queue before a single question was asked.
+
+The pair picks a route, and the route answers one question: **what would be enough to merge this change?** Enough for a green tick to settle it, or enough that it wants a test, an AI review, or a person.
+
+None of them says merge it now, and none of them merges anything. TypeSafe reports 67.8% accuracy on their own benchmark, published September 2026, which is enough to decide how much evidence to demand and nowhere near enough to be the last gate before main.
+
+| Route | Enough to merge on |
 | --- | --- |
 | `green-is-enough` | CI passing |
 | `tests-are-enough` | CI passing, and a test that exercises the change |
@@ -16,13 +30,13 @@ The pair picks a route, which names what evidence is sufficient before the chang
 | `human-required` | a person reads it, whatever the machines say |
 | `human-plus-author` | a person reads it line by line, with the author walking them through |
 
-Consequence sets the floor and effort can only raise it. Eighteen pull requests cost $0.0037 and three seconds.
+Consequence sets the floor and effort can only raise it. Of those eighteen, 8 were reviewable and cost about two tenths of a cent to route.
 
 ## What it asks
 
 Eleven questions go to Jev in one call: how far the change reaches, whether it touches auth or secrets, how many judgment calls a reviewer has to agree with, and eight more. Nine carry a weight in [questions.yml](questions.yml). Four of those nine also feed the consequence axis, marked below.
 
-![The pr-triage pipeline: read one pull request, ask eleven questions in one call, read the answers on two axes as an effort mean and a consequence max, turn the pair into a route naming what evidence is sufficient, let the file and line counts raise the effort tier, then print the route with the one thing that would change it.](assets/pipeline.png)
+![The pr-triage pipeline: read one pull request, stop early on anything not reviewable because CI is failing or pending or it is a draft, ask eleven questions in one call, read the answers on two axes as an effort mean and a consequence max, turn the pair into a route naming what evidence is sufficient, let the file and line counts raise the effort tier, then print the route with the one thing that would change it.](assets/pipeline.png)
 
 That diagram is built from [assets/pipeline.html](assets/pipeline.html). Edit the HTML and run `python3 assets/render.py` to rebuild the PNG.
 
@@ -110,29 +124,64 @@ For CI rather than a conversation, [`go/README.md`](go/README.md) covers the bin
 
 ## What it prints
 
-From a run against the eighteen most recent open pull requests of [apache/airflow](https://github.com/apache/airflow) on 26 September 2026, trimmed to the ends of the table:
+From a run against the eighteen most recent open pull requests of [apache/airflow](https://github.com/apache/airflow) on 26 September 2026. Ten never reached Jev:
 
 ```text
-| PR     | Files | Lines      | Kind    | Load            | Cons | Route                          | Title                                                      |
-| ------ | ----- | ---------- | ------- | --------------- | ---- | ------------------------------ | ---------------------------------------------------------- |
-| #73698 | 8     | +626/-73   | bugfix  | 0.63 (on a cut) | 0.99 | human-plus-author              | Bind the AWS auth manager SAML response to the browser ... |
-| #73696 | 7     | +136/-5    | bugfix  | 0.53            | 0.99 | human-required                 | Check admin-only views against a dedicated Keycloak res... |
-| #73704 | 9     | +57/-32    | bugfix  | 0.51            | 0.84 | human-required                 | Fix socket leaks and add missing request timeouts acros... |
-| #73706 | 17    | +2634/-117 | bugfix  | 0.50 (size)     | 0.77 | human-required                 | Account for AgentOperator spend on failed runs and acro... |
-| #73701 | 4     | +360/-39   | feature | 0.47            | 0.54 | ai-review-is-enough            | Add durable reconnect option to EmrServerlessStartJobOp... |
-| #73703 | 5     | +64/-0     | feature | 0.44            | 0.87 | human-required                 | [chart/v1-2x-test] Helm: Allow hostAliases and log groo... |
-| #73723 | 10    | +558/-121  | feature | 0.43 (on a cut) | 0.77 | human-required                 | TS SDK: embed one source region per native Dag file        |
-| #73702 | 4     | +291/-3    | bugfix  | 0.41 (on a cut) | 0.36 | ai-review-is-enough (on a cut) | Stop AWS Glue job run when a deferred task is cleared      |
-| #73724 | 4     | +209/-12   | bugfix  | 0.38            | 0.32 | tests-are-enough               | Fix Grid and Graph 500 errors for cyclic TaskGroup depe... |
-| #73713 | 54    | +467/-131  | feature | 0.37 (size)     | 0.97 | human-required                 | UI: Group digits of counters according to the selected ... |
-| #73720 | 2     | +98/-6     | bugfix  | 0.36            | 0.60 | human-required (on a cut)      | [v3-3-test] Raise DeadlockImminentError for sync comms ... |
-| #73719 | 4     | +103/-8    | bugfix  | 0.36            | 0.32 | tests-are-enough               | Fix masked failure reason for deferrable EMR Serverless... |
-| #73718 | 2     | +14/-2     | bugfix  | 0.30            | 0.84 | human-required                 | Fix merge_dicts crash when overwriting a non-dict value... |
-| #73709 | 2     | +113/-30   | bugfix  | 0.29            | 0.10 | green-is-enough                | Avoid repeated KubernetesExecutor pod deletion for dupl... |
-| #73717 | 3     | +16/-6     | feature | 0.29            | 0.22 | tests-are-enough               | add bundle_name to dag processor timeouts metric           |
-| #73711 | 2     | +89/-0     | bugfix  | 0.27            | 0.09 | green-is-enough                | Emit queued_duration metric when a task enters RUNNING ... |
-| #73722 | 1     | +2/-1      | docs    | 0.19            | 0.04 | green-is-enough                | Clarify max_db_retries doc wording to avoid off-by-one ... |
-| #73725 | 4     | +32/-8     | bugfix  | 0.18            | 0.14 | green-is-enough (on a cut)     | Fix Elasticsearch and OpenSearch response wrapper bugs     |
+## Not reviewable yet: 10 of 18
+
+DRAFT  (1)  -> the author is still working: nothing to review, and nothing to decide
+  #73720  marked draft by the author
+          [v3-3-test] Raise DeadlockImminentError for sync comms calls from a paused event loop thread (#73521)
+          https://github.com/apache/airflow/pull/73720
+
+CI-FAILING  (8)  -> the branch cannot merge until the checks pass, so review waits on that
+          5 of these fail only on a check that fails elsewhere too, so they are waiting on the checks rather than on their authors
+  #73743  1 of 95 checks failing: Postgres tests: core / DB-core:Postgres:14:3.10:Core...Serialization, which also fails on other pull requests
+          Fix airflowctl dags get-tags crashing whenever a Dag has tags
+          https://github.com/apache/airflow/pull/73743
+  #73737  1 of 100 checks failing: Basic tests / Scripts tests, which also fails on other pull requests
+          Bump the github-actions-updates group with 4 updates
+          https://github.com/apache/airflow/pull/73737
+  #73734  1 of 75 checks failing: Postgres tests: core / DB-core:Postgres:14:3.10:Core...Serialization, which also fails on other pull requests
+          Bump the edge-ui-package-updates group across 1 directory with 8 updates
+          https://github.com/apache/airflow/pull/73734
+  #73732  1 of 100 checks failing: Basic tests / Scripts tests, which also fails on other pull requests
+          Bump boto3 from 1.43.96 to 1.43.98 in /dev/breeze in the 3-3-uv-dependency-updates group
+          https://github.com/apache/airflow/pull/73732
+  #73730  1 of 100 checks failing: Postgres tests: core / DB-core:Postgres:14:3.10:Core...Serialization, which also fails on other pull requests
+          Bump boto3 from 1.43.97 to 1.43.98 in /dev/breeze in the uv-dependency-updates group
+          https://github.com/apache/airflow/pull/73730
+  #73726  2 of 100 checks failing: 2 checks
+          UI: Add team filter to Human-in-the-loop task instances listing
+          https://github.com/apache/airflow/pull/73726
+  #73724  1 of 100 checks failing: Additional PROD image tests / Test e2e integration tests with PROD image / Regular e2e test
+          Fix Grid and Graph 500 errors for cyclic TaskGroup dependencies
+          https://github.com/apache/airflow/pull/73724
+  #73723  1 of 88 checks failing: Additional PROD image tests / TypeScript SDK e2e tests with PROD image / TypeScript SDK e2e test
+          TS SDK: embed one source region per native Dag file
+          https://github.com/apache/airflow/pull/73723
+
+CI-PENDING  (1)  -> checks are still running: come back when they land
+  #73740  1 of 89 checks still running
+          Bump the auth-ui-package-updates group across 1 directory with 8 updates
+          https://github.com/apache/airflow/pull/73740
+
+56% of this queue cannot be reviewed as it stands. Fix that before reading anything into the routes below.
+```
+
+The eight that were reviewable:
+
+```text
+| PR     | Files | Lines    | Kind       | Load | Cons | Route                       | Title                                                      |
+| ------ | ----- | -------- | ---------- | ---- | ---- | --------------------------- | ---------------------------------------------------------- |
+| #73728 | 3     | +203/-34 | feature    | 0.49 | 0.54 | ai-review-is-enough         | Discover a bundle's Dag definitions through the importe... |
+| #73741 | 2     | +11/-3   | bugfix     | 0.40 | 0.97 | human-required              | Improve DAG tag length validation error                    |
+| #73719 | 4     | +103/-8  | bugfix     | 0.35 | 0.28 | tests-are-enough            | Fix masked failure reason for deferrable EMR Serverless... |
+| #73727 | 2     | +53/-23  | bugfix     | 0.35 | 0.22 | tests-are-enough            | Speed up zip Dag discovery and keep member file names      |
+| #73736 | 4     | +4/-4    | dependency | 0.28 | 0.99 | human-required              | Bump astral-sh/setup-uv from 10.1.0 to 10.2.0 in the gi... |
+| #73742 | 3     | +36/-0   | docs       | 0.27 | 0.07 | green-is-enough             | Account for the open pull request limit in the PR triag... |
+| #73729 | 2     | +51/-2   | bugfix     | 0.27 | 0.15 | tests-are-enough (on a cut) | Fix clearing with upstream and downstream selecting unr... |
+| #73722 | 1     | +2/-1    | docs       | 0.20 | 0.04 | green-is-enough             | Clarify max_db_retries doc wording to avoid off-by-one ... |
 ```
 
 `Load` is effort and `Cons` is consequence. A load marked `(size)` was raised by the file and line counts. Either number marked `(on a cut)` sits within 0.02 of a threshold, which is about how far repeat calls move it, so read it as either side.
@@ -195,7 +244,7 @@ Two rows show why the axes need different arithmetic. `has_tests` came back 0.95
 
 ## What to notice
 
-**All five routes get used, and half the queue skips a human.** Those eighteen came out 4 `green-is-enough`, 3 `tests-are-enough`, 2 `ai-review-is-enough`, 8 `human-required` and 1 `human-plus-author`. Nine of eighteen need no person. The cheapest is #73722, a two-line clarification of `max_db_retries` doc wording, at consequence 0.04.
+**Most of a queue is not waiting on review at all.** Of those eighteen, ten never reached Jev: one draft, eight with a failing check, one still running. The eight that were reviewable came out 2 `green-is-enough`, 3 `tests-are-enough`, 1 `ai-review-is-enough`, 2 `human-required`. The cheapest pull requests in a queue are usually the ones nobody needs to read, and the loudest are usually waiting on the build rather than on a person.
 
 **The spread is a fact about the repository, not about the thresholds.** The same cuts over 710 airflow pull requests opened in the last 100 days took 342 of them, 48%, off the human queue. Run against a repository where every change touches authentication or deployment credentials, they took none of 24, because that queue contains no low-consequence work to find. Airflow's cheap tail is its 48 docs pull requests, 20 dependency bumps and 22 test-only changes. A repository without those has no cheap tail, and a router that invented one would be wrong.
 
