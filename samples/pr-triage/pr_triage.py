@@ -94,15 +94,6 @@ SIZE_FLOORS: tuple[tuple[int, int, str], ...] = (
     (4, 150, "low"),
 )
 
-# What to do with a pull request in each tier. The advice is the point of the
-# triage, so it sits next to the tier rather than in a README.
-TIER_ADVICE: dict[str, str] = {
-    "trivial": "merge on a glance: read the title, skim the diff, check that CI is green",
-    "low": "one reviewer, one pass, no meeting",
-    "medium": "one reviewer who knows this area, reading the whole diff",
-    "high": "a human reads this line by line, and the author walks them through it",
-}
-
 # A word for each band of a Noul probability, highest floor first. Jev returns
 # one number and no separate confidence, so 0.5 says the diff never settled the
 # question either way.
@@ -208,15 +199,32 @@ EFFORT_RAISES: tuple[tuple[float, str], ...] = (
     (0.42, "tests-are-enough"),
 )
 
+# The summary table: how the whole queue came out, one row per outcome. It covers
+# the pre-triage states as well as the routes, so the counts account for every pull
+# request fetched rather than only the ones that reached Jev.
+SUMMARY_HEADER: list[str] = [
+    "Outcome",
+    "Count",
+    "Pull requests",
+]
+
+# How many numbers the summary names per row before it stops listing them. A queue
+# with ninety pull requests on one route would otherwise print a cell nobody reads.
+SUMMARY_NUMBERS_SHOWN: int = 12
+
+# The detail table: one row per reviewable pull request. Number and title come
+# first, because those are what a reader scans for, then the two scores, then what
+# produced the consequence, then the route it bought.
 TRIAGE_HEADER: list[str] = [
     "PR",
+    "Title",
     "Files",
     "Lines",
     "Kind",
-    "Load",
+    "Effort",
     "Cons",
+    "Cons from",
     "Route",
-    "Title",
 ]
 
 DETAIL_HEADER: list[str] = [
@@ -232,7 +240,7 @@ DETAIL_HEADER: list[str] = [
 
 # Titles longer than this get cut in the table. The grouped section below it
 # prints every title whole.
-MAX_TITLE_CHARS: int = 58
+MAX_TITLE_CHARS: int = 44
 
 
 def _load_payload() -> tuple[dict, dict]:
@@ -993,14 +1001,115 @@ def _triage_row(result: dict) -> list[str]:
 
     return [
         f"#{pull['number']}",
+        title,
         str(pull["changed_files"]),
         f"+{pull['additions']}/-{pull['deletions']}",
         result["answers"]["change_kind"].choice,
         load,
         f"{result['consequence']:.2f}",
+        result["consequence_label"],
         result["route"] + (" (on a cut)" if _near_a_route_cut(result["consequence"]) else ""),
-        title,
     ]
+
+
+def _summary_numbers(pulls: list[dict]) -> str:
+    """Name the pull requests in one summary row, stopping before the cell is unreadable.
+
+    Args:
+        pulls: The pull request records in this row, already in the order to read them.
+
+    Returns:
+        Their numbers, comma separated, with a count of any left unnamed.
+    """
+    numbers = [f"#{pull['number']}" for pull in pulls]
+    if len(numbers) <= SUMMARY_NUMBERS_SHOWN:
+        return ", ".join(numbers)
+
+    shown = numbers[:SUMMARY_NUMBERS_SHOWN]
+    return ", ".join(shown) + f", and {len(numbers) - SUMMARY_NUMBERS_SHOWN} more"
+
+
+def _summary_rows(
+    results: list[dict],
+    skipped: list[dict],
+) -> list[list[str]]:
+    """Build the summary table: every outcome the queue produced, with its members.
+
+    The rows run in pipeline order, so the pre-triage states come before the routes
+    they short-circuit. Empty outcomes are dropped rather than printed as zeros.
+
+    Args:
+        results: Triage results for the pull requests that reached Jev.
+        skipped: Entries from the pre-triage pass, each with a state.
+
+    Returns:
+        Cells per row, matching SUMMARY_HEADER.
+    """
+    rows = []
+    for state in PRE_TRIAGE_STATES:
+        members = [entry for entry in skipped if entry["state"] == state]
+        if members:
+            pulls = [entry["pull"] for entry in members]
+            rows.append([state, str(len(members)), _summary_numbers(pulls)])
+
+    for route in ROUTES:
+        members = sorted(
+            (result for result in results if result["route"] == route),
+            key=lambda item: item["consequence"],
+            reverse=True,
+        )
+        if members:
+            pulls = [result["pull"] for result in members]
+            rows.append([route, str(len(members)), _summary_numbers(pulls)])
+
+    return rows
+
+
+def _summary_note(
+    any_skipped: bool,
+    any_routed: bool,
+) -> list[str]:
+    """Say what separates the two kinds of summary row.
+
+    Both the terminal and the markdown report print this under the summary table,
+    so the wording lives in one place. A queue can be all states, all routes, or
+    both, and the note has to be true of whichever table it sits under.
+
+    Args:
+        any_skipped: Whether any pull request was settled before Jev.
+        any_routed: Whether any pull request reached Jev and got a route.
+
+    Returns:
+        A blank line, then the note, or nothing when there is no table to explain.
+    """
+    if any_skipped and any_routed:
+        return [
+            "",
+            (
+                "The state rows come first: plain rules settle those before any model call. "
+                "Each route below them names what would be enough to merge."
+            ),
+        ]
+    if any_skipped:
+        return ["", "Plain rules settled every one of these, so no model call happened."]
+    if any_routed:
+        return ["", "Each route names what would be enough to merge that pull request."]
+    return []
+
+
+def _print_summary_table(
+    results: list[dict],
+    skipped: list[dict],
+) -> None:
+    """Print the summary table, then say what separates the two kinds of row.
+
+    Args:
+        results: Triage results for the pull requests that reached Jev.
+        skipped: Entries from the pre-triage pass, each with a state.
+    """
+    _print_padded(SUMMARY_HEADER, _summary_rows(results, skipped))
+    for line in _summary_note(bool(skipped), bool(results)):
+        print(line)
 
 
 def _print_triage_table(results: list[dict]) -> None:
@@ -1030,7 +1139,7 @@ def _print_not_reviewable(
     if not skipped:
         return
 
-    print(f"\n## Not reviewable yet: {len(skipped)} of {total}\n")
+    print(f"\n### Not reviewable yet: {len(skipped)} of {total}\n")
     for state in PRE_TRIAGE_STATES:
         members = [entry for entry in skipped if entry["state"] == state]
         if not members:
@@ -1054,7 +1163,7 @@ def _print_not_reviewable(
     if share >= 0.5:
         print(
             f"{share:.0%} of this queue cannot be reviewed as it stands. Fix that before "
-            "reading anything into the routes below."
+            "reading anything into the routes."
         )
 
 
@@ -1353,63 +1462,102 @@ def _markdown_lines(
     settings: dict,
     skipped: list[dict] | None = None,
 ) -> list[str]:
-    """Build the markdown report: the same table and groups the run printed.
+    """Build the markdown report: a summary table, a detail table, then the groups.
+
+    The summary answers how the queue came out, the detail table answers what each
+    pull request scored, and the groups carry the reasoning and the links.
 
     Args:
         repo: The repository as `owner/repo`.
         results: Triage results.
         specs: Question entries from questions.yml, keyed by id.
         settings: Settings from questions.yml.
+        skipped: Entries from the pre-triage pass, each with a state.
 
     Returns:
         Markdown lines, without trailing newlines.
     """
+    skipped = skipped or []
     ordered = sorted(results, key=lambda item: item["load"], reverse=True)
     tokens = sum(result["response"].usage.input_tokens for result in results)
     stamp = datetime.datetime.now(datetime.UTC).strftime("%d %B %Y")
+    total = len(results) + len(skipped)
 
     lines = [
         f"# Triage: {repo}",
         "",
         (
-            f"{len(results)} pull requests, {len(specs)} questions each, one call apiece, "
-            f"on {stamp} with `{settings['model']}`."
+            f"{_plural(total, 'pull request')}, of which {len(results)} reached Jev at "
+            f"{len(specs)} questions each, one call apiece, on {stamp} with "
+            f"`{settings['model']}`."
         ),
         (
             f"{tokens:,} input tokens, ${_cost_usd(results, settings):.5f} at "
             f"${settings['input_usd_per_million']} per million."
         ),
         "",
-    ]
-    if skipped:
-        lines += [
-            (
-                f"{_plural(len(skipped), 'pull request')} skipped Jev, "
-                "not being in a reviewable condition:"
-            ),
-            "",
-        ]
-        for state in PRE_TRIAGE_STATES:
-            members = [entry for entry in skipped if entry["state"] == state]
-            if members:
-                named = ", ".join(f"[#{e['pull']['number']}]({e['pull']['url']})" for e in members)
-                lines.append(f"- **{state}** ({len(members)}): {named}")
-        lines.append("")
-
-    lines += [
-        *_padded_lines(TRIAGE_HEADER, [_triage_row(result) for result in ordered]),
+        "## Summary",
         "",
-        (
-            "Load is the weighted average of nine questions, 0 to 1. Tier comes from that "
-            f"load, raised when size demands it: over {SIZE_FLOORS[0][0]} files or "
-            f"{SIZE_FLOORS[0][1]:,} lines is high whatever Jev returned."
-        ),
+        *_padded_lines(SUMMARY_HEADER, _summary_rows(results, skipped)),
+        *_summary_note(bool(skipped), bool(results)),
     ]
-    return lines + _markdown_groups(results)
+
+    if results:
+        lines += [
+            "",
+            f"## The {_plural(len(results), 'pull request')} that reached Jev",
+            "",
+            *_padded_lines(TRIAGE_HEADER, [_triage_row(result) for result in ordered]),
+            "",
+            (
+                "Effort is the weighted mean of nine questions, 0 to 1, and consequence is the "
+                "max of four. `Cons from` names the question that produced the consequence, "
+                "which is what set the route. Effort is raised when size demands it: over "
+                f"{SIZE_FLOORS[0][0]} files or {SIZE_FLOORS[0][1]:,} lines is high whatever "
+                "Jev returned."
+            ),
+        ]
+
+    return lines + _markdown_not_reviewable(skipped) + _markdown_groups(results)
+
+
+def _markdown_not_reviewable(skipped: list[dict]) -> list[str]:
+    """Build the markdown section for the pull requests that never reached Jev.
+
+    Args:
+        skipped: Entries from the pre-triage pass, each with a state and a reason.
+
+    Returns:
+        Markdown lines, without trailing newlines.
+    """
+    if not skipped:
+        return []
+
+    lines = ["", f"## Not reviewable yet ({len(skipped)})"]
+    for state in PRE_TRIAGE_STATES:
+        members = [entry for entry in skipped if entry["state"] == state]
+        if not members:
+            continue
+
+        lines += ["", f"### {state} ({len(members)})", "", STATE_ADVICE[state], ""]
+        shared = sum(1 for entry in members if entry.get("shared_failure"))
+        if shared:
+            lines += [
+                (
+                    f"{shared} of these fail only on a check that fails elsewhere too, so they "
+                    "are waiting on the checks rather than on their authors."
+                ),
+                "",
+            ]
+        for entry in members:
+            pull = entry["pull"]
+            lines.append(f"- [#{pull['number']}]({pull['url']}) {pull['title']}")
+            lines.append(f"  - {entry['reason']}")
+    return lines
 
 
 def _markdown_groups(results: list[dict]) -> list[str]:
-    """Build one markdown section per tier, heaviest tier first.
+    """Build one markdown section per route, most consequential route first.
 
     Args:
         results: Triage results.
@@ -1418,29 +1566,32 @@ def _markdown_groups(results: list[dict]) -> list[str]:
         Markdown lines, without trailing newlines.
     """
     lines: list[str] = []
-    for tier in reversed(TIERS):
+    for route in reversed(ROUTES):
         members = sorted(
-            (result for result in results if result["tier"] == tier),
-            key=lambda item: item["load"],
+            (result for result in results if result["route"] == route),
+            key=lambda item: item["consequence"],
             reverse=True,
         )
         if not members:
             continue
 
-        lines += ["", f"## {tier} ({len(members)})", "", TIER_ADVICE[tier], ""]
+        lines += ["", f"## {route} ({len(members)})", "", ROUTE_ADVICE[route], ""]
         for result in members:
             pull = result["pull"]
             drivers = ", ".join(result["drivers"]) or "nothing above the driver floor"
             size_note = ", raised by the size floor" if result["raised_by_size"] else ""
+            lines.append(f"- [#{pull['number']}]({pull['url']}) {pull['title']}")
             lines.append(
-                f"- [#{pull['number']}]({pull['url']}) load {result['load']:.2f}{size_note}: "
-                f"{pull['title']}"
+                f"  - consequence {result['consequence']:.2f} from "
+                f"{result['consequence_label']}, effort {result['load']:.2f}{size_note}"
             )
             lines.append(f"  - drivers: {drivers}")
+            if result["downgrade"]:
+                lines.append(f"  - would drop a route with: {result['downgrade']}")
             if result["coverage"] < LOW_COVERAGE_BELOW:
                 lines.append(
-                    f"  - read from {result['coverage']:.0%} of the changed files, so the load "
-                    "is a read on part of the diff"
+                    f"  - read from {result['coverage']:.0%} of the changed files, so both "
+                    "numbers read part of the diff"
                 )
     return lines
 
@@ -1539,18 +1690,22 @@ def triage(
             print(f"\nRaw response for #{result['pull']['number']}:")
             print(json.dumps(result["response"].model_dump(mode="json"), indent=2))
 
-    _print_not_reviewable(skipped, len(pulls))
-    print(f"\n## Triage: {repo}, {_plural(len(results), 'reviewable pull request')}\n")
+    print(f"\n## Triage: {repo}, {_plural(len(pulls), 'pull request')}\n")
+    _print_summary_table(results, skipped)
     if not results:
-        print("Nothing reached Jev, so there is no route to report.")
+        print("\nNothing reached Jev, so there is no route to report.")
+        _print_not_reviewable(skipped, len(pulls))
         return
+
+    print(f"\n### The {_plural(len(results), 'pull request')} that reached Jev\n")
     _print_triage_table(results)
     print(
-        "\nLoad is the weighted average of nine questions, 0 to 1. Tier comes from that load, "
-        f"raised when size demands it: over {SIZE_FLOORS[-1][0]} files or "
+        "\nEffort is the weighted mean of nine questions, 0 to 1, and consequence is the max of "
+        f"four. Effort is raised when size demands it: over {SIZE_FLOORS[-1][0]} files or "
         f"{SIZE_FLOORS[-1][1]} lines cannot be trivial, over {SIZE_FLOORS[0][0]} files or "
         f"{SIZE_FLOORS[0][1]} lines is high whatever Jev returned."
     )
+    _print_not_reviewable(skipped, len(pulls))
     _print_groups(results)
 
     if explain is not None:

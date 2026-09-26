@@ -2,6 +2,21 @@
 
 Say what evidence each open pull request needs before it merges, one Jev call each.
 
+```text
+  INPUT            DATA PREP           PRE-TRIAGE            JEV TRIAGE              OUTPUT
+  a repo or        title, body,        draft, red CI         one call, eleven        one route: what
+  a PR URL   --->  files, diff,  --->  or pending CI   --->  questions: nine   --->  would be enough
+                   check runs          stops here            become effort           to merge this
+                   from the API        at no cost            and consequence         change
+
+  [18 open]  --->  [18 fetched]  --->  [10 stop here]  --->  [8 reach Jev]     --->  [6 clear on machines]
+                                                                                     [2 need a person]
+
+  [ ] = one real run, the 18 most recent open pull requests on apache/airflow
+```
+
+That bracketed row is the run worked through below. Rules remove ten before any model call, and Jev sorts the other eight by what evidence would settle each one: two clear on a green tick, three want a test, one wants an AI review, and two go to a person. The maintainer reads those two.
+
 A maintainer with a queue of open pull requests wants to know which ones a glance clears and which ones need an hour. The sample sends Jev the title, the description, the file list and as much of the diff as fits, then asks eleven questions about each pull request in one call.
 
 Nine of the answers become two numbers, because effort and consequence are different questions. **Effort** is their weighted mean: how long this takes to read. **Consequence** is the *max* of the four that say what breaks if it is wrong, never the mean, because a change that is safe in three ways and dangerous in one is a dangerous change.
@@ -34,7 +49,7 @@ Consequence sets the floor and effort can only raise it. Of those eighteen, 8 we
 
 ## What each stage costs
 
-Of the eighteen pull requests below, a frontier review is the deciding evidence on one. Ten never reach a model, removed by rules about drafts and check runs. Jev reads the remaining eight, at 3,039 input tokens and 164 ms each.
+Of the eighteen pull requests below, a frontier review is the deciding evidence on one. Ten never reach a model, removed by rules about drafts and check runs. Jev reads the remaining eight, at 3,040 input tokens and 171 ms each.
 
 Pre-triage is `if` statements over the checks API. No model can do that stage, because no model knows whether CI passed.
 
@@ -99,7 +114,6 @@ uv run pr_triage.py --dataset data/owner-repo-open-all.json --explain 1693
 
 The Python stays canonical. `go/questions.yml` is a copy, `build.sh` refreshes it before every build, and `payload_test.go` fails when the two drift, so the two tools cannot disagree about one pull request in silence.
 
-
 ## Install it as a Claude Code skill
 
 One command puts the tool and the skill on the machine. After that the skill does the work, and nobody has to learn the flags.
@@ -136,10 +150,41 @@ For CI rather than a conversation, [`go/README.md`](go/README.md) covers the bin
 
 ## What it prints
 
-From a run against the eighteen most recent open pull requests of [apache/airflow](https://github.com/apache/airflow) on 26 September 2026. Ten never reached Jev:
+From a run against the eighteen most recent open pull requests of [apache/airflow](https://github.com/apache/airflow) on 26 September 2026. The summary comes first, and it accounts for every pull request fetched:
 
 ```text
-## Not reviewable yet: 10 of 18
+| Outcome             | Count | Pull requests                                                  |
+| ------------------- | ----- | -------------------------------------------------------------- |
+| draft               | 1     | #73720                                                         |
+| ci-failing          | 8     | #73743, #73737, #73734, #73732, #73730, #73726, #73724, #73723 |
+| ci-pending          | 1     | #73740                                                         |
+| green-is-enough     | 2     | #73742, #73722                                                 |
+| tests-are-enough    | 3     | #73719, #73727, #73729                                         |
+| ai-review-is-enough | 1     | #73728                                                         |
+| human-required      | 2     | #73736, #73741                                                 |
+```
+
+The first three rows are the pre-triage states, settled by rules before any model call. Ten of the eighteen stopped there. The eight that reached Jev, one row each:
+
+```text
+| PR     | Title                                        | Files | Lines    | Kind       | Effort | Cons | Cons from        | Route                       |
+| ------ | -------------------------------------------- | ----- | -------- | ---------- | ------ | ---- | ---------------- | --------------------------- |
+| #73728 | Discover a bundle's Dag definitions throu... | 3     | +203/-34 | feature    | 0.49   | 0.53 | breaking change  | ai-review-is-enough         |
+| #73741 | Improve DAG tag length validation error      | 2     | +11/-3   | bugfix     | 0.40   | 0.97 | security surface | human-required              |
+| #73719 | Fix masked failure reason for deferrable ... | 4     | +103/-8  | bugfix     | 0.37   | 0.33 | breaking change  | tests-are-enough (on a cut) |
+| #73727 | Speed up zip Dag discovery and keep membe... | 2     | +53/-23  | bugfix     | 0.35   | 0.23 | breaking change  | tests-are-enough            |
+| #73736 | Bump astral-sh/setup-uv from 10.1.0 to 10... | 4     | +4/-4    | dependency | 0.28   | 0.99 | infra surface    | human-required              |
+| #73742 | Account for the open pull request limit i... | 3     | +36/-0   | docs       | 0.28   | 0.07 | infra surface    | green-is-enough             |
+| #73729 | Fix clearing with upstream and downstream... | 2     | +51/-2   | bugfix     | 0.27   | 0.17 | breaking change  | tests-are-enough (on a cut) |
+| #73722 | Clarify max_db_retries doc wording to avo... | 1     | +2/-1    | docs       | 0.19   | 0.04 | breaking change  | green-is-enough             |
+```
+
+`Effort` is the weighted mean of nine questions and `Cons` is the max of four. `Cons from` names the question that produced the consequence, which is what set the route: #73741 is a two-file bugfix that touches validation, so security surface at 0.97 carries it past four heavier changes. An effort marked `(size)` means the file and line counts raised it. Either number marked `(on a cut)` sits within 0.02 of a threshold, which is about how far repeat calls move it, so read it as either side.
+
+Then the ten that stopped at pre-triage, with what each is waiting on:
+
+```text
+### Not reviewable yet: 10 of 18
 
 DRAFT  (1)  -> the author is still working: nothing to review, and nothing to decide
   #73720  marked draft by the author
@@ -178,58 +223,46 @@ CI-PENDING  (1)  -> checks are still running: come back when they land
           Bump the auth-ui-package-updates group across 1 directory with 8 updates
           https://github.com/apache/airflow/pull/73740
 
-56% of this queue cannot be reviewed as it stands. Fix that before reading anything into the routes below.
+56% of this queue cannot be reviewed as it stands. Fix that before reading anything into the routes.
 ```
 
-The eight that were reviewable:
+Then the same pull requests grouped by route, costliest evidence first, with the reasoning and the one signal that would drop each a route:
 
 ```text
-| PR     | Files | Lines    | Kind       | Load | Cons | Route                       | Title                                                      |
-| ------ | ----- | -------- | ---------- | ---- | ---- | --------------------------- | ---------------------------------------------------------- |
-| #73728 | 3     | +203/-34 | feature    | 0.49 | 0.54 | ai-review-is-enough         | Discover a bundle's Dag definitions through the importe... |
-| #73741 | 2     | +11/-3   | bugfix     | 0.40 | 0.97 | human-required              | Improve DAG tag length validation error                    |
-| #73719 | 4     | +103/-8  | bugfix     | 0.35 | 0.28 | tests-are-enough            | Fix masked failure reason for deferrable EMR Serverless... |
-| #73727 | 2     | +53/-23  | bugfix     | 0.35 | 0.22 | tests-are-enough            | Speed up zip Dag discovery and keep member file names      |
-| #73736 | 4     | +4/-4    | dependency | 0.28 | 0.99 | human-required              | Bump astral-sh/setup-uv from 10.1.0 to 10.2.0 in the gi... |
-| #73742 | 3     | +36/-0   | docs       | 0.27 | 0.07 | green-is-enough             | Account for the open pull request limit in the PR triag... |
-| #73729 | 2     | +51/-2   | bugfix     | 0.27 | 0.15 | tests-are-enough (on a cut) | Fix clearing with upstream and downstream selecting unr... |
-| #73722 | 1     | +2/-1    | docs       | 0.20 | 0.04 | green-is-enough             | Clarify max_db_retries doc wording to avoid off-by-one ... |
-```
+HUMAN-REQUIRED  (2)  -> a person reads this before it merges, whatever the machines say
+  #73736  consequence 0.99 (infra surface), effort 0.28  Bump astral-sh/setup-uv from 10.1.0 to 10.2.0 in the github-actions-updates group
+          drivers: infra surface, has tests, blast radius
+          would drop a route with: evidence that infra surface is covered, a test or a reviewer who owns it
+          https://github.com/apache/airflow/pull/73736
+  #73741  consequence 0.97 (security surface), effort 0.40  Improve DAG tag length validation error
+          drivers: security surface, blast radius, mechanical
+          would drop a route with: evidence that security surface is covered, a test or a reviewer who owns it
+          https://github.com/apache/airflow/pull/73741
 
-`Load` is effort and `Cons` is consequence. A load marked `(size)` means the file and line counts raised it. Either number marked `(on a cut)` sits within 0.02 of a threshold, which is about how far repeat calls move it, so read it as either side.
-
-Then the same pull requests grouped by route, cheapest evidence last:
-
-```text
-GREEN-IS-ENOUGH  (4)  -> merge when CI is green: nothing here needs a person
-  #73725  consequence 0.14 (blast radius), effort 0.18  Fix Elasticsearch and OpenSearch response wrapper bugs
-          drivers: blast radius
-          https://github.com/apache/airflow/pull/73725
-  #73709  consequence 0.10 (blast radius), effort 0.29  Avoid repeated KubernetesExecutor pod deletion for duplicate events
+AI-REVIEW-IS-ENOUGH  (1)  -> an AI review that finds nothing is sufficient, plus green CI and tests
+  #73728  consequence 0.53 (breaking change), effort 0.49  Discover a bundle's Dag definitions through the importer registry
           drivers: design decisions, blast radius, mechanical
-          https://github.com/apache/airflow/pull/73709
-  #73711  consequence 0.09 (breaking change), effort 0.27  Emit queued_duration metric when a task enters RUNNING via the execution API
-          drivers: design decisions, blast radius, mechanical
-          https://github.com/apache/airflow/pull/73711
+          would drop a route with: evidence that breaking change is covered, a test or a reviewer who owns it
+          https://github.com/apache/airflow/pull/73728
+
+GREEN-IS-ENOUGH  (2)  -> merge when CI is green: nothing here needs a person
+  #73742  consequence 0.07 (infra surface), effort 0.28  Account for the open pull request limit in the PR triage process
+          drivers: mechanical, has tests, design decisions
+          https://github.com/apache/airflow/pull/73742
   #73722  consequence 0.04 (breaking change), effort 0.19  Clarify max_db_retries doc wording to avoid off-by-one confusion
           drivers: has tests
           https://github.com/apache/airflow/pull/73722
-
-HUMAN-PLUS-AUTHOR  (1)  -> a person reads it line by line, and the author walks them through it
-  #73698  consequence 0.99 (security surface), effort 0.63  Bind the AWS auth manager SAML response to the browser that started the login
-          drivers: security surface, design decisions, mechanical
-          would drop a route with: evidence that security surface is covered, a test or a reviewer who owns it
-          https://github.com/apache/airflow/pull/73698
 ```
 
-Four of the eighteen need nothing but a green tick. One needs a person and the author in the room, and the line under it names the single thing that would drop it a route.
+That listing leaves out the `tests-are-enough` section for length, and the committed report in [data/](data/) has all four. Two of the eighteen need a person, two more need nothing but a green tick, and the eight red branches above are what this queue waits on.
+
+Then what the run cost:
 
 ```text
-18 pull requests, 11 questions each, one call apiece. 87,483 input tokens, 2,907 ms total, 162 ms per call on average, $0.00367 at $0.042 per million input tokens.
-2 of 18 had patches too large to send whole, so Jev read part of the diff and the paths of the rest. Those are the ones the size floor guards.
+8 pull requests, 11 questions each, one call apiece. 24,317 input tokens, 1,367 ms total, 171 ms per call on average, $0.00102 at $0.042 per million input tokens.
 ```
 
-Every run writes two reports into [data/](data/). The JSON one holds each answer as Jev sent it, next to the credit, the consequence, the route and the tier the sample derived from it, plus a `route_counts` roll-up so a job can read the shape of a queue without walking every entry. The markdown one carries the same table and route sections, so a triage pastes into a pull request or an issue without reformatting. This repo commits the `apache-airflow` pair as the worked example and ignores the rest, because triaging somebody's open pull requests is their business.
+Every run writes two reports into [data/](data/). The JSON one holds each answer as Jev sent it, next to the credit, the consequence, the route and the tier the sample derived from it, plus a `route_counts` roll-up so a job can read the shape of a queue without walking every entry. The markdown one carries the same two tables and the same route sections, with the numbers as links, so a triage pastes into a pull request or an issue without reformatting. This repo commits the `apache-airflow` pair as the worked example and ignores the rest, because triaging somebody's open pull requests is their business.
 
 ### One pull request, from eleven answers to one route
 
@@ -266,13 +299,13 @@ The run also prints the one thing that would move it: a test exercising that sec
 
 **Arithmetic stays in code.** Jev cannot count, so the file and line totals reach it as a sentence for context, and every threshold on a number lives in [pr_triage.py](pr_triage.py) and its Go twin. `SIZE_FLOORS` names the lowest effort tier a change of a given size can land in: over 30 files or 1,500 lines is high whatever Jev returned. `CONSEQUENCE_FLOORS` and `EFFORT_RAISES` turn the two axes into a route. Every one of them only ever raises, and the output marks the rows where it did, so a reader sees the disagreement instead of inheriting it.
 
-**Say how much of the diff the model read.** Five of those eighteen hold more patch than the 24,000-character budget, so Jev read some files whole and the rest as paths and line counts. `_diff_text` fills the budget with the smallest patches first, because triage asks how far a change reaches and whether one edit repeats, and both of those want breadth. Coverage lands in the report as `diff_coverage` and in the grouped output as a line under any pull request below 70%. The 0.37 on #73713 came from 44% of its diff, which is a weaker claim than the same number across all of it, and the size floor guards those rows.
+**Say how much of the diff the model read.** All eight of the airflow changes fit inside the 24,000-character budget, but most pull requests on a feature-heavy repository do not: over the 26 open on mcp-gateway-registry, 22 hold more patch than that, so Jev read some files whole and the rest as paths and line counts. `_diff_text` fills the budget with the smallest patches first, because triage asks how far a change reaches and whether one edit repeats, and both of those want breadth. Coverage lands in the report as `diff_coverage` and in the grouped output as a line under any pull request below 70%. The 0.74 effort on #1693 came from 37% of a 51-file diff, which is a weaker claim than the same number across all of it, and the size floor guards those rows.
 
 **Weights are a data change, thresholds are a code change.** Raising `security_surface` to 0.25 means editing one line of `questions.yml`. Moving a route cut means editing `CONSEQUENCE_FLOORS`. Both sit in a diff, and neither hides inside a question's wording.
 
 **The description is evidence, and the author wrote it.** An author who opens with "trivial, please merge" is arguing for their own triage. The state names that field `description_written_by_the_author` and `scope_creep` asks whether the diff matches it, which turns the claim into something to check.
 
-**Answers move between runs, so both axes carry a deadband.** Two runs of one dataset moved a load by up to 0.03 and a consequence by up to 0.07. Either number within 0.02 of its cut prints `(on a cut)` rather than picking a side. Running the Python and the Go binary over the same eighteen agreed on 16 routes, and both disagreements were pull requests sitting on a cut, which both outputs said so.
+**Answers move between runs, so both axes carry a deadband.** Two runs of one dataset moved a load by up to 0.03 and a consequence by up to 0.07. Either number within 0.02 of its cut prints `(on a cut)` rather than picking a side. Running the Python and the Go binary over the same eighteen picked the same ten to stop at pre-triage, marked the same shared failures, and agreed on 7 of the 8 routes. They split on #73729, which came back at consequence 0.17 from Python and 0.10 from Go, either side of the 0.15 cut, and the Python run printed it as `(on a cut)`.
 
 ## Calibrate before you trust a route
 

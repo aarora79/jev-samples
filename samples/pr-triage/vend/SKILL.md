@@ -60,7 +60,9 @@ Add `-quiet` when you are going to read the output rather than show it, which dr
 
 ## Reading what comes back
 
-Every run prints a table, then the same pull requests grouped by tier with the advice for each, then what the run cost. It also writes two files into `-out` (default `./data`): a JSON report holding every answer, and a markdown report that pastes into an issue or a pull request without reformatting.
+Every run prints two tables, then the same pull requests grouped by route with the advice for each, then what the run cost. It also writes two files into `-out` (default `./data`): a JSON report holding every answer, and a markdown report that pastes into an issue or a pull request without reformatting.
+
+The first table is the summary: one row per outcome, with a count and the numbers in it. It covers the whole queue, so the pre-triage states are rows alongside the routes and the counts add up to what was fetched. Read it first, then the second table, which carries one row per pull request that reached Jev: number, title, size, effort, consequence, the question that produced the consequence, and the route it bought.
 
 Each pull request gets a **route**, answering one question: what would be enough to merge this change? Cheapest first:
 

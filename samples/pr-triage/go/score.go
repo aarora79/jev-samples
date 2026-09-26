@@ -131,15 +131,6 @@ var routeAdvice = map[string]string{
 	"human-plus-author":   "a person reads it line by line, and the author walks them through it",
 }
 
-// tierAdvice says what to do with a pull request in each tier. The advice is the
-// point of the triage, so it travels with the tier rather than living in a README.
-var tierAdvice = map[string]string{
-	"trivial": "merge on a glance: read the title, skim the diff, check that CI is green",
-	"low":     "one reviewer, one pass, no meeting",
-	"medium":  "one reviewer who knows this area, reading the whole diff",
-	"high":    "a human reads this line by line, and the author walks them through it",
-}
-
 // answer is one answer from Jev, covering all three question types.
 //
 // The API returns a different shape per type, and one struct with every field
