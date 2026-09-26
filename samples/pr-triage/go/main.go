@@ -77,6 +77,9 @@ type options struct {
 	// failUnder exits 2 when any pull request lands in a tier at or above this
 	// one, so a CI job can fail on a queue that needs attention.
 	failOnTier string
+	// failOnRoute exits 2 when any pull request lands on this route or a more
+	// expensive one, which is the gate a queue actually wants.
+	failOnRoute string
 	// fetchOnly stops after writing the dataset, so the GitHub half can run
 	// somewhere with no TypeSafe key.
 	fetchOnly bool
@@ -179,7 +182,7 @@ func gatherDataset(opts options) (dataset, error) {
 	}
 	path := filepath.Join(
 		opts.out,
-		fmt.Sprintf("%s-%s.json", repoSlug(tgt.Repo), selectorSlug(opts.state, opts.limit, since)),
+		fmt.Sprintf("%s-%s.json", repoSlug(tgt.Repo), datasetSlug(data.Selector)),
 	)
 	if err := writeJSON(path, data); err != nil {
 		return dataset{}, err
@@ -236,6 +239,7 @@ func parseFlags() (options, error) {
 	flag.StringVar(&opts.questions, "questions", "", "payload file to use instead of the copy baked into this binary")
 	flag.IntVar(&opts.explain, "explain", 0, "print every question and contribution for one pull request number")
 	flag.StringVar(&opts.failOnTier, "fail-on-tier", "", "exit 2 when any pull request lands in this tier or above: low, medium or high")
+	flag.StringVar(&opts.failOnRoute, "fail-on-route", "", "exit 2 when any pull request needs this route or a costlier one: tests-are-enough, ai-review-is-enough, human-required, human-plus-author")
 	flag.BoolVar(&opts.fetchOnly, "fetch-only", false, "write the dataset and stop, which needs no TypeSafe key")
 	flag.BoolVar(&opts.quiet, "quiet", false, "print the report without the progress lines")
 	flag.BoolVar(&opts.showVersion, "version", false, "print the version and exit")
@@ -281,6 +285,12 @@ func parseFlags() (options, error) {
 		return opts, fmt.Errorf("-fail-on-tier wants trivial, low, medium or high, got %q", opts.failOnTier)
 	}
 
+	if opts.failOnRoute != "" && routeIndex(opts.failOnRoute) < 0 {
+		return opts, fmt.Errorf(
+			"-fail-on-route wants one of %v, got %q", routes, opts.failOnRoute,
+		)
+	}
+
 	switch {
 	case opts.dataset != "" && opts.target != "":
 		return opts, fmt.Errorf("pass a repository or -dataset, not both")
@@ -301,6 +311,7 @@ Usage:
   pr-triage [flags] owner/repo
   pr-triage [flags] https://github.com/owner/repo
   pr-triage [flags] https://ghe.example.com/owner/repo
+  pr-triage https://github.com/owner/repo/pull/1803
   pr-triage -dataset data/owner-repo-open-all.json
 
 Examples:
@@ -309,8 +320,9 @@ Examples:
   pr-triage apache/airflow -since 30            # opened in the last 30 days
   pr-triage apache/airflow -since 2026-08-01    # opened on or after a date
   pr-triage apache/airflow -explain 73713       # one pull request in full
+  pr-triage https://github.com/apache/airflow/pull/73713   # just that one, fetched directly
   pr-triage apache/airflow -fetch-only          # build the dataset, skip Jev
-  pr-triage apache/airflow -fail-on-tier high   # exit 2 if anything lands high
+  pr-triage apache/airflow -fail-on-route human-required   # exit 2 if a human is needed
 
 Credentials, each read from the flag first and the environment second:
   GitHub   -token     GITHUB_TOKEN, GH_TOKEN, GH_ENTERPRISE_TOKEN, or the gh CLI

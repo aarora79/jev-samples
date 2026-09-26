@@ -84,12 +84,24 @@
   }
   .note { font-size: 12px; color: var(--ink3); margin: 6px 0 0; }
   .out { border-left: 4px solid var(--accent); }
+
+  table.routes { border-collapse: collapse; width: 100%; margin-top: 10px; font-size: 12.5px; }
+  table.routes th { text-align: left; font-size: 11px; text-transform: uppercase;
+                    letter-spacing: 0.5px; color: var(--ink3); padding: 0 9px 5px; }
+  table.routes td { padding: 7px 9px; border-top: 1px solid var(--line); color: var(--ink2); }
+  table.routes td:first-child { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+                                font-weight: 600; color: var(--ink); white-space: nowrap; }
+  table.routes tr.r-green td:first-child { color: var(--trivial); }
+  table.routes tr.r-tests td:first-child { color: var(--low); }
+  table.routes tr.r-ai    td:first-child { color: var(--medium); }
+  table.routes tr.r-human td:first-child { color: var(--high); }
+  table.routes tr.r-both  td:first-child { color: var(--high); }
 </style>
 </head>
 <body>
 
-<h1>pr-triage: one pull request, one call, one tier</h1>
-<p class="sub">Jev answers eleven questions in a single call. Python does every piece of arithmetic.</p>
+<h1>pr-triage: one pull request, one call, one route</h1>
+<p class="sub">Jev answers eleven questions in one call. Code does every piece of arithmetic, and the output is a route rather than a merge.</p>
 
 <div class="step">
   <div class="num">1</div>
@@ -120,7 +132,7 @@
            refactor.<br>
            <b>What to check first:</b> correctness, security, compatibility, tests, deployment
            or readability.<br>
-           Both print beside the tier.</p>
+           Both print beside the route.</p>
       </div>
     </div>
   </div>
@@ -131,10 +143,24 @@
 <div class="step">
   <div class="num">3</div>
   <div class="card">
-    <h2>Average the nine into a review load</h2>
-    <p>Each answer counts for the weight <span class="mono">questions.yml</span> gives it, and
-       three of them count inverted, so a mechanical diff, a tested change and a thorough
-       description each pull the load down. The weights sum to 1, so the load runs 0.00 to 1.00.</p>
+    <h2>Read the answers on two axes, not one</h2>
+    <p>Effort and consequence are different questions, and they take different arithmetic.</p>
+    <div class="two" style="margin-top:11px">
+      <div class="card" style="box-shadow:none">
+        <p class="tagline">Effort: the weighted mean of nine</p>
+        <p>How long this takes to read. Averaging is right here, because a diff that
+           is long in one way and short in three really is a medium read. Three of the
+           nine count inverted, so a repeated edit, a tested change and a thorough
+           description each pull it down.</p>
+      </div>
+      <div class="card" style="box-shadow:none;border-color:#e3b9b1;background:#fffaf9">
+        <p class="tagline" style="color:var(--high)">Consequence: the max of four</p>
+        <p>What breaks if it is wrong: does it touch <b>auth or secrets</b>, does it
+           <b>break a caller</b>, how far does it <b>reach</b>, does it touch
+           <b>deploy or CI</b>. The max, never the mean, because a change that is safe
+           in three ways and dangerous in one is a dangerous change.</p>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -143,15 +169,18 @@
 <div class="step">
   <div class="num">4</div>
   <div class="card">
-    <h2>Read the load as a tier</h2>
-    <div class="bands">
-      <div class="band b-high"><div class="name">high</div><div class="range mono">0.62 and up</div></div>
-      <div class="band b-medium"><div class="name">medium</div><div class="range mono">0.42 to 0.62</div></div>
-      <div class="band b-low"><div class="name">low</div><div class="range mono">0.22 to 0.42</div></div>
-      <div class="band b-trivial"><div class="name">trivial</div><div class="range mono">under 0.22</div></div>
-    </div>
-    <p class="note">A load within 0.02 of a cut prints <span class="mono">(on a cut)</span>, because
-       repeat calls move it by that much.</p>
+    <h2>Turn the pair into a route: what evidence is enough</h2>
+    <p>Consequence sets the floor. Effort can raise it and never lower it. Nothing here
+       says "merge", because a model reported at 67.8% accuracy can decide how much
+       evidence to demand and cannot be the last gate before main.</p>
+    <table class="routes">
+      <tr><th>Route</th><th>Sufficient evidence</th><th>Reached when</th></tr>
+      <tr class="r-green"><td>green-is-enough</td><td>CI passing</td><td>consequence under 0.15</td></tr>
+      <tr class="r-tests"><td>tests-are-enough</td><td>CI, and a test that exercises it</td><td>consequence 0.15, or effort 0.42</td></tr>
+      <tr class="r-ai"><td>ai-review-is-enough</td><td>the above, and an AI review finding nothing</td><td>consequence 0.35, or effort 0.62</td></tr>
+      <tr class="r-human"><td>human-required</td><td>a person reads it</td><td>consequence 0.60</td></tr>
+      <tr class="r-both"><td>human-plus-author</td><td>a person reads it, author walking through</td><td>consequence 0.60 and effort 0.62</td></tr>
+    </table>
   </div>
 </div>
 
@@ -160,14 +189,14 @@
 <div class="step">
   <div class="num">5</div>
   <div class="card">
-    <h2>Let the file and line counts raise it</h2>
+    <h2>Let the file and line counts raise the effort tier</h2>
     <div class="floor">
       <div>over 30 files or 1,500 lines &rarr; <b>high</b></div>
       <div>over 12 files or 500 lines &rarr; <b>medium</b></div>
       <div>over 4 files or 150 lines &rarr; <b>low</b></div>
     </div>
     <p class="note">Jev reads a truncated diff, so a 54-file change can read as one repeated edit.
-       Size is arithmetic, Python owns it, and it only ever raises a tier.</p>
+       Size is arithmetic, Python and Go own it, and it only ever raises.</p>
   </div>
 </div>
 
@@ -176,10 +205,10 @@
 <div class="step">
   <div class="num">6</div>
   <div class="card out">
-    <h2>Print one line per pull request</h2>
-    <p>The tier, the advice that goes with it, and the questions that drove the load. Every run
-       also writes a JSON report and a markdown one into
-       <span class="mono">data/</span>.</p>
+    <h2>Print the route, the reason, and the one thing that would change it</h2>
+    <p>Grouped by route, with what set the consequence, the questions carrying the effort,
+       and the single signal that would drop it a route: <i>"a test that exercises the
+       unconnected-identity path"</i>. A tier tells an author nothing to do. That line does.</p>
   </div>
 </div>
 

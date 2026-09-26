@@ -14,7 +14,7 @@ import (
 
 // triageHeader names the columns of the one-row-per-pull-request table.
 var triageHeader = []string{
-	"PR", "Files", "Lines", "Kind", "Load", "Tier", "Review focus", "Title",
+	"PR", "Files", "Lines", "Kind", "Load", "Cons", "Route", "Title",
 }
 
 // maxTitleChars cuts a title so the table stays inside a terminal.
@@ -40,7 +40,7 @@ func triage(opts options, data dataset, set settings, specs []spec, key string) 
 		results = append(results, r)
 	}
 
-	fmt.Printf("\n## Triage: %s, %d pull requests\n\n", data.Repo, len(results))
+	fmt.Printf("\n## Triage: %s, %s\n\n", data.Repo, plural(len(results), "pull request"))
 	printPadded(triageHeader, triageRows(results))
 	fmt.Printf(
 		"\nLoad is the weighted average of nine questions, 0 to 1. Tier comes from that load, "+
@@ -69,6 +69,19 @@ func triage(opts options, data dataset, set settings, specs []spec, key string) 
 // gate turns the results into an exit code, so a pull request job can fail on a
 // queue holding work it wants flagged.
 func gate(opts options, results []result) (int, error) {
+	// The route gate reads first, because the route is what a queue acts on.
+	if opts.failOnRoute != "" {
+		bar := routeIndex(opts.failOnRoute)
+		for _, r := range byConsequence(results) {
+			if routeIndex(r.Route) >= bar {
+				return exitGate, fmt.Errorf(
+					"#%d needs %s, consequence %.2f from %s, at or above the %s bar",
+					r.Pull.Number, r.Route, r.Consequence, r.ConsequenceLabel, opts.failOnRoute,
+				)
+			}
+		}
+	}
+
 	if opts.failOnTier == "" {
 		return exitOK, nil
 	}
@@ -107,6 +120,20 @@ func tierLabel(r result) string {
 	}
 }
 
+// loadLabel prints the effort with the same two marks, since the table now shows
+// the load where it used to show the tier.
+func loadLabel(r result) string {
+	text := fmt.Sprintf("%.2f", r.Load)
+	switch {
+	case r.RaisedBySize:
+		return text + " (size)"
+	case nearACut(r.Load):
+		return text + " (on a cut)"
+	default:
+		return text
+	}
+}
+
 // triageRows builds one row per pull request, heaviest first.
 func triageRows(results []result) [][]string {
 	rows := make([][]string, 0, len(results))
@@ -116,9 +143,9 @@ func triageRows(results []result) [][]string {
 			fmt.Sprintf("%d", r.Pull.ChangedFiles),
 			fmt.Sprintf("+%d/-%d", r.Pull.Additions, r.Pull.Deletions),
 			r.Answers["change_kind"].Choice,
-			fmt.Sprintf("%.2f", r.Load),
-			tierLabel(r),
-			r.Answers["review_focus"].Choice,
+			loadLabel(r),
+			fmt.Sprintf("%.2f", r.Consequence),
+			routeLabel(r),
 			trimTitle(r.Pull.Title),
 		})
 	}
@@ -132,6 +159,15 @@ func trimTitle(title string) string {
 		return title
 	}
 	return title[:maxTitleChars-3] + "..."
+}
+
+// routeLabel names the route, marking a consequence that sits on a cut so a reader
+// treats it as either of the two routes it straddles.
+func routeLabel(r result) string {
+	if nearARouteCut(r.Consequence) {
+		return r.Route + " (on a cut)"
+	}
+	return r.Route
 }
 
 // paddedLines builds one table padded to its widest cell per column.
@@ -178,15 +214,18 @@ func printPadded(header []string, rows [][]string) {
 	}
 }
 
-// printGroups prints the pull requests grouped by tier, with the advice for each
-// tier and the questions that drove each load.
+// printGroups prints the pull requests grouped by route, with what each route asks
+// for and the one signal that would drop it a route.
+//
+// The route is the thing a reader acts on, so it sets the grouping. The tier is
+// still in the report, as the effort half of the picture.
 func printGroups(results []result) {
-	// Heaviest tier first, because that is the work a reader has to plan for.
-	for index := len(tiers) - 1; index >= 0; index-- {
-		tier := tiers[index]
+	// Most expensive route first, because that is the work a reader has to plan for.
+	for index := len(routes) - 1; index >= 0; index-- {
+		route := routes[index]
 		members := make([]result, 0, len(results))
-		for _, r := range byLoad(results) {
-			if r.Tier == tier {
+		for _, r := range byConsequence(results) {
+			if r.Route == route {
 				members = append(members, r)
 			}
 		}
@@ -194,23 +233,40 @@ func printGroups(results []result) {
 			continue
 		}
 
-		fmt.Printf("\n%s  (%d)  -> %s\n", strings.ToUpper(tier), len(members), tierAdvice[tier])
+		fmt.Printf("\n%s  (%d)  -> %s\n", strings.ToUpper(route), len(members), routeAdvice[route])
 		for _, r := range members {
 			note := ""
 			if r.RaisedBySize {
 				note = "  [size floor]"
 			}
-			fmt.Printf("  #%-6d load %.2f%s  %s\n", r.Pull.Number, r.Load, note, r.Pull.Title)
-			fmt.Printf("          %s\n", driverText(r))
+			fmt.Printf(
+				"  #%-6d consequence %.2f (%s), effort %.2f%s  %s\n",
+				r.Pull.Number, r.Consequence, r.ConsequenceLabel, r.Load, note, r.Pull.Title,
+			)
+			fmt.Printf("          drivers: %s\n", driverText(r))
+			if r.Downgrade != "" {
+				fmt.Printf("          would drop a route with: %s\n", r.Downgrade)
+			}
 			if r.Coverage < lowCoverageBelow {
 				fmt.Printf(
-					"          read from %.0f%% of the changed files, so the load is a read on part of the diff\n",
+					"          read from %.0f%% of the changed files, so both numbers read part of the diff\n",
 					r.Coverage*100,
 				)
 			}
 			fmt.Printf("          %s\n", r.Pull.URL)
 		}
 	}
+}
+
+// byConsequence returns the results most consequential first, without disturbing
+// the caller's slice.
+func byConsequence(results []result) []result {
+	ordered := make([]result, len(results))
+	copy(ordered, results)
+	sort.SliceStable(ordered, func(i, j int) bool {
+		return ordered[i].Consequence > ordered[j].Consequence
+	})
+	return ordered
 }
 
 // driverText names the drivers, or says that nothing cleared the floor.
@@ -290,9 +346,9 @@ func printTotals(results []result, specs []spec, set settings) {
 	calls := len(results)
 
 	fmt.Printf(
-		"\n%d pull requests, %d questions each, one call apiece. %s input tokens, %s ms total, "+
+		"\n%s, %d questions each, one call apiece. %s input tokens, %s ms total, "+
 			"%d ms per call on average, $%.5f at $%v per million input tokens.\n",
-		calls, len(specs), commas(tokens), commas(int(latency)),
+		plural(calls, "pull request"), len(specs), commas(tokens), commas(int(latency)),
 		latency/int64(max(calls, 1)), costUSD(results, set), set.InputUSDPerMillion,
 	)
 	if thin > 0 {
@@ -302,6 +358,15 @@ func printTotals(results []result, specs []spec, set settings) {
 			thin, calls,
 		)
 	}
+}
+
+// plural counts a noun, adding an s only when there is more than one of them, so
+// a single pull request does not read as "1 pull requests".
+func plural(count int, noun string) string {
+	if count == 1 {
+		return fmt.Sprintf("%d %s", count, noun)
+	}
+	return fmt.Sprintf("%d %ss", count, noun)
 }
 
 // commas groups a number's digits, because a token count reads better as 183,426
@@ -329,18 +394,6 @@ func commas(value int) string {
 // reportStem names both reports after the repository and the selector, matching
 // what the Python sample writes.
 func reportStem(opts options, data dataset) string {
-	state := data.Selector.State
-	if state == "" {
-		state = "open"
-	}
-	limit := 0
-	if data.Selector.Limit != nil {
-		limit = *data.Selector.Limit
-	}
-	since := ""
-	if data.Selector.Since != nil {
-		since = *data.Selector.Since
-	}
-	name := fmt.Sprintf("%s-%s-triage", repoSlug(data.Repo), selectorSlug(state, limit, since))
+	name := fmt.Sprintf("%s-%s-triage", repoSlug(data.Repo), datasetSlug(data.Selector))
 	return filepath.Join(opts.out, name)
 }

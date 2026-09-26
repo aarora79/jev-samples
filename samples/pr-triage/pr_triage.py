@@ -39,7 +39,7 @@ from typesafe_sdk import (
     TypeSafeClient,
 )
 
-from fetch_prs import build_dataset, parse_repo, parse_since
+from fetch_prs import build_dataset, parse_since, parse_target
 
 # Configure logging with basicConfig
 logging.basicConfig(
@@ -138,7 +138,67 @@ LOW_COVERAGE_BELOW: float = 0.70
 # How many drivers to name per pull request.
 DRIVER_COUNT: int = 3
 
-TRIAGE_HEADER: list[str] = ["PR", "Files", "Lines", "Kind", "Load", "Tier", "Review focus", "Title"]
+# The four questions that say what breaks if this change is wrong, as opposed to
+# how long it takes to read. Consequence is the MAX of these, never the mean: a
+# change that is safe in three ways and dangerous in one is a dangerous change,
+# and averaging lets three absences of risk vote down one confident yes.
+CONSEQUENCE_QUESTIONS: tuple[str, ...] = (
+    "security_surface",
+    "breaking_change",
+    "blast_radius",
+    "infra_surface",
+)
+
+# What evidence is enough, cheapest first. The route names what has to be true
+# before this merges, and nothing here ever says "merge": TypeSafe publishes 67.8%
+# accuracy on their own benchmark, which is fine for deciding how much evidence to
+# demand and nowhere near enough to be the last gate before main.
+ROUTES: tuple[str, ...] = (
+    "green-is-enough",
+    "tests-are-enough",
+    "ai-review-is-enough",
+    "human-required",
+    "human-plus-author",
+)
+
+# What consequence buys which route, highest floor first. The cuts come from the
+# cost of being wrong: a change that probably touches auth cannot be waved through
+# on a green tick, whatever else is true of it.
+CONSEQUENCE_FLOORS: tuple[tuple[float, str], ...] = (
+    (0.60, "human-required"),
+    (0.35, "ai-review-is-enough"),
+    (0.15, "tests-are-enough"),
+    (0.00, "green-is-enough"),
+)
+
+# What each route asks of a team, so the advice travels with the route rather than
+# living in a README.
+ROUTE_ADVICE: dict[str, str] = {
+    "green-is-enough": "merge when CI is green: nothing here needs a person",
+    "tests-are-enough": "merge when CI is green and a test exercises the change",
+    "ai-review-is-enough": "an AI review that finds nothing is sufficient, plus green CI and tests",
+    "human-required": "a person reads this before it merges, whatever the machines say",
+    "human-plus-author": "a person reads it line by line, and the author walks them through it",
+}
+
+# Effort can only raise the route, never lower it. A long read wants a second pair
+# of eyes even when nothing dangerous is in it, and a long read on top of a high
+# consequence wants the author in the room.
+EFFORT_RAISES: tuple[tuple[float, str], ...] = (
+    (0.62, "ai-review-is-enough"),
+    (0.42, "tests-are-enough"),
+)
+
+TRIAGE_HEADER: list[str] = [
+    "PR",
+    "Files",
+    "Lines",
+    "Kind",
+    "Load",
+    "Cons",
+    "Route",
+    "Title",
+]
 
 DETAIL_HEADER: list[str] = [
     "Key",
@@ -504,6 +564,145 @@ def _near_a_cut(load: float) -> bool:
     return any(floor > 0.0 and round(abs(load - floor), 6) <= DEADBAND for floor, _ in LOAD_FLOORS)
 
 
+def _near_a_route_cut(consequence: float) -> bool:
+    """Say whether a consequence sits close enough to a route cut to move between runs.
+
+    The same deadband the tier uses. Repeat calls move a consequence by about this
+    much, so a value inside the band would otherwise flip a route between runs and
+    two reports of one queue would disagree.
+
+    Args:
+        consequence: The consequence, 0 to 1.
+
+    Returns:
+        True when the consequence is within DEADBAND of any cut in
+        CONSEQUENCE_FLOORS.
+    """
+    return any(
+        cut > 0.0 and round(abs(consequence - cut), 6) <= DEADBAND for cut, _ in CONSEQUENCE_FLOORS
+    )
+
+
+def _consequence(
+    answers: dict,
+    specs: dict,
+) -> tuple[float, str]:
+    """Read what breaks if this change is wrong, and name what said so.
+
+    The max rather than the mean, because risk does not average. A smoke alarm
+    that averages four rooms is useless.
+
+    Args:
+        answers: Answers keyed by question id, as returned by Jev.
+        specs: Question entries from questions.yml, keyed by id.
+
+    Returns:
+        Tuple of (consequence from 0 to 1, the label that set it).
+    """
+    worst, label = 0.0, ""
+    for qid in CONSEQUENCE_QUESTIONS:
+        if qid not in specs or qid not in answers:
+            continue
+        value = _consequence_of(specs[qid], answers[qid])
+        if value >= worst:
+            worst, label = value, specs[qid]["label"]
+    return worst, label
+
+
+def _consequence_of(
+    spec: dict,
+    answer: NoulAnswer | ChoiceAnswer | ScoreAnswer,
+) -> float:
+    """Read one answer as consequence, which is not the same as credit.
+
+    A Noul reads as its probability. A Score reads as the probability it put on
+    its top level, rather than as the normalised score, because only the top level
+    of these rubrics describes something consequential. `blast_radius` level 1 is
+    "confined to one module or feature area", which is ordinary work, and dividing
+    a score of 1.0 by 2 would report ordinary work as half a catastrophe.
+
+    Args:
+        spec: The question entry from questions.yml.
+        answer: The answer Jev returned for it.
+
+    Returns:
+        Consequence from 0 to 1.
+    """
+    if spec["type"] != "score":
+        return _credit(spec, answer)
+
+    top = len(answer.legend) - 1
+    # The SDK keys probabilities by int level; a wire-shaped dict keys them by str.
+    probabilities = answer.probabilities
+    return float(probabilities.get(top, probabilities.get(str(top), 0.0)))
+
+
+def _route(
+    consequence: float,
+    load: float,
+) -> tuple[str, str]:
+    """Say what evidence is enough before this merges, and what decided that.
+
+    Consequence sets the floor and effort can only raise it. Neither can lower
+    the other, so a small diff cannot talk its way past an auth change and a
+    quiet auth surface cannot wave through a thousand-line refactor.
+
+    Args:
+        consequence: The max of the consequence questions, 0 to 1.
+        load: The review load, 0 to 1.
+
+    Returns:
+        Tuple of (route, "consequence" or "effort" or "both").
+    """
+    floor = next(route for cut, route in CONSEQUENCE_FLOORS if consequence >= cut)
+    index = ROUTES.index(floor)
+    decided = "consequence"
+
+    for cut, route in EFFORT_RAISES:
+        if load >= cut and ROUTES.index(route) > index:
+            index, decided = ROUTES.index(route), "effort"
+            break
+
+    # A long read of something dangerous is the one case that wants the author
+    # walking a human through it.
+    if consequence >= CONSEQUENCE_FLOORS[0][0] and load >= EFFORT_RAISES[0][0]:
+        return ROUTES[-1], "both"
+
+    return ROUTES[index], decided
+
+
+def _downgrade(
+    answers: dict,
+    specs: dict,
+    route: str,
+    decided: str,
+) -> str:
+    """Name the one signal that would move this to a cheaper route.
+
+    A tier tells an author nothing to do. This tells them exactly what to do.
+
+    Args:
+        answers: Answers keyed by question id, as returned by Jev.
+        specs: Question entries from questions.yml, keyed by id.
+        route: The route this pull request landed on.
+        decided: What set it, from _route.
+
+    Returns:
+        A sentence, or "" when it is already on the cheapest route.
+    """
+    if route == ROUTES[0]:
+        return ""
+    if decided == "effort":
+        drivers = _drivers(answers, specs)
+        biggest = drivers[0] if drivers else "the weighted questions"
+        return f"a shorter read, or splitting it: {biggest} is carrying the load"
+
+    _, label = _consequence(answers, specs)
+    if label == specs.get("has_tests", {}).get("label"):
+        return "tests that exercise the change"
+    return f"evidence that {label} is covered, a test or a reviewer who owns it"
+
+
 def _drivers(
     answers: dict,
     specs: dict,
@@ -667,8 +866,13 @@ def _triage_one(
     answers = response.answers
     lines = pull["additions"] + pull["deletions"]
     load = _review_load(answers, specs)
+    consequence, consequence_label = _consequence(answers, specs)
+    route, decided = _route(consequence, load)
     tier, raised_by_size = _tier(load, pull["changed_files"], lines)
-    logger.info(f"#{pull['number']}: load {load:.2f}, tier {tier}, {latency_ms} ms")
+    logger.info(
+        f"#{pull['number']}: load {load:.2f}, consequence {consequence:.2f}, "
+        f"route {route}, {latency_ms} ms"
+    )
 
     return {
         "pull": pull,
@@ -676,6 +880,11 @@ def _triage_one(
         "answers": answers,
         "lines": lines,
         "load": load,
+        "consequence": consequence,
+        "consequence_label": consequence_label,
+        "route": route,
+        "route_decided_by": decided,
+        "downgrade": _downgrade(answers, specs, route, decided),
         "tier": tier,
         "raised_by_size": raised_by_size,
         "coverage": coverage,
@@ -698,20 +907,20 @@ def _triage_row(result: dict) -> list[str]:
     if len(title) > MAX_TITLE_CHARS:
         title = title[: MAX_TITLE_CHARS - 3] + "..."
 
-    tier = result["tier"]
+    load = f"{result['load']:.2f}"
     if result["raised_by_size"]:
-        tier += " (size)"
+        load += " (size)"
     elif _near_a_cut(result["load"]):
-        tier += " (on a cut)"
+        load += " (on a cut)"
 
     return [
         f"#{pull['number']}",
         str(pull["changed_files"]),
         f"+{pull['additions']}/-{pull['deletions']}",
         result["answers"]["change_kind"].choice,
-        f"{result['load']:.2f}",
-        tier,
-        result["answers"]["review_focus"].choice,
+        load,
+        f"{result['consequence']:.2f}",
+        result["route"] + (" (on a cut)" if _near_a_route_cut(result["consequence"]) else ""),
         title,
     ]
 
@@ -727,31 +936,40 @@ def _print_triage_table(results: list[dict]) -> None:
 
 
 def _print_groups(results: list[dict]) -> None:
-    """Print the pull requests grouped by tier, with the advice for each tier.
+    """Print the pull requests grouped by route, with what each route asks for.
+
+    The route is the thing a reader acts on, so it sets the grouping. The tier is
+    still in the report, as the effort half of the picture.
 
     Args:
         results: Triage results, in dataset order.
     """
-    for tier in reversed(TIERS):
+    for route in reversed(ROUTES):
         members = sorted(
-            (result for result in results if result["tier"] == tier),
-            key=lambda item: item["load"],
+            (result for result in results if result["route"] == route),
+            key=lambda item: item["consequence"],
             reverse=True,
         )
         if not members:
             continue
 
-        print(f"\n{tier.upper()}  ({len(members)})  -> {TIER_ADVICE[tier]}")
+        print(f"\n{route.upper()}  ({len(members)})  -> {ROUTE_ADVICE[route]}")
         for result in members:
             pull = result["pull"]
             drivers = ", ".join(result["drivers"]) or "nothing above the driver floor"
             size_note = "  [size floor]" if result["raised_by_size"] else ""
-            print(f"  #{pull['number']:<6} load {result['load']:.2f}{size_note}  {pull['title']}")
-            print(f"          {drivers}")
+            print(
+                f"  #{pull['number']:<6} consequence {result['consequence']:.2f} "
+                f"({result['consequence_label']}), effort {result['load']:.2f}"
+                f"{size_note}  {pull['title']}"
+            )
+            print(f"          drivers: {drivers}")
+            if result["downgrade"]:
+                print(f"          would drop a route with: {result['downgrade']}")
             if result["coverage"] < LOW_COVERAGE_BELOW:
                 print(
                     f"          read from {result['coverage']:.0%} of the changed files, "
-                    "so the load is a read on part of the diff"
+                    "so both numbers read part of the diff"
                 )
             print(f"          {pull['url']}")
 
@@ -847,7 +1065,7 @@ def _print_totals(
     calls = len(results)
     thin = sum(1 for result in results if result["coverage"] < LOW_COVERAGE_BELOW)
     print(
-        f"\n{calls} pull requests, {len(specs)} questions each, one call apiece. "
+        f"\n{_plural(calls, 'pull request')}, {len(specs)} questions each, one call apiece. "
         f"{tokens:,} input tokens, {latency:,} ms total, "
         f"{round(latency / calls):,} ms per call on average, "
         f"${_cost_usd(results, settings):.5f} at ${settings['input_usd_per_million']} "
@@ -858,6 +1076,22 @@ def _print_totals(
             f"{thin} of {calls} had patches too large to send whole, so Jev read part of the "
             "diff and the paths of the rest. Those are the ones the size floor guards."
         )
+
+
+def _plural(
+    count: int,
+    noun: str,
+) -> str:
+    """Count a noun, adding an s only when there is more than one of them.
+
+    Args:
+        count: How many.
+        noun: The singular form.
+
+    Returns:
+        The count and the noun, such as "1 pull request" or "18 pull requests".
+    """
+    return f"{count} {noun}" if count == 1 else f"{count} {noun}s"
 
 
 def _report_path(
@@ -875,6 +1109,10 @@ def _report_path(
     """
     REPORT_DIR.mkdir(exist_ok=True)
     slug = re.sub(r"[^a-z0-9]+", "-", repo.lower()).strip("-")
+    # A pull request names itself, so the state adds nothing and the report ends up
+    # beside the dataset under the same name.
+    if selector.get("pull") is not None:
+        return REPORT_DIR / f"{slug}-pull-{selector['pull']}-triage.json"
     if selector.get("since"):
         tail = f"since-{selector['since']}"
     elif selector.get("limit") is None:
@@ -916,6 +1154,7 @@ def _write_report(
         "model": settings["model"],
         "questions_asked": len(specs),
         "tier_counts": counts,
+        "route_counts": {route: sum(1 for r in results if r["route"] == route) for route in ROUTES},
         "cost_usd": round(_cost_usd(results, settings), 8),
         "pull_requests": [
             {
@@ -927,6 +1166,11 @@ def _write_report(
                 "additions": result["pull"]["additions"],
                 "deletions": result["pull"]["deletions"],
                 "review_load": round(result["load"], 4),
+                "consequence": round(result["consequence"], 4),
+                "consequence_from": result["consequence_label"],
+                "route": result["route"],
+                "route_decided_by": result["route_decided_by"],
+                "downgrade": result["downgrade"],
                 "tier": result["tier"],
                 "size_floor": _size_floor(result["pull"]["changed_files"], result["lines"]),
                 "raised_by_size": result["raised_by_size"],
@@ -1119,7 +1363,7 @@ def triage(
             print(f"\nRaw response for #{result['pull']['number']}:")
             print(json.dumps(result["response"].model_dump(mode="json"), indent=2))
 
-    print(f"\n## Triage: {repo}, {len(results)} pull requests\n")
+    print(f"\n## Triage: {repo}, {_plural(len(results), 'pull request')}\n")
     _print_triage_table(results)
     print(
         "\nLoad is the weighted average of nine questions, 0 to 1. Tier comes from that load, "
@@ -1223,11 +1467,16 @@ the repo root. Fetching also reads GITHUB_TOKEN, GH_TOKEN, or `gh auth token`.
     if args.dataset:
         dataset = _load_dataset(args.dataset)
     elif args.repo:
+        # A pull request URL carries its own number, and that number turns the run
+        # into one pull request: no listing, and --limit, --since and --state have
+        # nothing to select from.
+        repo, pull = parse_target(args.repo)
         path = build_dataset(
-            repo=parse_repo(args.repo),
+            repo=repo,
             state=args.state,
             limit=None if args.all else args.limit,
             since=parse_since(args.since),
+            pull=pull,
         )
         dataset = _load_dataset(path)
     else:
