@@ -14,7 +14,7 @@ Before any of that, a pull request has to be worth reading. One call to the chec
 | `ci-pending` | a check is still running | nobody, come back later |
 | `draft` | the author marked it draft | the author, who is not asking |
 
-`ci-failing` states a fact and never judges the author. A check name that fails on several unrelated pull requests is the check being broken, and the output says which failures are shared.
+`ci-failing` states a fact and never judges the author. A check name that fails on several unrelated pull requests is the check being broken, and the output marks those failures as the checks' own.
 
 Those three states took ten of eighteen out of the queue before Jev saw a single one.
 
