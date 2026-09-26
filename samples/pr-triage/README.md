@@ -14,7 +14,7 @@ Before any of that, a pull request has to be worth reading. One call to the chec
 | `ci-pending` | a check is still running | nobody, come back later |
 | `draft` | the author marked it draft | the author, who is not asking |
 
-`ci-failing` is a fact rather than a verdict. On the eighteen airflow pull requests below, eight were failing and **five of those failed only on a check that also fails on unrelated pull requests**, including a boto3 version bump that cannot break Postgres serialization. That is the check being broken, not each change breaking it, and the output says so. Detecting it costs nothing extra, because the names are already in the dataset.
+`ci-failing` states a fact and never judges the author. A check name that fails on several unrelated pull requests is the check being broken, and the output says which failures are shared.
 
 Those three states took ten of eighteen out of the queue before Jev saw a single one.
 
