@@ -5,52 +5,257 @@
     "limit": 18,
     "since": null
   },
-  "triaged_at": "2026-09-26T00:36:48+00:00",
+  "triaged_at": "2026-09-26T00:56:58+00:00",
   "model": "jev-1.13.0",
   "questions_asked": 11,
   "tier_counts": {
-    "trivial": 2,
-    "low": 8,
-    "medium": 5,
-    "high": 3
+    "trivial": 1,
+    "low": 6,
+    "medium": 1,
+    "high": 0
   },
   "route_counts": {
-    "green-is-enough": 4,
+    "green-is-enough": 2,
     "tests-are-enough": 3,
-    "ai-review-is-enough": 2,
-    "human-required": 8,
-    "human-plus-author": 1
+    "ai-review-is-enough": 1,
+    "human-required": 2,
+    "human-plus-author": 0
   },
-  "cost_usd": 0.00367429,
+  "state_counts": {
+    "draft": 1,
+    "ci-failing": 8,
+    "ci-pending": 1,
+    "reviewable": 8
+  },
+  "not_reviewable": [
+    {
+      "number": 73743,
+      "title": "Fix airflowctl dags get-tags crashing whenever a Dag has tags",
+      "url": "https://github.com/apache/airflow/pull/73743",
+      "state": "ci-failing",
+      "reason": "1 of 95 checks failing: Postgres tests: core / DB-core:Postgres:14:3.10:Core...Serialization, which also fails on other pull requests",
+      "shared_failure": true,
+      "checks": {
+        "total": 95,
+        "pending": 0,
+        "counts": {
+          "skipped": 43,
+          "success": 50,
+          "failure": 1,
+          "neutral": 1
+        },
+        "failing": [
+          "Postgres tests: core / DB-core:Postgres:14:3.10:Core...Serialization"
+        ]
+      }
+    },
+    {
+      "number": 73740,
+      "title": "Bump the auth-ui-package-updates group across 1 directory with 8 updates",
+      "url": "https://github.com/apache/airflow/pull/73740",
+      "state": "ci-pending",
+      "reason": "1 of 89 checks still running",
+      "shared_failure": false,
+      "checks": {
+        "total": 89,
+        "pending": 1,
+        "counts": {
+          "skipped": 50,
+          "success": 38
+        },
+        "failing": []
+      }
+    },
+    {
+      "number": 73737,
+      "title": "Bump the github-actions-updates group with 4 updates",
+      "url": "https://github.com/apache/airflow/pull/73737",
+      "state": "ci-failing",
+      "reason": "1 of 100 checks failing: Basic tests / Scripts tests, which also fails on other pull requests",
+      "shared_failure": true,
+      "checks": {
+        "total": 100,
+        "pending": 0,
+        "counts": {
+          "skipped": 26,
+          "success": 72,
+          "neutral": 1,
+          "failure": 1
+        },
+        "failing": [
+          "Basic tests / Scripts tests"
+        ]
+      }
+    },
+    {
+      "number": 73734,
+      "title": "Bump the edge-ui-package-updates group across 1 directory with 8 updates",
+      "url": "https://github.com/apache/airflow/pull/73734",
+      "state": "ci-failing",
+      "reason": "1 of 75 checks failing: Postgres tests: core / DB-core:Postgres:14:3.10:Core...Serialization, which also fails on other pull requests",
+      "shared_failure": true,
+      "checks": {
+        "total": 75,
+        "pending": 0,
+        "counts": {
+          "skipped": 35,
+          "success": 39,
+          "failure": 1
+        },
+        "failing": [
+          "Postgres tests: core / DB-core:Postgres:14:3.10:Core...Serialization"
+        ]
+      }
+    },
+    {
+      "number": 73732,
+      "title": "Bump boto3 from 1.43.96 to 1.43.98 in /dev/breeze in the 3-3-uv-dependency-updates group",
+      "url": "https://github.com/apache/airflow/pull/73732",
+      "state": "ci-failing",
+      "reason": "1 of 100 checks failing: Basic tests / Scripts tests, which also fails on other pull requests",
+      "shared_failure": true,
+      "checks": {
+        "total": 100,
+        "pending": 0,
+        "counts": {
+          "skipped": 26,
+          "success": 73,
+          "failure": 1
+        },
+        "failing": [
+          "Basic tests / Scripts tests"
+        ]
+      }
+    },
+    {
+      "number": 73730,
+      "title": "Bump boto3 from 1.43.97 to 1.43.98 in /dev/breeze in the uv-dependency-updates group",
+      "url": "https://github.com/apache/airflow/pull/73730",
+      "state": "ci-failing",
+      "reason": "1 of 100 checks failing: Postgres tests: core / DB-core:Postgres:14:3.10:Core...Serialization, which also fails on other pull requests",
+      "shared_failure": true,
+      "checks": {
+        "total": 100,
+        "pending": 0,
+        "counts": {
+          "skipped": 9,
+          "success": 90,
+          "failure": 1
+        },
+        "failing": [
+          "Postgres tests: core / DB-core:Postgres:14:3.10:Core...Serialization"
+        ]
+      }
+    },
+    {
+      "number": 73726,
+      "title": "UI: Add team filter to Human-in-the-loop task instances listing",
+      "url": "https://github.com/apache/airflow/pull/73726",
+      "state": "ci-failing",
+      "reason": "2 of 100 checks failing: 2 checks",
+      "shared_failure": false,
+      "checks": {
+        "total": 100,
+        "pending": 0,
+        "counts": {
+          "skipped": 7,
+          "success": 91,
+          "failure": 2
+        },
+        "failing": [
+          "Special tests / Latest SQLAlchemy test: core / DB-core:LatestSQLAlchemy-Postgres:14:3.10:Core...Serialization",
+          "Special tests / Min SQLAlchemy test: core / DB-core:MinSQLAlchemy-Postgres:14:3.10:Core...Serialization"
+        ]
+      }
+    },
+    {
+      "number": 73724,
+      "title": "Fix Grid and Graph 500 errors for cyclic TaskGroup dependencies",
+      "url": "https://github.com/apache/airflow/pull/73724",
+      "state": "ci-failing",
+      "reason": "1 of 100 checks failing: Additional PROD image tests / Test e2e integration tests with PROD image / Regular e2e test",
+      "shared_failure": false,
+      "checks": {
+        "total": 100,
+        "pending": 0,
+        "counts": {
+          "skipped": 8,
+          "success": 91,
+          "failure": 1
+        },
+        "failing": [
+          "Additional PROD image tests / Test e2e integration tests with PROD image / Regular e2e test"
+        ]
+      }
+    },
+    {
+      "number": 73723,
+      "title": "TS SDK: embed one source region per native Dag file",
+      "url": "https://github.com/apache/airflow/pull/73723",
+      "state": "ci-failing",
+      "reason": "1 of 88 checks failing: Additional PROD image tests / TypeScript SDK e2e tests with PROD image / TypeScript SDK e2e test",
+      "shared_failure": false,
+      "checks": {
+        "total": 88,
+        "pending": 0,
+        "counts": {
+          "skipped": 47,
+          "success": 39,
+          "failure": 1,
+          "neutral": 1
+        },
+        "failing": [
+          "Additional PROD image tests / TypeScript SDK e2e tests with PROD image / TypeScript SDK e2e test"
+        ]
+      }
+    },
+    {
+      "number": 73720,
+      "title": "[v3-3-test] Raise DeadlockImminentError for sync comms calls from a paused event loop thread (#73521)",
+      "url": "https://github.com/apache/airflow/pull/73720",
+      "state": "draft",
+      "reason": "marked draft by the author",
+      "shared_failure": false,
+      "checks": {
+        "total": 2,
+        "pending": 1,
+        "counts": {
+          "success": 1
+        },
+        "failing": []
+      }
+    }
+  ],
+  "cost_usd": 0.00102131,
   "pull_requests": [
     {
-      "number": 73698,
-      "title": "Bind the AWS auth manager SAML response to the browser that started the login",
-      "url": "https://github.com/apache/airflow/pull/73698",
-      "author": "potiuk",
-      "changed_files": 8,
-      "additions": 626,
-      "deletions": 73,
-      "review_load": 0.6301,
-      "consequence": 0.99,
-      "consequence_from": "security surface",
-      "route": "human-plus-author",
-      "route_decided_by": "both",
-      "downgrade": "evidence that security surface is covered, a test or a reviewer who owns it",
-      "tier": "high",
-      "size_floor": "medium",
+      "number": 73728,
+      "title": "Discover a bundle's Dag definitions through the importer registry",
+      "url": "https://github.com/apache/airflow/pull/73728",
+      "author": "dilnazanlid",
+      "changed_files": 3,
+      "additions": 203,
+      "deletions": 34,
+      "review_load": 0.4946,
+      "consequence": 0.54,
+      "consequence_from": "breaking change",
+      "route": "ai-review-is-enough",
+      "route_decided_by": "consequence",
+      "downgrade": "evidence that breaking change is covered, a test or a reviewer who owns it",
+      "tier": "medium",
+      "size_floor": "low",
       "raised_by_size": false,
-      "diff_coverage": 0.875,
+      "diff_coverage": 1.0,
       "drivers": [
-        "security surface",
         "design decisions",
+        "blast radius",
         "mechanical"
       ],
       "usage": {
-        "input_tokens": 7150,
-        "output_tokens": 283
+        "input_tokens": 5759,
+        "output_tokens": 284
       },
-      "latency_ms": 194,
+      "latency_ms": 157,
       "questions": {
         "change_kind": {
           "label": "change kind",
@@ -59,16 +264,16 @@
           "inverted": false,
           "returned": {
             "type": "choice",
-            "choice": "bugfix",
-            "confidence": 0.99,
+            "choice": "feature",
+            "confidence": 0.98,
             "probabilities": {
-              "refactor": 0.0,
+              "tests": 0.0,
+              "bugfix": 0.01,
+              "refactor": 0.01,
               "dependency": 0.0,
-              "bugfix": 0.99,
               "docs": 0.0,
-              "feature": 0.01,
-              "config": 0.0,
-              "tests": 0.0
+              "feature": 0.98,
+              "config": 0.0
             }
           },
           "credit": null,
@@ -81,15 +286,15 @@
           "inverted": false,
           "returned": {
             "type": "choice",
-            "choice": "security",
-            "confidence": 0.97,
+            "choice": "correctness",
+            "confidence": 0.68,
             "probabilities": {
-              "deployment": 0.0,
-              "security": 0.98,
-              "correctness": 0.02,
+              "tests": 0.21,
+              "compatibility": 0.05,
+              "correctness": 0.74,
+              "security": 0.0,
               "readability": 0.0,
-              "compatibility": 0.0,
-              "tests": 0.0
+              "deployment": 0.0
             }
           },
           "credit": null,
@@ -102,8 +307,8 @@
           "inverted": false,
           "returned": {
             "type": "score",
-            "score": 1.02,
-            "confidence": 0.97,
+            "score": 1.44,
+            "confidence": 0.34,
             "legend": {
               "0": "Confined to one file, or to documentation",
               "1": "Confined to one module or feature area",
@@ -111,12 +316,12 @@
             },
             "probabilities": {
               "0": 0.0,
-              "1": 0.98,
-              "2": 0.02
+              "1": 0.56,
+              "2": 0.44
             }
           },
-          "credit": 0.51,
-          "adds_to_load": 0.0765
+          "credit": 0.72,
+          "adds_to_load": 0.108
         },
         "design_decisions": {
           "label": "design decisions",
@@ -126,7 +331,7 @@
           "returned": {
             "type": "score",
             "score": 2.0,
-            "confidence": 0.99,
+            "confidence": 1.0,
             "legend": {
               "0": "None: the same edit repeated, or a value changed",
               "1": "Local choices inside one function or file",
@@ -148,8 +353,8 @@
           "inverted": true,
           "returned": {
             "type": "score",
-            "score": 1.98,
-            "confidence": 0.96,
+            "score": 1.28,
+            "confidence": 0.57,
             "legend": {
               "0": "Empty, or says nothing about what changed",
               "1": "Names what changed",
@@ -157,12 +362,12 @@
             },
             "probabilities": {
               "0": 0.0,
-              "1": 0.02,
-              "2": 0.98
+              "1": 0.72,
+              "2": 0.28
             }
           },
-          "credit": 0.01,
-          "adds_to_load": 0.0008
+          "credit": 0.36,
+          "adds_to_load": 0.0288
         },
         "security_surface": {
           "label": "security surface",
@@ -171,10 +376,10 @@
           "inverted": false,
           "returned": {
             "type": "noul",
-            "noul": 0.99
+            "noul": 0.3
           },
-          "credit": 0.99,
-          "adds_to_load": 0.1485
+          "credit": 0.3,
+          "adds_to_load": 0.045
         },
         "mechanical": {
           "label": "mechanical",
@@ -183,10 +388,10 @@
           "inverted": true,
           "returned": {
             "type": "noul",
-            "noul": 0.29
+            "noul": 0.32
           },
-          "credit": 0.71,
-          "adds_to_load": 0.0852
+          "credit": 0.68,
+          "adds_to_load": 0.0816
         },
         "breaking_change": {
           "label": "breaking change",
@@ -195,10 +400,10 @@
           "inverted": false,
           "returned": {
             "type": "noul",
-            "noul": 0.69
+            "noul": 0.54
           },
-          "credit": 0.69,
-          "adds_to_load": 0.0759
+          "credit": 0.54,
+          "adds_to_load": 0.0594
         },
         "scope_creep": {
           "label": "scope creep",
@@ -207,10 +412,10 @@
           "inverted": false,
           "returned": {
             "type": "noul",
-            "noul": 0.48
+            "noul": 0.3
           },
-          "credit": 0.48,
-          "adds_to_load": 0.0432
+          "credit": 0.3,
+          "adds_to_load": 0.027
         },
         "infra_surface": {
           "label": "infra surface",
@@ -219,225 +424,10 @@
           "inverted": false,
           "returned": {
             "type": "noul",
-            "noul": 0.7
+            "noul": 0.03
           },
-          "credit": 0.7,
-          "adds_to_load": 0.056
-        },
-        "has_tests": {
-          "label": "has tests",
-          "type": "noul",
-          "weight": 0.08,
-          "inverted": true,
-          "returned": {
-            "type": "noul",
-            "noul": 0.95
-          },
-          "credit": 0.05,
-          "adds_to_load": 0.004
-        }
-      }
-    },
-    {
-      "number": 73696,
-      "title": "Check admin-only views against a dedicated Keycloak resource in multi-team mode",
-      "url": "https://github.com/apache/airflow/pull/73696",
-      "author": "potiuk",
-      "changed_files": 7,
-      "additions": 136,
-      "deletions": 5,
-      "review_load": 0.5292,
-      "consequence": 0.99,
-      "consequence_from": "security surface",
-      "route": "human-required",
-      "route_decided_by": "consequence",
-      "downgrade": "evidence that security surface is covered, a test or a reviewer who owns it",
-      "tier": "medium",
-      "size_floor": "low",
-      "raised_by_size": false,
-      "diff_coverage": 1.0,
-      "drivers": [
-        "security surface",
-        "design decisions",
-        "mechanical"
-      ],
-      "usage": {
-        "input_tokens": 4561,
-        "output_tokens": 283
-      },
-      "latency_ms": 166,
-      "questions": {
-        "change_kind": {
-          "label": "change kind",
-          "type": "choice",
-          "weight": null,
-          "inverted": false,
-          "returned": {
-            "type": "choice",
-            "choice": "bugfix",
-            "confidence": 0.92,
-            "probabilities": {
-              "tests": 0.0,
-              "bugfix": 0.9400000000000001,
-              "refactor": 0.0,
-              "dependency": 0.0,
-              "config": 0.0,
-              "feature": 0.06,
-              "docs": 0.0
-            }
-          },
-          "credit": null,
-          "adds_to_load": null
-        },
-        "review_focus": {
-          "label": "review focus",
-          "type": "choice",
-          "weight": null,
-          "inverted": false,
-          "returned": {
-            "type": "choice",
-            "choice": "security",
-            "confidence": 0.87,
-            "probabilities": {
-              "tests": 0.01,
-              "readability": 0.0,
-              "security": 0.89,
-              "correctness": 0.09,
-              "compatibility": 0.01,
-              "deployment": 0.0
-            }
-          },
-          "credit": null,
-          "adds_to_load": null
-        },
-        "blast_radius": {
-          "label": "blast radius",
-          "type": "score",
-          "weight": 0.15,
-          "inverted": false,
-          "returned": {
-            "type": "score",
-            "score": 1.09,
-            "confidence": 0.86,
-            "legend": {
-              "0": "Confined to one file, or to documentation",
-              "1": "Confined to one module or feature area",
-              "2": "Reaches shared code paths that many callers depend on"
-            },
-            "probabilities": {
-              "0": 0.0,
-              "1": 0.91,
-              "2": 0.09
-            }
-          },
-          "credit": 0.545,
-          "adds_to_load": 0.0818
-        },
-        "design_decisions": {
-          "label": "design decisions",
-          "type": "score",
-          "weight": 0.14,
-          "inverted": false,
-          "returned": {
-            "type": "score",
-            "score": 1.96,
-            "confidence": 0.94,
-            "legend": {
-              "0": "None: the same edit repeated, or a value changed",
-              "1": "Local choices inside one function or file",
-              "2": "New abstractions, interfaces, or control flow"
-            },
-            "probabilities": {
-              "0": 0.0,
-              "1": 0.04,
-              "2": 0.96
-            }
-          },
-          "credit": 0.98,
-          "adds_to_load": 0.1372
-        },
-        "description_quality": {
-          "label": "description quality",
-          "type": "score",
-          "weight": 0.08,
-          "inverted": true,
-          "returned": {
-            "type": "score",
-            "score": 1.5,
-            "confidence": 0.25,
-            "legend": {
-              "0": "Empty, or says nothing about what changed",
-              "1": "Names what changed",
-              "2": "Explains what changed, why, and how the author verified it"
-            },
-            "probabilities": {
-              "0": 0.0,
-              "1": 0.5,
-              "2": 0.5
-            }
-          },
-          "credit": 0.25,
-          "adds_to_load": 0.02
-        },
-        "security_surface": {
-          "label": "security surface",
-          "type": "noul",
-          "weight": 0.15,
-          "inverted": false,
-          "returned": {
-            "type": "noul",
-            "noul": 0.99
-          },
-          "credit": 0.99,
-          "adds_to_load": 0.1485
-        },
-        "mechanical": {
-          "label": "mechanical",
-          "type": "noul",
-          "weight": 0.12,
-          "inverted": true,
-          "returned": {
-            "type": "noul",
-            "noul": 0.24
-          },
-          "credit": 0.76,
-          "adds_to_load": 0.0912
-        },
-        "breaking_change": {
-          "label": "breaking change",
-          "type": "noul",
-          "weight": 0.11,
-          "inverted": false,
-          "returned": {
-            "type": "noul",
-            "noul": 0.28
-          },
-          "credit": 0.28,
-          "adds_to_load": 0.0308
-        },
-        "scope_creep": {
-          "label": "scope creep",
-          "type": "noul",
-          "weight": 0.09,
-          "inverted": false,
-          "returned": {
-            "type": "noul",
-            "noul": 0.13
-          },
-          "credit": 0.13,
-          "adds_to_load": 0.0117
-        },
-        "infra_surface": {
-          "label": "infra surface",
-          "type": "noul",
-          "weight": 0.08,
-          "inverted": false,
-          "returned": {
-            "type": "noul",
-            "noul": 0.07
-          },
-          "credit": 0.07,
-          "adds_to_load": 0.0056
+          "credit": 0.03,
+          "adds_to_load": 0.0024
         },
         "has_tests": {
           "label": "has tests",
@@ -454,33 +444,33 @@
       }
     },
     {
-      "number": 73704,
-      "title": "Fix socket leaks and add missing request timeouts across providers",
-      "url": "https://github.com/apache/airflow/pull/73704",
-      "author": "TimurRakhmatullin86",
-      "changed_files": 9,
-      "additions": 57,
-      "deletions": 32,
-      "review_load": 0.5052,
-      "consequence": 0.84,
+      "number": 73741,
+      "title": "Improve DAG tag length validation error",
+      "url": "https://github.com/apache/airflow/pull/73741",
+      "author": "Dattuog",
+      "changed_files": 2,
+      "additions": 11,
+      "deletions": 3,
+      "review_load": 0.397,
+      "consequence": 0.97,
       "consequence_from": "security surface",
       "route": "human-required",
       "route_decided_by": "consequence",
       "downgrade": "evidence that security surface is covered, a test or a reviewer who owns it",
-      "tier": "medium",
-      "size_floor": "low",
+      "tier": "low",
+      "size_floor": "trivial",
       "raised_by_size": false,
       "diff_coverage": 1.0,
       "drivers": [
         "security surface",
         "blast radius",
-        "has tests"
+        "mechanical"
       ],
       "usage": {
-        "input_tokens": 5584,
+        "input_tokens": 2080,
         "output_tokens": 285
       },
-      "latency_ms": 147,
+      "latency_ms": 138,
       "questions": {
         "change_kind": {
           "label": "change kind",
@@ -490,444 +480,14 @@
           "returned": {
             "type": "choice",
             "choice": "bugfix",
-            "confidence": 1.0,
+            "confidence": 0.3,
             "probabilities": {
-              "dependency": 0.0,
-              "bugfix": 1.0,
-              "refactor": 0.0,
               "docs": 0.0,
+              "refactor": 0.2,
+              "bugfix": 0.41000000000000003,
+              "feature": 0.39,
+              "config": 0.0,
               "tests": 0.0,
-              "config": 0.0,
-              "feature": 0.0
-            }
-          },
-          "credit": null,
-          "adds_to_load": null
-        },
-        "review_focus": {
-          "label": "review focus",
-          "type": "choice",
-          "weight": null,
-          "inverted": false,
-          "returned": {
-            "type": "choice",
-            "choice": "correctness",
-            "confidence": 0.72,
-            "probabilities": {
-              "correctness": 0.77,
-              "compatibility": 0.07,
-              "security": 0.01,
-              "tests": 0.15,
-              "deployment": 0.0,
-              "readability": 0.0
-            }
-          },
-          "credit": null,
-          "adds_to_load": null
-        },
-        "blast_radius": {
-          "label": "blast radius",
-          "type": "score",
-          "weight": 0.15,
-          "inverted": false,
-          "returned": {
-            "type": "score",
-            "score": 1.66,
-            "confidence": 0.49,
-            "legend": {
-              "0": "Confined to one file, or to documentation",
-              "1": "Confined to one module or feature area",
-              "2": "Reaches shared code paths that many callers depend on"
-            },
-            "probabilities": {
-              "0": 0.0,
-              "1": 0.34,
-              "2": 0.66
-            }
-          },
-          "credit": 0.83,
-          "adds_to_load": 0.1245
-        },
-        "design_decisions": {
-          "label": "design decisions",
-          "type": "score",
-          "weight": 0.14,
-          "inverted": false,
-          "returned": {
-            "type": "score",
-            "score": 0.93,
-            "confidence": 0.27,
-            "legend": {
-              "0": "None: the same edit repeated, or a value changed",
-              "1": "Local choices inside one function or file",
-              "2": "New abstractions, interfaces, or control flow"
-            },
-            "probabilities": {
-              "0": 0.28,
-              "1": 0.51,
-              "2": 0.21
-            }
-          },
-          "credit": 0.465,
-          "adds_to_load": 0.0651
-        },
-        "description_quality": {
-          "label": "description quality",
-          "type": "score",
-          "weight": 0.08,
-          "inverted": true,
-          "returned": {
-            "type": "score",
-            "score": 1.17,
-            "confidence": 0.74,
-            "legend": {
-              "0": "Empty, or says nothing about what changed",
-              "1": "Names what changed",
-              "2": "Explains what changed, why, and how the author verified it"
-            },
-            "probabilities": {
-              "0": 0.0,
-              "1": 0.83,
-              "2": 0.17
-            }
-          },
-          "credit": 0.415,
-          "adds_to_load": 0.0332
-        },
-        "security_surface": {
-          "label": "security surface",
-          "type": "noul",
-          "weight": 0.15,
-          "inverted": false,
-          "returned": {
-            "type": "noul",
-            "noul": 0.84
-          },
-          "credit": 0.84,
-          "adds_to_load": 0.126
-        },
-        "mechanical": {
-          "label": "mechanical",
-          "type": "noul",
-          "weight": 0.12,
-          "inverted": true,
-          "returned": {
-            "type": "noul",
-            "noul": 0.52
-          },
-          "credit": 0.48,
-          "adds_to_load": 0.0576
-        },
-        "breaking_change": {
-          "label": "breaking change",
-          "type": "noul",
-          "weight": 0.11,
-          "inverted": false,
-          "returned": {
-            "type": "noul",
-            "noul": 0.09
-          },
-          "credit": 0.09,
-          "adds_to_load": 0.0099
-        },
-        "scope_creep": {
-          "label": "scope creep",
-          "type": "noul",
-          "weight": 0.09,
-          "inverted": false,
-          "returned": {
-            "type": "noul",
-            "noul": 0.09
-          },
-          "credit": 0.09,
-          "adds_to_load": 0.0081
-        },
-        "infra_surface": {
-          "label": "infra surface",
-          "type": "noul",
-          "weight": 0.08,
-          "inverted": false,
-          "returned": {
-            "type": "noul",
-            "noul": 0.05
-          },
-          "credit": 0.05,
-          "adds_to_load": 0.004
-        },
-        "has_tests": {
-          "label": "has tests",
-          "type": "noul",
-          "weight": 0.08,
-          "inverted": true,
-          "returned": {
-            "type": "noul",
-            "noul": 0.04
-          },
-          "credit": 0.96,
-          "adds_to_load": 0.0768
-        }
-      }
-    },
-    {
-      "number": 73706,
-      "title": "Account for AgentOperator spend on failed runs and across retries",
-      "url": "https://github.com/apache/airflow/pull/73706",
-      "author": "Lee-W",
-      "changed_files": 17,
-      "additions": 2634,
-      "deletions": 117,
-      "review_load": 0.4977,
-      "consequence": 0.77,
-      "consequence_from": "breaking change",
-      "route": "human-required",
-      "route_decided_by": "consequence",
-      "downgrade": "evidence that breaking change is covered, a test or a reviewer who owns it",
-      "tier": "high",
-      "size_floor": "high",
-      "raised_by_size": true,
-      "diff_coverage": 0.4706,
-      "drivers": [
-        "design decisions",
-        "blast radius",
-        "breaking change"
-      ],
-      "usage": {
-        "input_tokens": 7675,
-        "output_tokens": 285
-      },
-      "latency_ms": 159,
-      "questions": {
-        "change_kind": {
-          "label": "change kind",
-          "type": "choice",
-          "weight": null,
-          "inverted": false,
-          "returned": {
-            "type": "choice",
-            "choice": "bugfix",
-            "confidence": 0.75,
-            "probabilities": {
-              "dependency": 0.0,
-              "bugfix": 0.78,
-              "docs": 0.0,
-              "config": 0.0,
-              "feature": 0.22,
-              "refactor": 0.0,
-              "tests": 0.0
-            }
-          },
-          "credit": null,
-          "adds_to_load": null
-        },
-        "review_focus": {
-          "label": "review focus",
-          "type": "choice",
-          "weight": null,
-          "inverted": false,
-          "returned": {
-            "type": "choice",
-            "choice": "correctness",
-            "confidence": 0.85,
-            "probabilities": {
-              "compatibility": 0.08,
-              "tests": 0.05,
-              "readability": 0.0,
-              "deployment": 0.0,
-              "security": 0.0,
-              "correctness": 0.87
-            }
-          },
-          "credit": null,
-          "adds_to_load": null
-        },
-        "blast_radius": {
-          "label": "blast radius",
-          "type": "score",
-          "weight": 0.15,
-          "inverted": false,
-          "returned": {
-            "type": "score",
-            "score": 1.42,
-            "confidence": 0.36,
-            "legend": {
-              "0": "Confined to one file, or to documentation",
-              "1": "Confined to one module or feature area",
-              "2": "Reaches shared code paths that many callers depend on"
-            },
-            "probabilities": {
-              "0": 0.0,
-              "1": 0.58,
-              "2": 0.42
-            }
-          },
-          "credit": 0.71,
-          "adds_to_load": 0.1065
-        },
-        "design_decisions": {
-          "label": "design decisions",
-          "type": "score",
-          "weight": 0.14,
-          "inverted": false,
-          "returned": {
-            "type": "score",
-            "score": 2.0,
-            "confidence": 1.0,
-            "legend": {
-              "0": "None: the same edit repeated, or a value changed",
-              "1": "Local choices inside one function or file",
-              "2": "New abstractions, interfaces, or control flow"
-            },
-            "probabilities": {
-              "0": 0.0,
-              "1": 0.0,
-              "2": 1.0
-            }
-          },
-          "credit": 1.0,
-          "adds_to_load": 0.14
-        },
-        "description_quality": {
-          "label": "description quality",
-          "type": "score",
-          "weight": 0.08,
-          "inverted": true,
-          "returned": {
-            "type": "score",
-            "score": 1.29,
-            "confidence": 0.55,
-            "legend": {
-              "0": "Empty, or says nothing about what changed",
-              "1": "Names what changed",
-              "2": "Explains what changed, why, and how the author verified it"
-            },
-            "probabilities": {
-              "0": 0.0,
-              "1": 0.7,
-              "2": 0.3
-            }
-          },
-          "credit": 0.355,
-          "adds_to_load": 0.0284
-        },
-        "security_surface": {
-          "label": "security surface",
-          "type": "noul",
-          "weight": 0.15,
-          "inverted": false,
-          "returned": {
-            "type": "noul",
-            "noul": 0.12
-          },
-          "credit": 0.12,
-          "adds_to_load": 0.018
-        },
-        "mechanical": {
-          "label": "mechanical",
-          "type": "noul",
-          "weight": 0.12,
-          "inverted": true,
-          "returned": {
-            "type": "noul",
-            "noul": 0.33
-          },
-          "credit": 0.67,
-          "adds_to_load": 0.0804
-        },
-        "breaking_change": {
-          "label": "breaking change",
-          "type": "noul",
-          "weight": 0.11,
-          "inverted": false,
-          "returned": {
-            "type": "noul",
-            "noul": 0.77
-          },
-          "credit": 0.77,
-          "adds_to_load": 0.0847
-        },
-        "scope_creep": {
-          "label": "scope creep",
-          "type": "noul",
-          "weight": 0.09,
-          "inverted": false,
-          "returned": {
-            "type": "noul",
-            "noul": 0.37
-          },
-          "credit": 0.37,
-          "adds_to_load": 0.0333
-        },
-        "infra_surface": {
-          "label": "infra surface",
-          "type": "noul",
-          "weight": 0.08,
-          "inverted": false,
-          "returned": {
-            "type": "noul",
-            "noul": 0.04
-          },
-          "credit": 0.04,
-          "adds_to_load": 0.0032
-        },
-        "has_tests": {
-          "label": "has tests",
-          "type": "noul",
-          "weight": 0.08,
-          "inverted": true,
-          "returned": {
-            "type": "noul",
-            "noul": 0.96
-          },
-          "credit": 0.04,
-          "adds_to_load": 0.0032
-        }
-      }
-    },
-    {
-      "number": 73701,
-      "title": "Add durable reconnect option to EmrServerlessStartJobOperator",
-      "url": "https://github.com/apache/airflow/pull/73701",
-      "author": "Leondon9",
-      "changed_files": 4,
-      "additions": 360,
-      "deletions": 39,
-      "review_load": 0.4722,
-      "consequence": 0.54,
-      "consequence_from": "security surface",
-      "route": "ai-review-is-enough",
-      "route_decided_by": "consequence",
-      "downgrade": "evidence that security surface is covered, a test or a reviewer who owns it",
-      "tier": "medium",
-      "size_floor": "low",
-      "raised_by_size": false,
-      "diff_coverage": 0.75,
-      "drivers": [
-        "design decisions",
-        "mechanical",
-        "security surface"
-      ],
-      "usage": {
-        "input_tokens": 5512,
-        "output_tokens": 284
-      },
-      "latency_ms": 153,
-      "questions": {
-        "change_kind": {
-          "label": "change kind",
-          "type": "choice",
-          "weight": null,
-          "inverted": false,
-          "returned": {
-            "type": "choice",
-            "choice": "feature",
-            "confidence": 1.0,
-            "probabilities": {
-              "feature": 1.0,
-              "docs": 0.0,
-              "tests": 0.0,
-              "refactor": 0.0,
-              "config": 0.0,
-              "bugfix": 0.0,
               "dependency": 0.0
             }
           },
@@ -942,14 +502,14 @@
           "returned": {
             "type": "choice",
             "choice": "correctness",
-            "confidence": 0.85,
+            "confidence": 0.43,
             "probabilities": {
-              "deployment": 0.0,
+              "correctness": 0.53,
+              "compatibility": 0.02,
               "security": 0.0,
-              "tests": 0.09,
-              "correctness": 0.87,
-              "compatibility": 0.04,
-              "readability": 0.0
+              "readability": 0.0,
+              "deployment": 0.0,
+              "tests": 0.45
             }
           },
           "credit": null,
@@ -962,21 +522,21 @@
           "inverted": false,
           "returned": {
             "type": "score",
-            "score": 1.01,
-            "confidence": 0.98,
+            "score": 1.21,
+            "confidence": 0.66,
             "legend": {
               "0": "Confined to one file, or to documentation",
               "1": "Confined to one module or feature area",
               "2": "Reaches shared code paths that many callers depend on"
             },
             "probabilities": {
-              "0": 0.0,
-              "1": 0.99,
-              "2": 0.01
+              "0": 0.01,
+              "1": 0.77,
+              "2": 0.22
             }
           },
-          "credit": 0.505,
-          "adds_to_load": 0.0757
+          "credit": 0.605,
+          "adds_to_load": 0.0907
         },
         "design_decisions": {
           "label": "design decisions",
@@ -985,7 +545,7 @@
           "inverted": false,
           "returned": {
             "type": "score",
-            "score": 1.97,
+            "score": 0.98,
             "confidence": 0.96,
             "legend": {
               "0": "None: the same edit repeated, or a value changed",
@@ -993,13 +553,13 @@
               "2": "New abstractions, interfaces, or control flow"
             },
             "probabilities": {
-              "0": 0.0,
-              "1": 0.03,
-              "2": 0.97
+              "0": 0.02,
+              "1": 0.97,
+              "2": 0.01
             }
           },
-          "credit": 0.985,
-          "adds_to_load": 0.1379
+          "credit": 0.49,
+          "adds_to_load": 0.0686
         },
         "description_quality": {
           "label": "description quality",
@@ -1031,225 +591,10 @@
           "inverted": false,
           "returned": {
             "type": "noul",
-            "noul": 0.54
-          },
-          "credit": 0.54,
-          "adds_to_load": 0.081
-        },
-        "mechanical": {
-          "label": "mechanical",
-          "type": "noul",
-          "weight": 0.12,
-          "inverted": true,
-          "returned": {
-            "type": "noul",
-            "noul": 0.23
-          },
-          "credit": 0.77,
-          "adds_to_load": 0.0924
-        },
-        "breaking_change": {
-          "label": "breaking change",
-          "type": "noul",
-          "weight": 0.11,
-          "inverted": false,
-          "returned": {
-            "type": "noul",
-            "noul": 0.51
-          },
-          "credit": 0.51,
-          "adds_to_load": 0.0561
-        },
-        "scope_creep": {
-          "label": "scope creep",
-          "type": "noul",
-          "weight": 0.09,
-          "inverted": false,
-          "returned": {
-            "type": "noul",
-            "noul": 0.26
-          },
-          "credit": 0.26,
-          "adds_to_load": 0.0234
-        },
-        "infra_surface": {
-          "label": "infra surface",
-          "type": "noul",
-          "weight": 0.08,
-          "inverted": false,
-          "returned": {
-            "type": "noul",
-            "noul": 0.04
-          },
-          "credit": 0.04,
-          "adds_to_load": 0.0032
-        },
-        "has_tests": {
-          "label": "has tests",
-          "type": "noul",
-          "weight": 0.08,
-          "inverted": true,
-          "returned": {
-            "type": "noul",
             "noul": 0.97
           },
-          "credit": 0.03,
-          "adds_to_load": 0.0024
-        }
-      }
-    },
-    {
-      "number": 73703,
-      "title": "[chart/v1-2x-test] Helm: Allow hostAliases and log groomer lifecycle hooks on the Dag processor (#73159)",
-      "url": "https://github.com/apache/airflow/pull/73703",
-      "author": "pranayyelugam",
-      "changed_files": 5,
-      "additions": 64,
-      "deletions": 0,
-      "review_load": 0.442,
-      "consequence": 0.87,
-      "consequence_from": "infra surface",
-      "route": "human-required",
-      "route_decided_by": "consequence",
-      "downgrade": "evidence that infra surface is covered, a test or a reviewer who owns it",
-      "tier": "medium",
-      "size_floor": "low",
-      "raised_by_size": false,
-      "diff_coverage": 1.0,
-      "drivers": [
-        "design decisions",
-        "mechanical",
-        "blast radius"
-      ],
-      "usage": {
-        "input_tokens": 2821,
-        "output_tokens": 284
-      },
-      "latency_ms": 165,
-      "questions": {
-        "change_kind": {
-          "label": "change kind",
-          "type": "choice",
-          "weight": null,
-          "inverted": false,
-          "returned": {
-            "type": "choice",
-            "choice": "feature",
-            "confidence": 0.98,
-            "probabilities": {
-              "config": 0.01,
-              "docs": 0.0,
-              "refactor": 0.0,
-              "tests": 0.0,
-              "bugfix": 0.0,
-              "feature": 0.99,
-              "dependency": 0.0
-            }
-          },
-          "credit": null,
-          "adds_to_load": null
-        },
-        "review_focus": {
-          "label": "review focus",
-          "type": "choice",
-          "weight": null,
-          "inverted": false,
-          "returned": {
-            "type": "choice",
-            "choice": "correctness",
-            "confidence": 0.47,
-            "probabilities": {
-              "compatibility": 0.09,
-              "readability": 0.0,
-              "security": 0.0,
-              "correctness": 0.56,
-              "tests": 0.35,
-              "deployment": 0.0
-            }
-          },
-          "credit": null,
-          "adds_to_load": null
-        },
-        "blast_radius": {
-          "label": "blast radius",
-          "type": "score",
-          "weight": 0.15,
-          "inverted": false,
-          "returned": {
-            "type": "score",
-            "score": 1.01,
-            "confidence": 0.99,
-            "legend": {
-              "0": "Confined to one file, or to documentation",
-              "1": "Confined to one module or feature area",
-              "2": "Reaches shared code paths that many callers depend on"
-            },
-            "probabilities": {
-              "0": 0.0,
-              "1": 0.99,
-              "2": 0.01
-            }
-          },
-          "credit": 0.505,
-          "adds_to_load": 0.0757
-        },
-        "design_decisions": {
-          "label": "design decisions",
-          "type": "score",
-          "weight": 0.14,
-          "inverted": false,
-          "returned": {
-            "type": "score",
-            "score": 1.51,
-            "confidence": 0.26,
-            "legend": {
-              "0": "None: the same edit repeated, or a value changed",
-              "1": "Local choices inside one function or file",
-              "2": "New abstractions, interfaces, or control flow"
-            },
-            "probabilities": {
-              "0": 0.12,
-              "1": 0.26,
-              "2": 0.62
-            }
-          },
-          "credit": 0.755,
-          "adds_to_load": 0.1057
-        },
-        "description_quality": {
-          "label": "description quality",
-          "type": "score",
-          "weight": 0.08,
-          "inverted": true,
-          "returned": {
-            "type": "score",
-            "score": 1.33,
-            "confidence": 0.48,
-            "legend": {
-              "0": "Empty, or says nothing about what changed",
-              "1": "Names what changed",
-              "2": "Explains what changed, why, and how the author verified it"
-            },
-            "probabilities": {
-              "0": 0.01,
-              "1": 0.65,
-              "2": 0.34
-            }
-          },
-          "credit": 0.335,
-          "adds_to_load": 0.0268
-        },
-        "security_surface": {
-          "label": "security surface",
-          "type": "noul",
-          "weight": 0.15,
-          "inverted": false,
-          "returned": {
-            "type": "noul",
-            "noul": 0.23
-          },
-          "credit": 0.23,
-          "adds_to_load": 0.0345
+          "credit": 0.97,
+          "adds_to_load": 0.1455
         },
         "mechanical": {
           "label": "mechanical",
@@ -1258,10 +603,10 @@
           "inverted": true,
           "returned": {
             "type": "noul",
-            "noul": 0.33
+            "noul": 0.39
           },
-          "credit": 0.67,
-          "adds_to_load": 0.0804
+          "credit": 0.61,
+          "adds_to_load": 0.0732
         },
         "breaking_change": {
           "label": "breaking change",
@@ -1270,10 +615,10 @@
           "inverted": false,
           "returned": {
             "type": "noul",
-            "noul": 0.36
+            "noul": 0.07
           },
-          "credit": 0.36,
-          "adds_to_load": 0.0396
+          "credit": 0.07,
+          "adds_to_load": 0.0077
         },
         "scope_creep": {
           "label": "scope creep",
@@ -1294,10 +639,10 @@
           "inverted": false,
           "returned": {
             "type": "noul",
-            "noul": 0.87
+            "noul": 0.02
           },
-          "credit": 0.87,
-          "adds_to_load": 0.0696
+          "credit": 0.02,
+          "adds_to_load": 0.0016
         },
         "has_tests": {
           "label": "has tests",
@@ -1314,1081 +659,6 @@
       }
     },
     {
-      "number": 73723,
-      "title": "TS SDK: embed one source region per native Dag file",
-      "url": "https://github.com/apache/airflow/pull/73723",
-      "author": "pierrejeambrun",
-      "changed_files": 10,
-      "additions": 558,
-      "deletions": 121,
-      "review_load": 0.4328,
-      "consequence": 0.77,
-      "consequence_from": "breaking change",
-      "route": "human-required",
-      "route_decided_by": "consequence",
-      "downgrade": "evidence that breaking change is covered, a test or a reviewer who owns it",
-      "tier": "medium",
-      "size_floor": "medium",
-      "raised_by_size": false,
-      "diff_coverage": 0.8,
-      "drivers": [
-        "design decisions",
-        "blast radius",
-        "mechanical"
-      ],
-      "usage": {
-        "input_tokens": 9191,
-        "output_tokens": 284
-      },
-      "latency_ms": 180,
-      "questions": {
-        "change_kind": {
-          "label": "change kind",
-          "type": "choice",
-          "weight": null,
-          "inverted": false,
-          "returned": {
-            "type": "choice",
-            "choice": "feature",
-            "confidence": 0.75,
-            "probabilities": {
-              "refactor": 0.0,
-              "docs": 0.0,
-              "tests": 0.0,
-              "feature": 0.79,
-              "config": 0.0,
-              "bugfix": 0.21,
-              "dependency": 0.0
-            }
-          },
-          "credit": null,
-          "adds_to_load": null
-        },
-        "review_focus": {
-          "label": "review focus",
-          "type": "choice",
-          "weight": null,
-          "inverted": false,
-          "returned": {
-            "type": "choice",
-            "choice": "correctness",
-            "confidence": 0.75,
-            "probabilities": {
-              "security": 0.0,
-              "deployment": 0.0,
-              "tests": 0.13,
-              "correctness": 0.79,
-              "compatibility": 0.08,
-              "readability": 0.0
-            }
-          },
-          "credit": null,
-          "adds_to_load": null
-        },
-        "blast_radius": {
-          "label": "blast radius",
-          "type": "score",
-          "weight": 0.15,
-          "inverted": false,
-          "returned": {
-            "type": "score",
-            "score": 1.21,
-            "confidence": 0.68,
-            "legend": {
-              "0": "Confined to one file, or to documentation",
-              "1": "Confined to one module or feature area",
-              "2": "Reaches shared code paths that many callers depend on"
-            },
-            "probabilities": {
-              "0": 0.0,
-              "1": 0.79,
-              "2": 0.21
-            }
-          },
-          "credit": 0.605,
-          "adds_to_load": 0.0907
-        },
-        "design_decisions": {
-          "label": "design decisions",
-          "type": "score",
-          "weight": 0.14,
-          "inverted": false,
-          "returned": {
-            "type": "score",
-            "score": 2.0,
-            "confidence": 1.0,
-            "legend": {
-              "0": "None: the same edit repeated, or a value changed",
-              "1": "Local choices inside one function or file",
-              "2": "New abstractions, interfaces, or control flow"
-            },
-            "probabilities": {
-              "0": 0.0,
-              "1": 0.0,
-              "2": 1.0
-            }
-          },
-          "credit": 1.0,
-          "adds_to_load": 0.14
-        },
-        "description_quality": {
-          "label": "description quality",
-          "type": "score",
-          "weight": 0.08,
-          "inverted": true,
-          "returned": {
-            "type": "score",
-            "score": 2.0,
-            "confidence": 1.0,
-            "legend": {
-              "0": "Empty, or says nothing about what changed",
-              "1": "Names what changed",
-              "2": "Explains what changed, why, and how the author verified it"
-            },
-            "probabilities": {
-              "0": 0.0,
-              "1": 0.0,
-              "2": 1.0
-            }
-          },
-          "credit": 0.0,
-          "adds_to_load": 0.0
-        },
-        "security_surface": {
-          "label": "security surface",
-          "type": "noul",
-          "weight": 0.15,
-          "inverted": false,
-          "returned": {
-            "type": "noul",
-            "noul": 0.04
-          },
-          "credit": 0.04,
-          "adds_to_load": 0.006
-        },
-        "mechanical": {
-          "label": "mechanical",
-          "type": "noul",
-          "weight": 0.12,
-          "inverted": true,
-          "returned": {
-            "type": "noul",
-            "noul": 0.29
-          },
-          "credit": 0.71,
-          "adds_to_load": 0.0852
-        },
-        "breaking_change": {
-          "label": "breaking change",
-          "type": "noul",
-          "weight": 0.11,
-          "inverted": false,
-          "returned": {
-            "type": "noul",
-            "noul": 0.77
-          },
-          "credit": 0.77,
-          "adds_to_load": 0.0847
-        },
-        "scope_creep": {
-          "label": "scope creep",
-          "type": "noul",
-          "weight": 0.09,
-          "inverted": false,
-          "returned": {
-            "type": "noul",
-            "noul": 0.21
-          },
-          "credit": 0.21,
-          "adds_to_load": 0.0189
-        },
-        "infra_surface": {
-          "label": "infra surface",
-          "type": "noul",
-          "weight": 0.08,
-          "inverted": false,
-          "returned": {
-            "type": "noul",
-            "noul": 0.05
-          },
-          "credit": 0.05,
-          "adds_to_load": 0.004
-        },
-        "has_tests": {
-          "label": "has tests",
-          "type": "noul",
-          "weight": 0.08,
-          "inverted": true,
-          "returned": {
-            "type": "noul",
-            "noul": 0.96
-          },
-          "credit": 0.04,
-          "adds_to_load": 0.0032
-        }
-      }
-    },
-    {
-      "number": 73702,
-      "title": "Stop AWS Glue job run when a deferred task is cleared",
-      "url": "https://github.com/apache/airflow/pull/73702",
-      "author": "Leondon9",
-      "changed_files": 4,
-      "additions": 291,
-      "deletions": 3,
-      "review_load": 0.4101,
-      "consequence": 0.36,
-      "consequence_from": "breaking change",
-      "route": "ai-review-is-enough",
-      "route_decided_by": "consequence",
-      "downgrade": "evidence that breaking change is covered, a test or a reviewer who owns it",
-      "tier": "low",
-      "size_floor": "low",
-      "raised_by_size": false,
-      "diff_coverage": 1.0,
-      "drivers": [
-        "design decisions",
-        "mechanical",
-        "blast radius"
-      ],
-      "usage": {
-        "input_tokens": 7131,
-        "output_tokens": 285
-      },
-      "latency_ms": 163,
-      "questions": {
-        "change_kind": {
-          "label": "change kind",
-          "type": "choice",
-          "weight": null,
-          "inverted": false,
-          "returned": {
-            "type": "choice",
-            "choice": "bugfix",
-            "confidence": 0.43,
-            "probabilities": {
-              "refactor": 0.0,
-              "config": 0.0,
-              "docs": 0.0,
-              "feature": 0.49,
-              "bugfix": 0.51,
-              "dependency": 0.0,
-              "tests": 0.0
-            }
-          },
-          "credit": null,
-          "adds_to_load": null
-        },
-        "review_focus": {
-          "label": "review focus",
-          "type": "choice",
-          "weight": null,
-          "inverted": false,
-          "returned": {
-            "type": "choice",
-            "choice": "correctness",
-            "confidence": 0.77,
-            "probabilities": {
-              "tests": 0.1,
-              "security": 0.0,
-              "deployment": 0.0,
-              "readability": 0.0,
-              "compatibility": 0.09,
-              "correctness": 0.81
-            }
-          },
-          "credit": null,
-          "adds_to_load": null
-        },
-        "blast_radius": {
-          "label": "blast radius",
-          "type": "score",
-          "weight": 0.15,
-          "inverted": false,
-          "returned": {
-            "type": "score",
-            "score": 1.01,
-            "confidence": 0.99,
-            "legend": {
-              "0": "Confined to one file, or to documentation",
-              "1": "Confined to one module or feature area",
-              "2": "Reaches shared code paths that many callers depend on"
-            },
-            "probabilities": {
-              "0": 0.0,
-              "1": 0.99,
-              "2": 0.01
-            }
-          },
-          "credit": 0.505,
-          "adds_to_load": 0.0757
-        },
-        "design_decisions": {
-          "label": "design decisions",
-          "type": "score",
-          "weight": 0.14,
-          "inverted": false,
-          "returned": {
-            "type": "score",
-            "score": 1.99,
-            "confidence": 0.99,
-            "legend": {
-              "0": "None: the same edit repeated, or a value changed",
-              "1": "Local choices inside one function or file",
-              "2": "New abstractions, interfaces, or control flow"
-            },
-            "probabilities": {
-              "0": 0.0,
-              "1": 0.01,
-              "2": 0.99
-            }
-          },
-          "credit": 0.995,
-          "adds_to_load": 0.1393
-        },
-        "description_quality": {
-          "label": "description quality",
-          "type": "score",
-          "weight": 0.08,
-          "inverted": true,
-          "returned": {
-            "type": "score",
-            "score": 2.0,
-            "confidence": 1.0,
-            "legend": {
-              "0": "Empty, or says nothing about what changed",
-              "1": "Names what changed",
-              "2": "Explains what changed, why, and how the author verified it"
-            },
-            "probabilities": {
-              "0": 0.0,
-              "1": 0.0,
-              "2": 1.0
-            }
-          },
-          "credit": 0.0,
-          "adds_to_load": 0.0
-        },
-        "security_surface": {
-          "label": "security surface",
-          "type": "noul",
-          "weight": 0.15,
-          "inverted": false,
-          "returned": {
-            "type": "noul",
-            "noul": 0.33
-          },
-          "credit": 0.33,
-          "adds_to_load": 0.0495
-        },
-        "mechanical": {
-          "label": "mechanical",
-          "type": "noul",
-          "weight": 0.12,
-          "inverted": true,
-          "returned": {
-            "type": "noul",
-            "noul": 0.27
-          },
-          "credit": 0.73,
-          "adds_to_load": 0.0876
-        },
-        "breaking_change": {
-          "label": "breaking change",
-          "type": "noul",
-          "weight": 0.11,
-          "inverted": false,
-          "returned": {
-            "type": "noul",
-            "noul": 0.36
-          },
-          "credit": 0.36,
-          "adds_to_load": 0.0396
-        },
-        "scope_creep": {
-          "label": "scope creep",
-          "type": "noul",
-          "weight": 0.09,
-          "inverted": false,
-          "returned": {
-            "type": "noul",
-            "noul": 0.15
-          },
-          "credit": 0.15,
-          "adds_to_load": 0.0135
-        },
-        "infra_surface": {
-          "label": "infra surface",
-          "type": "noul",
-          "weight": 0.08,
-          "inverted": false,
-          "returned": {
-            "type": "noul",
-            "noul": 0.04
-          },
-          "credit": 0.04,
-          "adds_to_load": 0.0032
-        },
-        "has_tests": {
-          "label": "has tests",
-          "type": "noul",
-          "weight": 0.08,
-          "inverted": true,
-          "returned": {
-            "type": "noul",
-            "noul": 0.98
-          },
-          "credit": 0.02,
-          "adds_to_load": 0.0016
-        }
-      }
-    },
-    {
-      "number": 73724,
-      "title": "Fix Grid and Graph 500 errors for cyclic TaskGroup dependencies",
-      "url": "https://github.com/apache/airflow/pull/73724",
-      "author": "dheerajturaga",
-      "changed_files": 4,
-      "additions": 209,
-      "deletions": 12,
-      "review_load": 0.3759,
-      "consequence": 0.32,
-      "consequence_from": "blast radius",
-      "route": "tests-are-enough",
-      "route_decided_by": "consequence",
-      "downgrade": "evidence that blast radius is covered, a test or a reviewer who owns it",
-      "tier": "low",
-      "size_floor": "low",
-      "raised_by_size": false,
-      "diff_coverage": 1.0,
-      "drivers": [
-        "design decisions",
-        "blast radius",
-        "mechanical"
-      ],
-      "usage": {
-        "input_tokens": 5046,
-        "output_tokens": 285
-      },
-      "latency_ms": 175,
-      "questions": {
-        "change_kind": {
-          "label": "change kind",
-          "type": "choice",
-          "weight": null,
-          "inverted": false,
-          "returned": {
-            "type": "choice",
-            "choice": "bugfix",
-            "confidence": 1.0,
-            "probabilities": {
-              "dependency": 0.0,
-              "refactor": 0.0,
-              "config": 0.0,
-              "docs": 0.0,
-              "feature": 0.0,
-              "tests": 0.0,
-              "bugfix": 1.0
-            }
-          },
-          "credit": null,
-          "adds_to_load": null
-        },
-        "review_focus": {
-          "label": "review focus",
-          "type": "choice",
-          "weight": null,
-          "inverted": false,
-          "returned": {
-            "type": "choice",
-            "choice": "correctness",
-            "confidence": 0.93,
-            "probabilities": {
-              "tests": 0.06,
-              "correctness": 0.94,
-              "security": 0.0,
-              "compatibility": 0.0,
-              "deployment": 0.0,
-              "readability": 0.0
-            }
-          },
-          "credit": null,
-          "adds_to_load": null
-        },
-        "blast_radius": {
-          "label": "blast radius",
-          "type": "score",
-          "weight": 0.15,
-          "inverted": false,
-          "returned": {
-            "type": "score",
-            "score": 1.31,
-            "confidence": 0.5,
-            "legend": {
-              "0": "Confined to one file, or to documentation",
-              "1": "Confined to one module or feature area",
-              "2": "Reaches shared code paths that many callers depend on"
-            },
-            "probabilities": {
-              "0": 0.01,
-              "1": 0.67,
-              "2": 0.32
-            }
-          },
-          "credit": 0.655,
-          "adds_to_load": 0.0983
-        },
-        "design_decisions": {
-          "label": "design decisions",
-          "type": "score",
-          "weight": 0.14,
-          "inverted": false,
-          "returned": {
-            "type": "score",
-            "score": 1.99,
-            "confidence": 0.99,
-            "legend": {
-              "0": "None: the same edit repeated, or a value changed",
-              "1": "Local choices inside one function or file",
-              "2": "New abstractions, interfaces, or control flow"
-            },
-            "probabilities": {
-              "0": 0.0,
-              "1": 0.01,
-              "2": 0.99
-            }
-          },
-          "credit": 0.995,
-          "adds_to_load": 0.1393
-        },
-        "description_quality": {
-          "label": "description quality",
-          "type": "score",
-          "weight": 0.08,
-          "inverted": true,
-          "returned": {
-            "type": "score",
-            "score": 1.8,
-            "confidence": 0.7,
-            "legend": {
-              "0": "Empty, or says nothing about what changed",
-              "1": "Names what changed",
-              "2": "Explains what changed, why, and how the author verified it"
-            },
-            "probabilities": {
-              "0": 0.0,
-              "1": 0.2,
-              "2": 0.8
-            }
-          },
-          "credit": 0.1,
-          "adds_to_load": 0.008
-        },
-        "security_surface": {
-          "label": "security surface",
-          "type": "noul",
-          "weight": 0.15,
-          "inverted": false,
-          "returned": {
-            "type": "noul",
-            "noul": 0.06
-          },
-          "credit": 0.06,
-          "adds_to_load": 0.009
-        },
-        "mechanical": {
-          "label": "mechanical",
-          "type": "noul",
-          "weight": 0.12,
-          "inverted": true,
-          "returned": {
-            "type": "noul",
-            "noul": 0.36
-          },
-          "credit": 0.64,
-          "adds_to_load": 0.0768
-        },
-        "breaking_change": {
-          "label": "breaking change",
-          "type": "noul",
-          "weight": 0.11,
-          "inverted": false,
-          "returned": {
-            "type": "noul",
-            "noul": 0.22
-          },
-          "credit": 0.22,
-          "adds_to_load": 0.0242
-        },
-        "scope_creep": {
-          "label": "scope creep",
-          "type": "noul",
-          "weight": 0.09,
-          "inverted": false,
-          "returned": {
-            "type": "noul",
-            "noul": 0.19
-          },
-          "credit": 0.19,
-          "adds_to_load": 0.0171
-        },
-        "infra_surface": {
-          "label": "infra surface",
-          "type": "noul",
-          "weight": 0.08,
-          "inverted": false,
-          "returned": {
-            "type": "noul",
-            "noul": 0.02
-          },
-          "credit": 0.02,
-          "adds_to_load": 0.0016
-        },
-        "has_tests": {
-          "label": "has tests",
-          "type": "noul",
-          "weight": 0.08,
-          "inverted": true,
-          "returned": {
-            "type": "noul",
-            "noul": 0.98
-          },
-          "credit": 0.02,
-          "adds_to_load": 0.0016
-        }
-      }
-    },
-    {
-      "number": 73713,
-      "title": "UI: Group digits of counters according to the selected locale",
-      "url": "https://github.com/apache/airflow/pull/73713",
-      "author": "shahar1",
-      "changed_files": 54,
-      "additions": 467,
-      "deletions": 131,
-      "review_load": 0.3725,
-      "consequence": 0.97,
-      "consequence_from": "blast radius",
-      "route": "human-required",
-      "route_decided_by": "consequence",
-      "downgrade": "evidence that blast radius is covered, a test or a reviewer who owns it",
-      "tier": "high",
-      "size_floor": "high",
-      "raised_by_size": true,
-      "diff_coverage": 0.4444,
-      "drivers": [
-        "blast radius",
-        "design decisions",
-        "scope creep"
-      ],
-      "usage": {
-        "input_tokens": 10337,
-        "output_tokens": 284
-      },
-      "latency_ms": 191,
-      "questions": {
-        "change_kind": {
-          "label": "change kind",
-          "type": "choice",
-          "weight": null,
-          "inverted": false,
-          "returned": {
-            "type": "choice",
-            "choice": "feature",
-            "confidence": 1.0,
-            "probabilities": {
-              "dependency": 0.0,
-              "docs": 0.0,
-              "refactor": 0.0,
-              "tests": 0.0,
-              "config": 0.0,
-              "feature": 1.0,
-              "bugfix": 0.0
-            }
-          },
-          "credit": null,
-          "adds_to_load": null
-        },
-        "review_focus": {
-          "label": "review focus",
-          "type": "choice",
-          "weight": null,
-          "inverted": false,
-          "returned": {
-            "type": "choice",
-            "choice": "correctness",
-            "confidence": 0.67,
-            "probabilities": {
-              "compatibility": 0.1,
-              "readability": 0.0,
-              "security": 0.0,
-              "correctness": 0.72,
-              "tests": 0.18,
-              "deployment": 0.0
-            }
-          },
-          "credit": null,
-          "adds_to_load": null
-        },
-        "blast_radius": {
-          "label": "blast radius",
-          "type": "score",
-          "weight": 0.15,
-          "inverted": false,
-          "returned": {
-            "type": "score",
-            "score": 1.97,
-            "confidence": 0.96,
-            "legend": {
-              "0": "Confined to one file, or to documentation",
-              "1": "Confined to one module or feature area",
-              "2": "Reaches shared code paths that many callers depend on"
-            },
-            "probabilities": {
-              "0": 0.0,
-              "1": 0.03,
-              "2": 0.97
-            }
-          },
-          "credit": 0.985,
-          "adds_to_load": 0.1477
-        },
-        "design_decisions": {
-          "label": "design decisions",
-          "type": "score",
-          "weight": 0.14,
-          "inverted": false,
-          "returned": {
-            "type": "score",
-            "score": 1.9,
-            "confidence": 0.86,
-            "legend": {
-              "0": "None: the same edit repeated, or a value changed",
-              "1": "Local choices inside one function or file",
-              "2": "New abstractions, interfaces, or control flow"
-            },
-            "probabilities": {
-              "0": 0.03,
-              "1": 0.04,
-              "2": 0.93
-            }
-          },
-          "credit": 0.95,
-          "adds_to_load": 0.133
-        },
-        "description_quality": {
-          "label": "description quality",
-          "type": "score",
-          "weight": 0.08,
-          "inverted": true,
-          "returned": {
-            "type": "score",
-            "score": 2.0,
-            "confidence": 1.0,
-            "legend": {
-              "0": "Empty, or says nothing about what changed",
-              "1": "Names what changed",
-              "2": "Explains what changed, why, and how the author verified it"
-            },
-            "probabilities": {
-              "0": 0.0,
-              "1": 0.0,
-              "2": 1.0
-            }
-          },
-          "credit": 0.0,
-          "adds_to_load": 0.0
-        },
-        "security_surface": {
-          "label": "security surface",
-          "type": "noul",
-          "weight": 0.15,
-          "inverted": false,
-          "returned": {
-            "type": "noul",
-            "noul": 0.03
-          },
-          "credit": 0.03,
-          "adds_to_load": 0.0045
-        },
-        "mechanical": {
-          "label": "mechanical",
-          "type": "noul",
-          "weight": 0.12,
-          "inverted": true,
-          "returned": {
-            "type": "noul",
-            "noul": 0.81
-          },
-          "credit": 0.19,
-          "adds_to_load": 0.0228
-        },
-        "breaking_change": {
-          "label": "breaking change",
-          "type": "noul",
-          "weight": 0.11,
-          "inverted": false,
-          "returned": {
-            "type": "noul",
-            "noul": 0.07
-          },
-          "credit": 0.07,
-          "adds_to_load": 0.0077
-        },
-        "scope_creep": {
-          "label": "scope creep",
-          "type": "noul",
-          "weight": 0.09,
-          "inverted": false,
-          "returned": {
-            "type": "noul",
-            "noul": 0.56
-          },
-          "credit": 0.56,
-          "adds_to_load": 0.0504
-        },
-        "infra_surface": {
-          "label": "infra surface",
-          "type": "noul",
-          "weight": 0.08,
-          "inverted": false,
-          "returned": {
-            "type": "noul",
-            "noul": 0.04
-          },
-          "credit": 0.04,
-          "adds_to_load": 0.0032
-        },
-        "has_tests": {
-          "label": "has tests",
-          "type": "noul",
-          "weight": 0.08,
-          "inverted": true,
-          "returned": {
-            "type": "noul",
-            "noul": 0.96
-          },
-          "credit": 0.04,
-          "adds_to_load": 0.0032
-        }
-      }
-    },
-    {
-      "number": 73720,
-      "title": "[v3-3-test] Raise DeadlockImminentError for sync comms calls from a paused event loop thread (#73521)",
-      "url": "https://github.com/apache/airflow/pull/73720",
-      "author": "github-actions[bot]",
-      "changed_files": 2,
-      "additions": 98,
-      "deletions": 6,
-      "review_load": 0.3633,
-      "consequence": 0.6,
-      "consequence_from": "blast radius",
-      "route": "human-required",
-      "route_decided_by": "consequence",
-      "downgrade": "evidence that blast radius is covered, a test or a reviewer who owns it",
-      "tier": "low",
-      "size_floor": "trivial",
-      "raised_by_size": false,
-      "diff_coverage": 1.0,
-      "drivers": [
-        "design decisions",
-        "blast radius",
-        "mechanical"
-      ],
-      "usage": {
-        "input_tokens": 3408,
-        "output_tokens": 285
-      },
-      "latency_ms": 175,
-      "questions": {
-        "change_kind": {
-          "label": "change kind",
-          "type": "choice",
-          "weight": null,
-          "inverted": false,
-          "returned": {
-            "type": "choice",
-            "choice": "bugfix",
-            "confidence": 1.0,
-            "probabilities": {
-              "refactor": 0.0,
-              "docs": 0.0,
-              "tests": 0.0,
-              "feature": 0.0,
-              "bugfix": 1.0,
-              "config": 0.0,
-              "dependency": 0.0
-            }
-          },
-          "credit": null,
-          "adds_to_load": null
-        },
-        "review_focus": {
-          "label": "review focus",
-          "type": "choice",
-          "weight": null,
-          "inverted": false,
-          "returned": {
-            "type": "choice",
-            "choice": "correctness",
-            "confidence": 0.81,
-            "probabilities": {
-              "deployment": 0.0,
-              "security": 0.0,
-              "tests": 0.15,
-              "correctness": 0.84,
-              "compatibility": 0.01,
-              "readability": 0.0
-            }
-          },
-          "credit": null,
-          "adds_to_load": null
-        },
-        "blast_radius": {
-          "label": "blast radius",
-          "type": "score",
-          "weight": 0.15,
-          "inverted": false,
-          "returned": {
-            "type": "score",
-            "score": 1.6,
-            "confidence": 0.4,
-            "legend": {
-              "0": "Confined to one file, or to documentation",
-              "1": "Confined to one module or feature area",
-              "2": "Reaches shared code paths that many callers depend on"
-            },
-            "probabilities": {
-              "0": 0.0,
-              "1": 0.4,
-              "2": 0.6
-            }
-          },
-          "credit": 0.8,
-          "adds_to_load": 0.12
-        },
-        "design_decisions": {
-          "label": "design decisions",
-          "type": "score",
-          "weight": 0.14,
-          "inverted": false,
-          "returned": {
-            "type": "score",
-            "score": 1.9,
-            "confidence": 0.85,
-            "legend": {
-              "0": "None: the same edit repeated, or a value changed",
-              "1": "Local choices inside one function or file",
-              "2": "New abstractions, interfaces, or control flow"
-            },
-            "probabilities": {
-              "0": 0.0,
-              "1": 0.09,
-              "2": 0.91
-            }
-          },
-          "credit": 0.95,
-          "adds_to_load": 0.133
-        },
-        "description_quality": {
-          "label": "description quality",
-          "type": "score",
-          "weight": 0.08,
-          "inverted": true,
-          "returned": {
-            "type": "score",
-            "score": 1.87,
-            "confidence": 0.81,
-            "legend": {
-              "0": "Empty, or says nothing about what changed",
-              "1": "Names what changed",
-              "2": "Explains what changed, why, and how the author verified it"
-            },
-            "probabilities": {
-              "0": 0.0,
-              "1": 0.12,
-              "2": 0.88
-            }
-          },
-          "credit": 0.065,
-          "adds_to_load": 0.0052
-        },
-        "security_surface": {
-          "label": "security surface",
-          "type": "noul",
-          "weight": 0.15,
-          "inverted": false,
-          "returned": {
-            "type": "noul",
-            "noul": 0.06
-          },
-          "credit": 0.06,
-          "adds_to_load": 0.009
-        },
-        "mechanical": {
-          "label": "mechanical",
-          "type": "noul",
-          "weight": 0.12,
-          "inverted": true,
-          "returned": {
-            "type": "noul",
-            "noul": 0.38
-          },
-          "credit": 0.62,
-          "adds_to_load": 0.0744
-        },
-        "breaking_change": {
-          "label": "breaking change",
-          "type": "noul",
-          "weight": 0.11,
-          "inverted": false,
-          "returned": {
-            "type": "noul",
-            "noul": 0.07
-          },
-          "credit": 0.07,
-          "adds_to_load": 0.0077
-        },
-        "scope_creep": {
-          "label": "scope creep",
-          "type": "noul",
-          "weight": 0.09,
-          "inverted": false,
-          "returned": {
-            "type": "noul",
-            "noul": 0.12
-          },
-          "credit": 0.12,
-          "adds_to_load": 0.0108
-        },
-        "infra_surface": {
-          "label": "infra surface",
-          "type": "noul",
-          "weight": 0.08,
-          "inverted": false,
-          "returned": {
-            "type": "noul",
-            "noul": 0.02
-          },
-          "credit": 0.02,
-          "adds_to_load": 0.0016
-        },
-        "has_tests": {
-          "label": "has tests",
-          "type": "noul",
-          "weight": 0.08,
-          "inverted": true,
-          "returned": {
-            "type": "noul",
-            "noul": 0.98
-          },
-          "credit": 0.02,
-          "adds_to_load": 0.0016
-        }
-      }
-    },
-    {
       "number": 73719,
       "title": "Fix masked failure reason for deferrable EMR Serverless jobs",
       "url": "https://github.com/apache/airflow/pull/73719",
@@ -2396,8 +666,8 @@
       "changed_files": 4,
       "additions": 103,
       "deletions": 8,
-      "review_load": 0.3613,
-      "consequence": 0.32,
+      "review_load": 0.3545,
+      "consequence": 0.28,
       "consequence_from": "breaking change",
       "route": "tests-are-enough",
       "route_decided_by": "consequence",
@@ -2415,7 +685,7 @@
         "input_tokens": 3668,
         "output_tokens": 285
       },
-      "latency_ms": 152,
+      "latency_ms": 193,
       "questions": {
         "change_kind": {
           "label": "change kind",
@@ -2427,11 +697,11 @@
             "choice": "bugfix",
             "confidence": 1.0,
             "probabilities": {
-              "tests": 0.0,
               "refactor": 0.0,
+              "docs": 0.0,
+              "tests": 0.0,
               "feature": 0.0,
               "bugfix": 1.0,
-              "docs": 0.0,
               "config": 0.0,
               "dependency": 0.0
             }
@@ -2447,14 +717,14 @@
           "returned": {
             "type": "choice",
             "choice": "correctness",
-            "confidence": 0.82,
+            "confidence": 0.84,
             "probabilities": {
-              "deployment": 0.0,
-              "correctness": 0.85,
-              "readability": 0.0,
-              "tests": 0.13,
               "security": 0.0,
-              "compatibility": 0.02
+              "deployment": 0.0,
+              "tests": 0.12,
+              "correctness": 0.87,
+              "compatibility": 0.01,
+              "readability": 0.0
             }
           },
           "credit": null,
@@ -2490,8 +760,8 @@
           "inverted": false,
           "returned": {
             "type": "score",
-            "score": 1.65,
-            "confidence": 0.47,
+            "score": 1.63,
+            "confidence": 0.44,
             "legend": {
               "0": "None: the same edit repeated, or a value changed",
               "1": "Local choices inside one function or file",
@@ -2499,12 +769,12 @@
             },
             "probabilities": {
               "0": 0.01,
-              "1": 0.34,
-              "2": 0.65
+              "1": 0.36,
+              "2": 0.63
             }
           },
-          "credit": 0.825,
-          "adds_to_load": 0.1155
+          "credit": 0.815,
+          "adds_to_load": 0.1141
         },
         "description_quality": {
           "label": "description quality",
@@ -2536,10 +806,10 @@
           "inverted": false,
           "returned": {
             "type": "noul",
-            "noul": 0.18
+            "noul": 0.19
           },
-          "credit": 0.18,
-          "adds_to_load": 0.027
+          "credit": 0.19,
+          "adds_to_load": 0.0285
         },
         "mechanical": {
           "label": "mechanical",
@@ -2548,10 +818,10 @@
           "inverted": true,
           "returned": {
             "type": "noul",
-            "noul": 0.24
+            "noul": 0.26
           },
-          "credit": 0.76,
-          "adds_to_load": 0.0912
+          "credit": 0.74,
+          "adds_to_load": 0.0888
         },
         "breaking_change": {
           "label": "breaking change",
@@ -2560,10 +830,10 @@
           "inverted": false,
           "returned": {
             "type": "noul",
-            "noul": 0.32
+            "noul": 0.28
           },
-          "credit": 0.32,
-          "adds_to_load": 0.0352
+          "credit": 0.28,
+          "adds_to_load": 0.0308
         },
         "scope_creep": {
           "label": "scope creep",
@@ -2604,444 +874,14 @@
       }
     },
     {
-      "number": 73718,
-      "title": "Fix merge_dicts crash when overwriting a non-dict value with a dict",
-      "url": "https://github.com/apache/airflow/pull/73718",
-      "author": "ccoliu",
+      "number": 73727,
+      "title": "Speed up zip Dag discovery and keep member file names",
+      "url": "https://github.com/apache/airflow/pull/73727",
+      "author": "dilnazanlid",
       "changed_files": 2,
-      "additions": 14,
-      "deletions": 2,
-      "review_load": 0.2972,
-      "consequence": 0.84,
-      "consequence_from": "blast radius",
-      "route": "human-required",
-      "route_decided_by": "consequence",
-      "downgrade": "evidence that blast radius is covered, a test or a reviewer who owns it",
-      "tier": "low",
-      "size_floor": "trivial",
-      "raised_by_size": false,
-      "diff_coverage": 1.0,
-      "drivers": [
-        "blast radius",
-        "mechanical",
-        "design decisions"
-      ],
-      "usage": {
-        "input_tokens": 1827,
-        "output_tokens": 285
-      },
-      "latency_ms": 163,
-      "questions": {
-        "change_kind": {
-          "label": "change kind",
-          "type": "choice",
-          "weight": null,
-          "inverted": false,
-          "returned": {
-            "type": "choice",
-            "choice": "bugfix",
-            "confidence": 1.0,
-            "probabilities": {
-              "bugfix": 1.0,
-              "feature": 0.0,
-              "refactor": 0.0,
-              "config": 0.0,
-              "docs": 0.0,
-              "tests": 0.0,
-              "dependency": 0.0
-            }
-          },
-          "credit": null,
-          "adds_to_load": null
-        },
-        "review_focus": {
-          "label": "review focus",
-          "type": "choice",
-          "weight": null,
-          "inverted": false,
-          "returned": {
-            "type": "choice",
-            "choice": "correctness",
-            "confidence": 0.79,
-            "probabilities": {
-              "readability": 0.0,
-              "correctness": 0.83,
-              "security": 0.0,
-              "compatibility": 0.03,
-              "tests": 0.14,
-              "deployment": 0.0
-            }
-          },
-          "credit": null,
-          "adds_to_load": null
-        },
-        "blast_radius": {
-          "label": "blast radius",
-          "type": "score",
-          "weight": 0.15,
-          "inverted": false,
-          "returned": {
-            "type": "score",
-            "score": 1.82,
-            "confidence": 0.72,
-            "legend": {
-              "0": "Confined to one file, or to documentation",
-              "1": "Confined to one module or feature area",
-              "2": "Reaches shared code paths that many callers depend on"
-            },
-            "probabilities": {
-              "0": 0.01,
-              "1": 0.15,
-              "2": 0.84
-            }
-          },
-          "credit": 0.91,
-          "adds_to_load": 0.1365
-        },
-        "design_decisions": {
-          "label": "design decisions",
-          "type": "score",
-          "weight": 0.14,
-          "inverted": false,
-          "returned": {
-            "type": "score",
-            "score": 0.92,
-            "confidence": 0.77,
-            "legend": {
-              "0": "None: the same edit repeated, or a value changed",
-              "1": "Local choices inside one function or file",
-              "2": "New abstractions, interfaces, or control flow"
-            },
-            "probabilities": {
-              "0": 0.12,
-              "1": 0.84,
-              "2": 0.04
-            }
-          },
-          "credit": 0.46,
-          "adds_to_load": 0.0644
-        },
-        "description_quality": {
-          "label": "description quality",
-          "type": "score",
-          "weight": 0.08,
-          "inverted": true,
-          "returned": {
-            "type": "score",
-            "score": 2.0,
-            "confidence": 1.0,
-            "legend": {
-              "0": "Empty, or says nothing about what changed",
-              "1": "Names what changed",
-              "2": "Explains what changed, why, and how the author verified it"
-            },
-            "probabilities": {
-              "0": 0.0,
-              "1": 0.0,
-              "2": 1.0
-            }
-          },
-          "credit": 0.0,
-          "adds_to_load": 0.0
-        },
-        "security_surface": {
-          "label": "security surface",
-          "type": "noul",
-          "weight": 0.15,
-          "inverted": false,
-          "returned": {
-            "type": "noul",
-            "noul": 0.03
-          },
-          "credit": 0.03,
-          "adds_to_load": 0.0045
-        },
-        "mechanical": {
-          "label": "mechanical",
-          "type": "noul",
-          "weight": 0.12,
-          "inverted": true,
-          "returned": {
-            "type": "noul",
-            "noul": 0.4
-          },
-          "credit": 0.6,
-          "adds_to_load": 0.072
-        },
-        "breaking_change": {
-          "label": "breaking change",
-          "type": "noul",
-          "weight": 0.11,
-          "inverted": false,
-          "returned": {
-            "type": "noul",
-            "noul": 0.11
-          },
-          "credit": 0.11,
-          "adds_to_load": 0.0121
-        },
-        "scope_creep": {
-          "label": "scope creep",
-          "type": "noul",
-          "weight": 0.09,
-          "inverted": false,
-          "returned": {
-            "type": "noul",
-            "noul": 0.05
-          },
-          "credit": 0.05,
-          "adds_to_load": 0.0045
-        },
-        "infra_surface": {
-          "label": "infra surface",
-          "type": "noul",
-          "weight": 0.08,
-          "inverted": false,
-          "returned": {
-            "type": "noul",
-            "noul": 0.02
-          },
-          "credit": 0.02,
-          "adds_to_load": 0.0016
-        },
-        "has_tests": {
-          "label": "has tests",
-          "type": "noul",
-          "weight": 0.08,
-          "inverted": true,
-          "returned": {
-            "type": "noul",
-            "noul": 0.98
-          },
-          "credit": 0.02,
-          "adds_to_load": 0.0016
-        }
-      }
-    },
-    {
-      "number": 73709,
-      "title": "Avoid repeated KubernetesExecutor pod deletion for duplicate events",
-      "url": "https://github.com/apache/airflow/pull/73709",
-      "author": "Sanjays2402",
-      "changed_files": 2,
-      "additions": 113,
-      "deletions": 30,
-      "review_load": 0.2923,
-      "consequence": 0.1,
-      "consequence_from": "blast radius",
-      "route": "green-is-enough",
-      "route_decided_by": "consequence",
-      "downgrade": "",
-      "tier": "low",
-      "size_floor": "trivial",
-      "raised_by_size": false,
-      "diff_coverage": 1.0,
-      "drivers": [
-        "design decisions",
-        "blast radius",
-        "mechanical"
-      ],
-      "usage": {
-        "input_tokens": 4404,
-        "output_tokens": 285
-      },
-      "latency_ms": 141,
-      "questions": {
-        "change_kind": {
-          "label": "change kind",
-          "type": "choice",
-          "weight": null,
-          "inverted": false,
-          "returned": {
-            "type": "choice",
-            "choice": "bugfix",
-            "confidence": 1.0,
-            "probabilities": {
-              "config": 0.0,
-              "docs": 0.0,
-              "dependency": 0.0,
-              "tests": 0.0,
-              "refactor": 0.0,
-              "feature": 0.0,
-              "bugfix": 1.0
-            }
-          },
-          "credit": null,
-          "adds_to_load": null
-        },
-        "review_focus": {
-          "label": "review focus",
-          "type": "choice",
-          "weight": null,
-          "inverted": false,
-          "returned": {
-            "type": "choice",
-            "choice": "correctness",
-            "confidence": 0.88,
-            "probabilities": {
-              "correctness": 0.9,
-              "readability": 0.0,
-              "security": 0.0,
-              "compatibility": 0.01,
-              "tests": 0.09,
-              "deployment": 0.0
-            }
-          },
-          "credit": null,
-          "adds_to_load": null
-        },
-        "blast_radius": {
-          "label": "blast radius",
-          "type": "score",
-          "weight": 0.15,
-          "inverted": false,
-          "returned": {
-            "type": "score",
-            "score": 1.09,
-            "confidence": 0.82,
-            "legend": {
-              "0": "Confined to one file, or to documentation",
-              "1": "Confined to one module or feature area",
-              "2": "Reaches shared code paths that many callers depend on"
-            },
-            "probabilities": {
-              "0": 0.02,
-              "1": 0.88,
-              "2": 0.1
-            }
-          },
-          "credit": 0.545,
-          "adds_to_load": 0.0818
-        },
-        "design_decisions": {
-          "label": "design decisions",
-          "type": "score",
-          "weight": 0.14,
-          "inverted": false,
-          "returned": {
-            "type": "score",
-            "score": 1.46,
-            "confidence": 0.29,
-            "legend": {
-              "0": "None: the same edit repeated, or a value changed",
-              "1": "Local choices inside one function or file",
-              "2": "New abstractions, interfaces, or control flow"
-            },
-            "probabilities": {
-              "0": 0.0,
-              "1": 0.53,
-              "2": 0.47
-            }
-          },
-          "credit": 0.73,
-          "adds_to_load": 0.1022
-        },
-        "description_quality": {
-          "label": "description quality",
-          "type": "score",
-          "weight": 0.08,
-          "inverted": true,
-          "returned": {
-            "type": "score",
-            "score": 2.0,
-            "confidence": 1.0,
-            "legend": {
-              "0": "Empty, or says nothing about what changed",
-              "1": "Names what changed",
-              "2": "Explains what changed, why, and how the author verified it"
-            },
-            "probabilities": {
-              "0": 0.0,
-              "1": 0.0,
-              "2": 1.0
-            }
-          },
-          "credit": 0.0,
-          "adds_to_load": 0.0
-        },
-        "security_surface": {
-          "label": "security surface",
-          "type": "noul",
-          "weight": 0.15,
-          "inverted": false,
-          "returned": {
-            "type": "noul",
-            "noul": 0.04
-          },
-          "credit": 0.04,
-          "adds_to_load": 0.006
-        },
-        "mechanical": {
-          "label": "mechanical",
-          "type": "noul",
-          "weight": 0.12,
-          "inverted": true,
-          "returned": {
-            "type": "noul",
-            "noul": 0.4
-          },
-          "credit": 0.6,
-          "adds_to_load": 0.072
-        },
-        "breaking_change": {
-          "label": "breaking change",
-          "type": "noul",
-          "weight": 0.11,
-          "inverted": false,
-          "returned": {
-            "type": "noul",
-            "noul": 0.06
-          },
-          "credit": 0.06,
-          "adds_to_load": 0.0066
-        },
-        "scope_creep": {
-          "label": "scope creep",
-          "type": "noul",
-          "weight": 0.09,
-          "inverted": false,
-          "returned": {
-            "type": "noul",
-            "noul": 0.21
-          },
-          "credit": 0.21,
-          "adds_to_load": 0.0189
-        },
-        "infra_surface": {
-          "label": "infra surface",
-          "type": "noul",
-          "weight": 0.08,
-          "inverted": false,
-          "returned": {
-            "type": "noul",
-            "noul": 0.04
-          },
-          "credit": 0.04,
-          "adds_to_load": 0.0032
-        },
-        "has_tests": {
-          "label": "has tests",
-          "type": "noul",
-          "weight": 0.08,
-          "inverted": true,
-          "returned": {
-            "type": "noul",
-            "noul": 0.98
-          },
-          "credit": 0.02,
-          "adds_to_load": 0.0016
-        }
-      }
-    },
-    {
-      "number": 73717,
-      "title": "add bundle_name to dag processor timeouts metric",
-      "url": "https://github.com/apache/airflow/pull/73717",
-      "author": "samraj2k",
-      "changed_files": 3,
-      "additions": 16,
-      "deletions": 6,
-      "review_load": 0.29,
+      "additions": 53,
+      "deletions": 23,
+      "review_load": 0.3517,
       "consequence": 0.22,
       "consequence_from": "breaking change",
       "route": "tests-are-enough",
@@ -3052,15 +892,15 @@
       "raised_by_size": false,
       "diff_coverage": 1.0,
       "drivers": [
+        "design decisions",
         "blast radius",
-        "mechanical",
-        "design decisions"
+        "mechanical"
       ],
       "usage": {
-        "input_tokens": 2284,
-        "output_tokens": 284
+        "input_tokens": 2802,
+        "output_tokens": 285
       },
-      "latency_ms": 133,
+      "latency_ms": 154,
       "questions": {
         "change_kind": {
           "label": "change kind",
@@ -3069,16 +909,16 @@
           "inverted": false,
           "returned": {
             "type": "choice",
-            "choice": "feature",
-            "confidence": 0.94,
+            "choice": "bugfix",
+            "confidence": 1.0,
             "probabilities": {
-              "bugfix": 0.05,
-              "docs": 0.0,
+              "tests": 0.0,
+              "bugfix": 1.0,
               "refactor": 0.0,
-              "feature": 0.95,
               "config": 0.0,
               "dependency": 0.0,
-              "tests": 0.0
+              "docs": 0.0,
+              "feature": 0.0
             }
           },
           "credit": null,
@@ -3092,14 +932,14 @@
           "returned": {
             "type": "choice",
             "choice": "correctness",
-            "confidence": 0.41,
+            "confidence": 0.85,
             "probabilities": {
-              "security": 0.0,
-              "correctness": 0.52,
-              "deployment": 0.0,
+              "compatibility": 0.01,
+              "tests": 0.11,
+              "correctness": 0.88,
               "readability": 0.0,
-              "compatibility": 0.1,
-              "tests": 0.38
+              "deployment": 0.0,
+              "security": 0.0
             }
           },
           "credit": null,
@@ -3112,8 +952,8 @@
           "inverted": false,
           "returned": {
             "type": "score",
-            "score": 1.18,
-            "confidence": 0.71,
+            "score": 1.14,
+            "confidence": 0.78,
             "legend": {
               "0": "Confined to one file, or to documentation",
               "1": "Confined to one module or feature area",
@@ -3121,12 +961,12 @@
             },
             "probabilities": {
               "0": 0.0,
-              "1": 0.81,
-              "2": 0.19
+              "1": 0.85,
+              "2": 0.15
             }
           },
-          "credit": 0.59,
-          "adds_to_load": 0.0885
+          "credit": 0.57,
+          "adds_to_load": 0.0855
         },
         "design_decisions": {
           "label": "design decisions",
@@ -3135,21 +975,21 @@
           "inverted": false,
           "returned": {
             "type": "score",
-            "score": 0.92,
-            "confidence": 0.73,
+            "score": 1.68,
+            "confidence": 0.52,
             "legend": {
               "0": "None: the same edit repeated, or a value changed",
               "1": "Local choices inside one function or file",
               "2": "New abstractions, interfaces, or control flow"
             },
             "probabilities": {
-              "0": 0.13,
-              "1": 0.82,
-              "2": 0.05
+              "0": 0.0,
+              "1": 0.32,
+              "2": 0.68
             }
           },
-          "credit": 0.46,
-          "adds_to_load": 0.0644
+          "credit": 0.84,
+          "adds_to_load": 0.1176
         },
         "description_quality": {
           "label": "description quality",
@@ -3158,8 +998,8 @@
           "inverted": true,
           "returned": {
             "type": "score",
-            "score": 2.0,
-            "confidence": 1.0,
+            "score": 1.65,
+            "confidence": 0.47,
             "legend": {
               "0": "Empty, or says nothing about what changed",
               "1": "Names what changed",
@@ -3167,12 +1007,12 @@
             },
             "probabilities": {
               "0": 0.0,
-              "1": 0.0,
-              "2": 1.0
+              "1": 0.35,
+              "2": 0.65
             }
           },
-          "credit": 0.0,
-          "adds_to_load": 0.0
+          "credit": 0.175,
+          "adds_to_load": 0.014
         },
         "security_surface": {
           "label": "security surface",
@@ -3181,10 +1021,10 @@
           "inverted": false,
           "returned": {
             "type": "noul",
-            "noul": 0.04
+            "noul": 0.05
           },
-          "credit": 0.04,
-          "adds_to_load": 0.006
+          "credit": 0.05,
+          "adds_to_load": 0.0075
         },
         "mechanical": {
           "label": "mechanical",
@@ -3193,10 +1033,10 @@
           "inverted": true,
           "returned": {
             "type": "noul",
-            "noul": 0.37
+            "noul": 0.31
           },
-          "credit": 0.63,
-          "adds_to_load": 0.0756
+          "credit": 0.69,
+          "adds_to_load": 0.0828
         },
         "breaking_change": {
           "label": "breaking change",
@@ -3217,10 +1057,440 @@
           "inverted": false,
           "returned": {
             "type": "noul",
-            "noul": 0.25
+            "noul": 0.17
           },
-          "credit": 0.25,
-          "adds_to_load": 0.0225
+          "credit": 0.17,
+          "adds_to_load": 0.0153
+        },
+        "infra_surface": {
+          "label": "infra surface",
+          "type": "noul",
+          "weight": 0.08,
+          "inverted": false,
+          "returned": {
+            "type": "noul",
+            "noul": 0.03
+          },
+          "credit": 0.03,
+          "adds_to_load": 0.0024
+        },
+        "has_tests": {
+          "label": "has tests",
+          "type": "noul",
+          "weight": 0.08,
+          "inverted": true,
+          "returned": {
+            "type": "noul",
+            "noul": 0.97
+          },
+          "credit": 0.03,
+          "adds_to_load": 0.0024
+        }
+      }
+    },
+    {
+      "number": 73736,
+      "title": "Bump astral-sh/setup-uv from 10.1.0 to 10.2.0 in the github-actions-updates group",
+      "url": "https://github.com/apache/airflow/pull/73736",
+      "author": "dependabot[bot]",
+      "changed_files": 4,
+      "additions": 4,
+      "deletions": 4,
+      "review_load": 0.2834,
+      "consequence": 0.99,
+      "consequence_from": "infra surface",
+      "route": "human-required",
+      "route_decided_by": "consequence",
+      "downgrade": "evidence that infra surface is covered, a test or a reviewer who owns it",
+      "tier": "low",
+      "size_floor": "trivial",
+      "raised_by_size": false,
+      "diff_coverage": 1.0,
+      "drivers": [
+        "infra surface",
+        "has tests",
+        "blast radius"
+      ],
+      "usage": {
+        "input_tokens": 3369,
+        "output_tokens": 284
+      },
+      "latency_ms": 141,
+      "questions": {
+        "change_kind": {
+          "label": "change kind",
+          "type": "choice",
+          "weight": null,
+          "inverted": false,
+          "returned": {
+            "type": "choice",
+            "choice": "dependency",
+            "confidence": 0.88,
+            "probabilities": {
+              "bugfix": 0.0,
+              "config": 0.1,
+              "tests": 0.0,
+              "dependency": 0.9,
+              "refactor": 0.0,
+              "docs": 0.0,
+              "feature": 0.0
+            }
+          },
+          "credit": null,
+          "adds_to_load": null
+        },
+        "review_focus": {
+          "label": "review focus",
+          "type": "choice",
+          "weight": null,
+          "inverted": false,
+          "returned": {
+            "type": "choice",
+            "choice": "correctness",
+            "confidence": 0.44,
+            "probabilities": {
+              "readability": 0.0,
+              "tests": 0.08,
+              "correctness": 0.52,
+              "deployment": 0.03,
+              "security": 0.01,
+              "compatibility": 0.36
+            }
+          },
+          "credit": null,
+          "adds_to_load": null
+        },
+        "blast_radius": {
+          "label": "blast radius",
+          "type": "score",
+          "weight": 0.15,
+          "inverted": false,
+          "returned": {
+            "type": "score",
+            "score": 0.96,
+            "confidence": 0.65,
+            "legend": {
+              "0": "Confined to one file, or to documentation",
+              "1": "Confined to one module or feature area",
+              "2": "Reaches shared code paths that many callers depend on"
+            },
+            "probabilities": {
+              "0": 0.14,
+              "1": 0.76,
+              "2": 0.1
+            }
+          },
+          "credit": 0.48,
+          "adds_to_load": 0.072
+        },
+        "design_decisions": {
+          "label": "design decisions",
+          "type": "score",
+          "weight": 0.14,
+          "inverted": false,
+          "returned": {
+            "type": "score",
+            "score": 0.0,
+            "confidence": 1.0,
+            "legend": {
+              "0": "None: the same edit repeated, or a value changed",
+              "1": "Local choices inside one function or file",
+              "2": "New abstractions, interfaces, or control flow"
+            },
+            "probabilities": {
+              "0": 1.0,
+              "1": 0.0,
+              "2": 0.0
+            }
+          },
+          "credit": 0.0,
+          "adds_to_load": 0.0
+        },
+        "description_quality": {
+          "label": "description quality",
+          "type": "score",
+          "weight": 0.08,
+          "inverted": true,
+          "returned": {
+            "type": "score",
+            "score": 1.06,
+            "confidence": 0.91,
+            "legend": {
+              "0": "Empty, or says nothing about what changed",
+              "1": "Names what changed",
+              "2": "Explains what changed, why, and how the author verified it"
+            },
+            "probabilities": {
+              "0": 0.0,
+              "1": 0.94,
+              "2": 0.06
+            }
+          },
+          "credit": 0.47,
+          "adds_to_load": 0.0376
+        },
+        "security_surface": {
+          "label": "security surface",
+          "type": "noul",
+          "weight": 0.15,
+          "inverted": false,
+          "returned": {
+            "type": "noul",
+            "noul": 0.03
+          },
+          "credit": 0.03,
+          "adds_to_load": 0.0045
+        },
+        "mechanical": {
+          "label": "mechanical",
+          "type": "noul",
+          "weight": 0.12,
+          "inverted": true,
+          "returned": {
+            "type": "noul",
+            "noul": 0.97
+          },
+          "credit": 0.03,
+          "adds_to_load": 0.0036
+        },
+        "breaking_change": {
+          "label": "breaking change",
+          "type": "noul",
+          "weight": 0.11,
+          "inverted": false,
+          "returned": {
+            "type": "noul",
+            "noul": 0.04
+          },
+          "credit": 0.04,
+          "adds_to_load": 0.0044
+        },
+        "scope_creep": {
+          "label": "scope creep",
+          "type": "noul",
+          "weight": 0.09,
+          "inverted": false,
+          "returned": {
+            "type": "noul",
+            "noul": 0.05
+          },
+          "credit": 0.05,
+          "adds_to_load": 0.0045
+        },
+        "infra_surface": {
+          "label": "infra surface",
+          "type": "noul",
+          "weight": 0.08,
+          "inverted": false,
+          "returned": {
+            "type": "noul",
+            "noul": 0.99
+          },
+          "credit": 0.99,
+          "adds_to_load": 0.0792
+        },
+        "has_tests": {
+          "label": "has tests",
+          "type": "noul",
+          "weight": 0.08,
+          "inverted": true,
+          "returned": {
+            "type": "noul",
+            "noul": 0.03
+          },
+          "credit": 0.97,
+          "adds_to_load": 0.0776
+        }
+      }
+    },
+    {
+      "number": 73742,
+      "title": "Account for the open pull request limit in the PR triage process",
+      "url": "https://github.com/apache/airflow/pull/73742",
+      "author": "potiuk",
+      "changed_files": 3,
+      "additions": 36,
+      "deletions": 0,
+      "review_load": 0.2746,
+      "consequence": 0.07,
+      "consequence_from": "infra surface",
+      "route": "green-is-enough",
+      "route_decided_by": "consequence",
+      "downgrade": "",
+      "tier": "low",
+      "size_floor": "trivial",
+      "raised_by_size": false,
+      "diff_coverage": 1.0,
+      "drivers": [
+        "mechanical",
+        "has tests",
+        "design decisions"
+      ],
+      "usage": {
+        "input_tokens": 2789,
+        "output_tokens": 284
+      },
+      "latency_ms": 248,
+      "questions": {
+        "change_kind": {
+          "label": "change kind",
+          "type": "choice",
+          "weight": null,
+          "inverted": false,
+          "returned": {
+            "type": "choice",
+            "choice": "docs",
+            "confidence": 0.92,
+            "probabilities": {
+              "refactor": 0.0,
+              "dependency": 0.0,
+              "tests": 0.0,
+              "bugfix": 0.0,
+              "feature": 0.0,
+              "docs": 0.93,
+              "config": 0.07
+            }
+          },
+          "credit": null,
+          "adds_to_load": null
+        },
+        "review_focus": {
+          "label": "review focus",
+          "type": "choice",
+          "weight": null,
+          "inverted": false,
+          "returned": {
+            "type": "choice",
+            "choice": "correctness",
+            "confidence": 0.49,
+            "probabilities": {
+              "compatibility": 0.03,
+              "tests": 0.01,
+              "deployment": 0.0,
+              "security": 0.0,
+              "readability": 0.38,
+              "correctness": 0.58
+            }
+          },
+          "credit": null,
+          "adds_to_load": null
+        },
+        "blast_radius": {
+          "label": "blast radius",
+          "type": "score",
+          "weight": 0.15,
+          "inverted": false,
+          "returned": {
+            "type": "score",
+            "score": 0.03,
+            "confidence": 0.95,
+            "legend": {
+              "0": "Confined to one file, or to documentation",
+              "1": "Confined to one module or feature area",
+              "2": "Reaches shared code paths that many callers depend on"
+            },
+            "probabilities": {
+              "0": 0.97,
+              "1": 0.03,
+              "2": 0.0
+            }
+          },
+          "credit": 0.015,
+          "adds_to_load": 0.0022
+        },
+        "design_decisions": {
+          "label": "design decisions",
+          "type": "score",
+          "weight": 0.14,
+          "inverted": false,
+          "returned": {
+            "type": "score",
+            "score": 0.83,
+            "confidence": 0.42,
+            "legend": {
+              "0": "None: the same edit repeated, or a value changed",
+              "1": "Local choices inside one function or file",
+              "2": "New abstractions, interfaces, or control flow"
+            },
+            "probabilities": {
+              "0": 0.28,
+              "1": 0.61,
+              "2": 0.11
+            }
+          },
+          "credit": 0.415,
+          "adds_to_load": 0.0581
+        },
+        "description_quality": {
+          "label": "description quality",
+          "type": "score",
+          "weight": 0.08,
+          "inverted": true,
+          "returned": {
+            "type": "score",
+            "score": 1.37,
+            "confidence": 0.45,
+            "legend": {
+              "0": "Empty, or says nothing about what changed",
+              "1": "Names what changed",
+              "2": "Explains what changed, why, and how the author verified it"
+            },
+            "probabilities": {
+              "0": 0.0,
+              "1": 0.63,
+              "2": 0.37
+            }
+          },
+          "credit": 0.315,
+          "adds_to_load": 0.0252
+        },
+        "security_surface": {
+          "label": "security surface",
+          "type": "noul",
+          "weight": 0.15,
+          "inverted": false,
+          "returned": {
+            "type": "noul",
+            "noul": 0.04
+          },
+          "credit": 0.04,
+          "adds_to_load": 0.006
+        },
+        "mechanical": {
+          "label": "mechanical",
+          "type": "noul",
+          "weight": 0.12,
+          "inverted": true,
+          "returned": {
+            "type": "noul",
+            "noul": 0.3
+          },
+          "credit": 0.7,
+          "adds_to_load": 0.084
+        },
+        "breaking_change": {
+          "label": "breaking change",
+          "type": "noul",
+          "weight": 0.11,
+          "inverted": false,
+          "returned": {
+            "type": "noul",
+            "noul": 0.07
+          },
+          "credit": 0.07,
+          "adds_to_load": 0.0077
+        },
+        "scope_creep": {
+          "label": "scope creep",
+          "type": "noul",
+          "weight": 0.09,
+          "inverted": false,
+          "returned": {
+            "type": "noul",
+            "noul": 0.09
+          },
+          "credit": 0.09,
+          "adds_to_load": 0.0081
         },
         "infra_surface": {
           "label": "infra surface",
@@ -3241,41 +1511,41 @@
           "inverted": true,
           "returned": {
             "type": "noul",
-            "noul": 0.96
+            "noul": 0.03
           },
-          "credit": 0.04,
-          "adds_to_load": 0.0032
+          "credit": 0.97,
+          "adds_to_load": 0.0776
         }
       }
     },
     {
-      "number": 73711,
-      "title": "Emit queued_duration metric when a task enters RUNNING via the execution API",
-      "url": "https://github.com/apache/airflow/pull/73711",
-      "author": "wufangyong973",
+      "number": 73729,
+      "title": "Fix clearing with upstream and downstream selecting unrelated tasks",
+      "url": "https://github.com/apache/airflow/pull/73729",
+      "author": "ShousenZHANG",
       "changed_files": 2,
-      "additions": 89,
-      "deletions": 0,
-      "review_load": 0.2651,
-      "consequence": 0.09,
-      "consequence_from": "breaking change",
-      "route": "green-is-enough",
+      "additions": 51,
+      "deletions": 2,
+      "review_load": 0.2675,
+      "consequence": 0.15,
+      "consequence_from": "blast radius",
+      "route": "tests-are-enough",
       "route_decided_by": "consequence",
-      "downgrade": "",
+      "downgrade": "evidence that blast radius is covered, a test or a reviewer who owns it",
       "tier": "low",
       "size_floor": "trivial",
       "raised_by_size": false,
       "diff_coverage": 1.0,
       "drivers": [
-        "design decisions",
         "blast radius",
+        "design decisions",
         "mechanical"
       ],
       "usage": {
-        "input_tokens": 2679,
+        "input_tokens": 2525,
         "output_tokens": 285
       },
-      "latency_ms": 142,
+      "latency_ms": 148,
       "questions": {
         "change_kind": {
           "label": "change kind",
@@ -3285,15 +1555,15 @@
           "returned": {
             "type": "choice",
             "choice": "bugfix",
-            "confidence": 0.95,
+            "confidence": 1.0,
             "probabilities": {
+              "bugfix": 1.0,
+              "feature": 0.0,
+              "config": 0.0,
+              "docs": 0.0,
               "dependency": 0.0,
               "refactor": 0.0,
-              "config": 0.0,
-              "tests": 0.0,
-              "docs": 0.0,
-              "feature": 0.04,
-              "bugfix": 0.96
+              "tests": 0.0
             }
           },
           "credit": null,
@@ -3307,14 +1577,14 @@
           "returned": {
             "type": "choice",
             "choice": "correctness",
-            "confidence": 0.84,
+            "confidence": 0.81,
             "probabilities": {
-              "correctness": 0.86,
-              "readability": 0.0,
               "security": 0.0,
-              "compatibility": 0.01,
-              "tests": 0.13,
-              "deployment": 0.0
+              "readability": 0.0,
+              "correctness": 0.85,
+              "deployment": 0.0,
+              "compatibility": 0.0,
+              "tests": 0.15
             }
           },
           "credit": null,
@@ -3327,21 +1597,21 @@
           "inverted": false,
           "returned": {
             "type": "score",
-            "score": 1.04,
-            "confidence": 0.91,
+            "score": 1.12,
+            "confidence": 0.74,
             "legend": {
               "0": "Confined to one file, or to documentation",
               "1": "Confined to one module or feature area",
               "2": "Reaches shared code paths that many callers depend on"
             },
             "probabilities": {
-              "0": 0.01,
-              "1": 0.94,
-              "2": 0.05
+              "0": 0.03,
+              "1": 0.82,
+              "2": 0.15
             }
           },
-          "credit": 0.52,
-          "adds_to_load": 0.078
+          "credit": 0.56,
+          "adds_to_load": 0.084
         },
         "design_decisions": {
           "label": "design decisions",
@@ -3350,21 +1620,21 @@
           "inverted": false,
           "returned": {
             "type": "score",
-            "score": 1.18,
-            "confidence": 0.7,
+            "score": 1.08,
+            "confidence": 0.77,
             "legend": {
               "0": "None: the same edit repeated, or a value changed",
               "1": "Local choices inside one function or file",
               "2": "New abstractions, interfaces, or control flow"
             },
             "probabilities": {
-              "0": 0.01,
-              "1": 0.8,
-              "2": 0.19
+              "0": 0.04,
+              "1": 0.84,
+              "2": 0.12
             }
           },
-          "credit": 0.59,
-          "adds_to_load": 0.0826
+          "credit": 0.54,
+          "adds_to_load": 0.0756
         },
         "description_quality": {
           "label": "description quality",
@@ -3408,10 +1678,10 @@
           "inverted": true,
           "returned": {
             "type": "noul",
-            "noul": 0.41
+            "noul": 0.39
           },
-          "credit": 0.59,
-          "adds_to_load": 0.0708
+          "credit": 0.61,
+          "adds_to_load": 0.0732
         },
         "breaking_change": {
           "label": "breaking change",
@@ -3420,10 +1690,10 @@
           "inverted": false,
           "returned": {
             "type": "noul",
-            "noul": 0.09
+            "noul": 0.14
           },
-          "credit": 0.09,
-          "adds_to_load": 0.0099
+          "credit": 0.14,
+          "adds_to_load": 0.0154
         },
         "scope_creep": {
           "label": "scope creep",
@@ -3432,10 +1702,10 @@
           "inverted": false,
           "returned": {
             "type": "noul",
-            "noul": 0.12
+            "noul": 0.07
           },
-          "credit": 0.12,
-          "adds_to_load": 0.0108
+          "credit": 0.07,
+          "adds_to_load": 0.0063
         },
         "infra_surface": {
           "label": "infra surface",
@@ -3471,7 +1741,7 @@
       "changed_files": 1,
       "additions": 2,
       "deletions": 1,
-      "review_load": 0.1935,
+      "review_load": 0.197,
       "consequence": 0.04,
       "consequence_from": "breaking change",
       "route": "green-is-enough",
@@ -3488,7 +1758,7 @@
         "input_tokens": 1325,
         "output_tokens": 284
       },
-      "latency_ms": 135,
+      "latency_ms": 129,
       "questions": {
         "change_kind": {
           "label": "change kind",
@@ -3500,13 +1770,13 @@
             "choice": "docs",
             "confidence": 0.97,
             "probabilities": {
-              "bugfix": 0.0,
               "feature": 0.0,
-              "docs": 0.98,
-              "refactor": 0.0,
-              "config": 0.02,
+              "dependency": 0.0,
               "tests": 0.0,
-              "dependency": 0.0
+              "refactor": 0.0,
+              "docs": 0.97,
+              "bugfix": 0.0,
+              "config": 0.03
             }
           },
           "credit": null,
@@ -3520,14 +1790,14 @@
           "returned": {
             "type": "choice",
             "choice": "correctness",
-            "confidence": 0.45,
+            "confidence": 0.48,
             "probabilities": {
-              "correctness": 0.54,
               "compatibility": 0.03,
               "deployment": 0.0,
+              "tests": 0.02,
               "security": 0.0,
-              "readability": 0.41,
-              "tests": 0.02
+              "correctness": 0.57,
+              "readability": 0.38
             }
           },
           "credit": null,
@@ -3563,21 +1833,21 @@
           "inverted": false,
           "returned": {
             "type": "score",
-            "score": 0.5,
-            "confidence": 0.25,
+            "score": 0.52,
+            "confidence": 0.28,
             "legend": {
               "0": "None: the same edit repeated, or a value changed",
               "1": "Local choices inside one function or file",
               "2": "New abstractions, interfaces, or control flow"
             },
             "probabilities": {
-              "0": 0.5,
-              "1": 0.5,
+              "0": 0.48,
+              "1": 0.52,
               "2": 0.0
             }
           },
-          "credit": 0.25,
-          "adds_to_load": 0.035
+          "credit": 0.26,
+          "adds_to_load": 0.0364
         },
         "description_quality": {
           "label": "description quality",
@@ -3586,8 +1856,8 @@
           "inverted": true,
           "returned": {
             "type": "score",
-            "score": 1.46,
-            "confidence": 0.31,
+            "score": 1.48,
+            "confidence": 0.27,
             "legend": {
               "0": "Empty, or says nothing about what changed",
               "1": "Names what changed",
@@ -3595,12 +1865,12 @@
             },
             "probabilities": {
               "0": 0.0,
-              "1": 0.54,
-              "2": 0.46
+              "1": 0.52,
+              "2": 0.48
             }
           },
-          "credit": 0.27,
-          "adds_to_load": 0.0216
+          "credit": 0.26,
+          "adds_to_load": 0.0208
         },
         "security_surface": {
           "label": "security surface",
@@ -3621,10 +1891,10 @@
           "inverted": true,
           "returned": {
             "type": "noul",
-            "noul": 0.61
+            "noul": 0.6
           },
-          "credit": 0.39,
-          "adds_to_load": 0.0468
+          "credit": 0.4,
+          "adds_to_load": 0.048
         },
         "breaking_change": {
           "label": "breaking change",
@@ -3645,10 +1915,10 @@
           "inverted": false,
           "returned": {
             "type": "noul",
-            "noul": 0.03
+            "noul": 0.04
           },
-          "credit": 0.03,
-          "adds_to_load": 0.0027
+          "credit": 0.04,
+          "adds_to_load": 0.0036
         },
         "infra_surface": {
           "label": "infra surface",
@@ -3657,10 +1927,10 @@
           "inverted": false,
           "returned": {
             "type": "noul",
-            "noul": 0.02
+            "noul": 0.03
           },
-          "credit": 0.02,
-          "adds_to_load": 0.0016
+          "credit": 0.03,
+          "adds_to_load": 0.0024
         },
         "has_tests": {
           "label": "has tests",
@@ -3673,219 +1943,6 @@
           },
           "credit": 0.98,
           "adds_to_load": 0.0784
-        }
-      }
-    },
-    {
-      "number": 73725,
-      "title": "Fix Elasticsearch and OpenSearch response wrapper bugs",
-      "url": "https://github.com/apache/airflow/pull/73725",
-      "author": "subhramit",
-      "changed_files": 4,
-      "additions": 32,
-      "deletions": 8,
-      "review_load": 0.1764,
-      "consequence": 0.14,
-      "consequence_from": "blast radius",
-      "route": "green-is-enough",
-      "route_decided_by": "consequence",
-      "downgrade": "",
-      "tier": "trivial",
-      "size_floor": "trivial",
-      "raised_by_size": false,
-      "diff_coverage": 1.0,
-      "drivers": [
-        "blast radius"
-      ],
-      "usage": {
-        "input_tokens": 2880,
-        "output_tokens": 285
-      },
-      "latency_ms": 173,
-      "questions": {
-        "change_kind": {
-          "label": "change kind",
-          "type": "choice",
-          "weight": null,
-          "inverted": false,
-          "returned": {
-            "type": "choice",
-            "choice": "bugfix",
-            "confidence": 1.0,
-            "probabilities": {
-              "docs": 0.0,
-              "config": 0.0,
-              "dependency": 0.0,
-              "bugfix": 1.0,
-              "tests": 0.0,
-              "feature": 0.0,
-              "refactor": 0.0
-            }
-          },
-          "credit": null,
-          "adds_to_load": null
-        },
-        "review_focus": {
-          "label": "review focus",
-          "type": "choice",
-          "weight": null,
-          "inverted": false,
-          "returned": {
-            "type": "choice",
-            "choice": "correctness",
-            "confidence": 0.73,
-            "probabilities": {
-              "compatibility": 0.01,
-              "readability": 0.0,
-              "security": 0.0,
-              "correctness": 0.78,
-              "tests": 0.21,
-              "deployment": 0.0
-            }
-          },
-          "credit": null,
-          "adds_to_load": null
-        },
-        "blast_radius": {
-          "label": "blast radius",
-          "type": "score",
-          "weight": 0.15,
-          "inverted": false,
-          "returned": {
-            "type": "score",
-            "score": 1.13,
-            "confidence": 0.79,
-            "legend": {
-              "0": "Confined to one file, or to documentation",
-              "1": "Confined to one module or feature area",
-              "2": "Reaches shared code paths that many callers depend on"
-            },
-            "probabilities": {
-              "0": 0.0,
-              "1": 0.86,
-              "2": 0.14
-            }
-          },
-          "credit": 0.565,
-          "adds_to_load": 0.0847
-        },
-        "design_decisions": {
-          "label": "design decisions",
-          "type": "score",
-          "weight": 0.14,
-          "inverted": false,
-          "returned": {
-            "type": "score",
-            "score": 0.28,
-            "confidence": 0.58,
-            "legend": {
-              "0": "None: the same edit repeated, or a value changed",
-              "1": "Local choices inside one function or file",
-              "2": "New abstractions, interfaces, or control flow"
-            },
-            "probabilities": {
-              "0": 0.73,
-              "1": 0.25,
-              "2": 0.02
-            }
-          },
-          "credit": 0.14,
-          "adds_to_load": 0.0196
-        },
-        "description_quality": {
-          "label": "description quality",
-          "type": "score",
-          "weight": 0.08,
-          "inverted": true,
-          "returned": {
-            "type": "score",
-            "score": 1.4,
-            "confidence": 0.4,
-            "legend": {
-              "0": "Empty, or says nothing about what changed",
-              "1": "Names what changed",
-              "2": "Explains what changed, why, and how the author verified it"
-            },
-            "probabilities": {
-              "0": 0.0,
-              "1": 0.6,
-              "2": 0.4
-            }
-          },
-          "credit": 0.3,
-          "adds_to_load": 0.024
-        },
-        "security_surface": {
-          "label": "security surface",
-          "type": "noul",
-          "weight": 0.15,
-          "inverted": false,
-          "returned": {
-            "type": "noul",
-            "noul": 0.05
-          },
-          "credit": 0.05,
-          "adds_to_load": 0.0075
-        },
-        "mechanical": {
-          "label": "mechanical",
-          "type": "noul",
-          "weight": 0.12,
-          "inverted": true,
-          "returned": {
-            "type": "noul",
-            "noul": 0.86
-          },
-          "credit": 0.14,
-          "adds_to_load": 0.0168
-        },
-        "breaking_change": {
-          "label": "breaking change",
-          "type": "noul",
-          "weight": 0.11,
-          "inverted": false,
-          "returned": {
-            "type": "noul",
-            "noul": 0.13
-          },
-          "credit": 0.13,
-          "adds_to_load": 0.0143
-        },
-        "scope_creep": {
-          "label": "scope creep",
-          "type": "noul",
-          "weight": 0.09,
-          "inverted": false,
-          "returned": {
-            "type": "noul",
-            "noul": 0.07
-          },
-          "credit": 0.07,
-          "adds_to_load": 0.0063
-        },
-        "infra_surface": {
-          "label": "infra surface",
-          "type": "noul",
-          "weight": 0.08,
-          "inverted": false,
-          "returned": {
-            "type": "noul",
-            "noul": 0.02
-          },
-          "credit": 0.02,
-          "adds_to_load": 0.0016
-        },
-        "has_tests": {
-          "label": "has tests",
-          "type": "noul",
-          "weight": 0.08,
-          "inverted": true,
-          "returned": {
-            "type": "noul",
-            "noul": 0.98
-          },
-          "credit": 0.02,
-          "adds_to_load": 0.0016
         }
       }
     }

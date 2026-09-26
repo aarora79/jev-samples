@@ -24,14 +24,160 @@ const maxTitleChars = 58
 // Jev read. Above it, the reading covers enough of the change to stand on its own.
 const lowCoverageBelow = 0.70
 
+// preTriageStates are checked in this order. Each one is terminal: the pull request
+// is not in a reviewable condition, so no Jev call happens and no route is computed.
+var preTriageStates = []string{"draft", "ci-failing", "ci-pending"}
+
+// stateAdvice says what each state means for a reader, and who it is waiting on.
+var stateAdvice = map[string]string{
+	"draft":      "the author is still working: nothing to review, and nothing to decide",
+	"ci-failing": "the branch cannot merge until the checks pass, so review waits on that",
+	"ci-pending": "checks are still running: come back when they land",
+}
+
+// notReviewable is one pull request that never reached Jev.
+type notReviewable struct {
+	Pull   pullRequest
+	State  string
+	Reason string
+	// Shared marks a failure whose check names also fail on other pull requests,
+	// which points at the checks rather than at this branch.
+	Shared bool
+}
+
+// preTriageState says whether a pull request is in no condition to be triaged.
+//
+// Skipping these is the cheapest thing this binary does: it costs no Jev call at
+// all. Measured on eighteen apache/airflow pull requests, ten were in one of these
+// states.
+func preTriageState(pull pullRequest) (string, string) {
+	switch {
+	case pull.Draft:
+		return "draft", "marked draft by the author"
+	case len(pull.Checks.Failing) > 0:
+		named := fmt.Sprintf("%d checks", len(pull.Checks.Failing))
+		if len(pull.Checks.Failing) == 1 {
+			named = pull.Checks.Failing[0]
+		}
+		return "ci-failing", fmt.Sprintf(
+			"%d of %d checks failing: %s", len(pull.Checks.Failing), pull.Checks.Total, named,
+		)
+	case pull.Checks.Pending > 0:
+		return "ci-pending", fmt.Sprintf(
+			"%d of %d checks still running", pull.Checks.Pending, pull.Checks.Total,
+		)
+	}
+	return "", ""
+}
+
+// markSharedFailures says which failures belong to the branch and which belong to
+// the checks.
+//
+// A check name that fails on several unrelated pull requests is the check being
+// broken, not each change breaking it: a boto3 version bump cannot break Postgres
+// serialization. It costs no extra API call, because the names are already in the
+// dataset.
+func markSharedFailures(skipped []notReviewable) {
+	seen := map[string]int{}
+	for _, entry := range skipped {
+		for _, name := range entry.Pull.Checks.Failing {
+			seen[name]++
+		}
+	}
+
+	for index := range skipped {
+		failing := skipped[index].Pull.Checks.Failing
+		if len(failing) == 0 {
+			continue
+		}
+		shared := true
+		for _, name := range failing {
+			if seen[name] < 2 {
+				shared = false
+				break
+			}
+		}
+		if shared {
+			skipped[index].Shared = true
+			skipped[index].Reason += ", which also fails on other pull requests"
+		}
+	}
+}
+
+// printNotReviewable prints the pull requests that never reached Jev, and why.
+//
+// A queue that is mostly ci-failing is saying something more useful than any
+// routing could: review capacity is not the bottleneck.
+func printNotReviewable(skipped []notReviewable, total int) {
+	if len(skipped) == 0 {
+		return
+	}
+
+	fmt.Printf("\n## Not reviewable yet: %d of %d\n\n", len(skipped), total)
+	for _, state := range preTriageStates {
+		members := make([]notReviewable, 0, len(skipped))
+		shared := 0
+		for _, entry := range skipped {
+			if entry.State == state {
+				members = append(members, entry)
+				if entry.Shared {
+					shared++
+				}
+			}
+		}
+		if len(members) == 0 {
+			continue
+		}
+
+		fmt.Printf("%s  (%d)  -> %s\n", strings.ToUpper(state), len(members), stateAdvice[state])
+		if shared > 0 {
+			fmt.Printf(
+				"          %d of these fail only on a check that fails elsewhere too, "+
+					"so they are waiting on the checks rather than on their authors\n",
+				shared,
+			)
+		}
+		for _, entry := range members {
+			fmt.Printf("  #%-6d %s\n", entry.Pull.Number, entry.Reason)
+			fmt.Printf("          %s\n", entry.Pull.Title)
+			fmt.Printf("          %s\n", entry.Pull.URL)
+		}
+		fmt.Println()
+	}
+
+	if float64(len(skipped))/float64(total) >= 0.5 {
+		fmt.Printf(
+			"%.0f%% of this queue cannot be reviewed as it stands. Fix that before reading "+
+				"anything into the routes below.\n",
+			100*float64(len(skipped))/float64(total),
+		)
+	}
+}
+
 // triage asks Jev about every pull request in the dataset, prints the triage, and
 // writes the two reports.
 //
 // It returns the exit code, so -fail-on-tier can turn a queue that needs attention
 // into a failed CI job.
 func triage(opts options, data dataset, set settings, specs []spec, key string) (int, error) {
-	results := make([]result, 0, len(data.PullRequests))
+	// Pre-triage first, so a draft or a red branch costs nothing.
+	var skipped []notReviewable
+	var reviewable []pullRequest
 	for _, pull := range data.PullRequests {
+		state, reason := preTriageState(pull)
+		if state != "" {
+			skipped = append(skipped, notReviewable{Pull: pull, State: state, Reason: reason})
+			continue
+		}
+		reviewable = append(reviewable, pull)
+	}
+	if len(skipped) > 0 {
+		markSharedFailures(skipped)
+		logf("%d of %d are not reviewable yet, so they skip Jev", len(skipped), len(data.PullRequests))
+	}
+
+	results := make([]result, 0, len(reviewable))
+	for _, pull := range reviewable {
 		r, err := ask(key, set, specs, data.Repo, pull)
 		if err != nil {
 			return exitError, err
@@ -40,7 +186,12 @@ func triage(opts options, data dataset, set settings, specs []spec, key string) 
 		results = append(results, r)
 	}
 
-	fmt.Printf("\n## Triage: %s, %s\n\n", data.Repo, plural(len(results), "pull request"))
+	printNotReviewable(skipped, len(data.PullRequests))
+	fmt.Printf("\n## Triage: %s, %s\n\n", data.Repo, plural(len(results), "reviewable pull request"))
+	if len(results) == 0 {
+		fmt.Println("Nothing reached Jev, so there is no route to report.")
+		return exitOK, nil
+	}
 	printPadded(triageHeader, triageRows(results))
 	fmt.Printf(
 		"\nLoad is the weighted average of nine questions, 0 to 1. Tier comes from that load, "+
@@ -57,7 +208,7 @@ func triage(opts options, data dataset, set settings, specs []spec, key string) 
 
 	printTotals(results, specs, set)
 
-	jsonPath, mdPath, err := writeReports(opts, data, results, specs, set)
+	jsonPath, mdPath, err := writeReports(opts, data, results, specs, set, skipped)
 	if err != nil {
 		return exitError, err
 	}

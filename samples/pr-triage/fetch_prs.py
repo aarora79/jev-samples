@@ -52,6 +52,11 @@ PER_PAGE: int = 100
 # requests. --all means all of them up to this.
 MAX_PAGES: int = 20
 
+# Which check conclusions count as a failure. A skipped job did not run, a neutral
+# one declined to judge, and a cancelled one was abandoned: none of those is the
+# branch being broken.
+FAILING_CONCLUSIONS: tuple[str, ...] = ("failure", "timed_out", "action_required")
+
 # Where the environment carries a token, in the order checked.
 TOKEN_ENV_NAMES: tuple[str, ...] = ("GITHUB_TOKEN", "GH_TOKEN")
 
@@ -274,6 +279,50 @@ def _pull_files(
     return files, True
 
 
+def _pull_checks(
+    repo: str,
+    sha: str,
+    token: str | None,
+) -> dict:
+    """Summarise the check runs on one commit.
+
+    One call per pull request. The summary is counts plus the names of what
+    failed, which is what lets a reader tell one flaky job out of ninety from a
+    genuinely broken branch without opening the pull request.
+
+    Args:
+        repo: The repository as `owner/repo`.
+        sha: The head commit of the pull request.
+        token: Bearer token, or None.
+
+    Returns:
+        Counts by outcome, the names that failed, and whether anything is still
+        running.
+    """
+    query = urllib.parse.urlencode({"per_page": PER_PAGE})
+    runs = _get_json(f"{API_ROOT}/repos/{repo}/commits/{sha}/check-runs?{query}", token)
+    entries = runs.get("check_runs", []) if isinstance(runs, dict) else []
+
+    counts: dict[str, int] = {}
+    failing: list[str] = []
+    pending = 0
+    for entry in entries:
+        if entry.get("status") != "completed":
+            pending += 1
+            continue
+        conclusion = entry.get("conclusion") or "none"
+        counts[conclusion] = counts.get(conclusion, 0) + 1
+        if conclusion in FAILING_CONCLUSIONS:
+            failing.append(entry.get("name", "unnamed check"))
+
+    return {
+        "total": len(entries),
+        "pending": pending,
+        "counts": counts,
+        "failing": failing,
+    }
+
+
 def _pull_record(
     repo: str,
     entry: dict,
@@ -296,9 +345,12 @@ def _pull_record(
     logger.info(f"Fetching #{number}: {entry['title'][:60]}")
     detail = _get_json(f"{API_ROOT}/repos/{repo}/pulls/{number}", token)
     files, files_truncated = _pull_files(repo, number, token)
+    head_sha = detail["head"]["sha"]
 
     return {
         "number": number,
+        "head_sha": head_sha,
+        "checks": _pull_checks(repo, head_sha, token),
         "title": entry["title"],
         "body": entry.get("body") or "",
         "author": (entry.get("user") or {}).get("login", ""),
@@ -338,9 +390,12 @@ def _pull_one(
     logger.info(f"Fetching #{number} directly")
     detail = _get_json(f"{API_ROOT}/repos/{repo}/pulls/{number}", token)
     files, files_truncated = _pull_files(repo, number, token)
+    head_sha = detail["head"]["sha"]
 
     return {
         "number": detail["number"],
+        "head_sha": head_sha,
+        "checks": _pull_checks(repo, head_sha, token),
         "title": detail["title"],
         "body": detail.get("body") or "",
         "author": (detail.get("user") or {}).get("login", ""),

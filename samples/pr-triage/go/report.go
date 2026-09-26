@@ -55,6 +55,18 @@ type pullReport struct {
 	Questions       map[string]questionReport `json:"questions"`
 }
 
+// notReviewableJSON is one pull request that never reached Jev, as the report
+// stores it.
+type notReviewableJSON struct {
+	Number        int          `json:"number"`
+	Title         string       `json:"title"`
+	URL           string       `json:"url"`
+	State         string       `json:"state"`
+	Reason        string       `json:"reason"`
+	SharedFailure bool         `json:"shared_failure"`
+	Checks        checkSummary `json:"checks"`
+}
+
 // triageReport is the whole JSON report.
 type triageReport struct {
 	Repo           string         `json:"repo"`
@@ -65,9 +77,13 @@ type triageReport struct {
 	TierCounts     map[string]int `json:"tier_counts"`
 	// RouteCounts rolls the queue up, so a job can read its shape without walking
 	// every entry.
-	RouteCounts  map[string]int `json:"route_counts"`
-	CostUSD      float64        `json:"cost_usd"`
-	PullRequests []pullReport   `json:"pull_requests"`
+	RouteCounts map[string]int `json:"route_counts"`
+	// StateCounts covers the whole queue, so a job can see how much of it was even
+	// reviewable before any routing happened.
+	StateCounts   map[string]int      `json:"state_counts"`
+	NotReviewable []notReviewableJSON `json:"not_reviewable"`
+	CostUSD       float64             `json:"cost_usd"`
+	PullRequests  []pullReport        `json:"pull_requests"`
 }
 
 // writeReports writes both files and returns their paths.
@@ -77,6 +93,7 @@ func writeReports(
 	results []result,
 	specs []spec,
 	set settings,
+	skipped []notReviewable,
 ) (string, string, error) {
 	if err := os.MkdirAll(opts.out, 0o755); err != nil {
 		return "", "", fmt.Errorf("making %s: %w", opts.out, err)
@@ -86,7 +103,7 @@ func writeReports(
 	jsonPath := stem + ".json"
 	mdPath := stem + ".md"
 
-	if err := writeJSON(jsonPath, buildReport(data, results, specs, set)); err != nil {
+	if err := writeJSON(jsonPath, buildReport(data, results, specs, set, skipped)); err != nil {
 		return "", "", err
 	}
 
@@ -98,7 +115,7 @@ func writeReports(
 }
 
 // buildReport assembles the JSON report.
-func buildReport(data dataset, results []result, specs []spec, set settings) triageReport {
+func buildReport(data dataset, results []result, specs []spec, set settings, skipped []notReviewable) triageReport {
 	total := weightedTotal(specs)
 
 	counts := make(map[string]int, len(tiers))
@@ -164,6 +181,24 @@ func buildReport(data dataset, results []result, specs []spec, set settings) tri
 		})
 	}
 
+	stateCounts := map[string]int{"reviewable": len(results)}
+	for _, state := range preTriageStates {
+		stateCounts[state] = 0
+	}
+	notReviewable := make([]notReviewableJSON, 0, len(skipped))
+	for _, entry := range skipped {
+		stateCounts[entry.State]++
+		notReviewable = append(notReviewable, notReviewableJSON{
+			Number:        entry.Pull.Number,
+			Title:         entry.Pull.Title,
+			URL:           entry.Pull.URL,
+			State:         entry.State,
+			Reason:        entry.Reason,
+			SharedFailure: entry.Shared,
+			Checks:        entry.Pull.Checks,
+		})
+	}
+
 	return triageReport{
 		Repo:           data.Repo,
 		Selector:       data.Selector,
@@ -172,6 +207,8 @@ func buildReport(data dataset, results []result, specs []spec, set settings) tri
 		QuestionsAsked: len(specs),
 		TierCounts:     counts,
 		RouteCounts:    routeCounts,
+		StateCounts:    stateCounts,
+		NotReviewable:  notReviewable,
 		CostUSD:        round8(costUSD(results, set)),
 		PullRequests:   pulls,
 	}

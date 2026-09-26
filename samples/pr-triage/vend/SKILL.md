@@ -62,9 +62,9 @@ Add `-quiet` when you are going to read the output rather than show it, which dr
 
 Every run prints a table, then the same pull requests grouped by tier with the advice for each, then what the run cost. It also writes two files into `-out` (default `./data`): a JSON report holding every answer, and a markdown report that pastes into an issue or a pull request without reformatting.
 
-Each pull request gets a **route**, naming what evidence is sufficient before it merges, cheapest first:
+Each pull request gets a **route**, answering one question: what would be enough to merge this change? Cheapest first:
 
-| Route | Sufficient evidence |
+| Route | Enough to merge on |
 | --- | --- |
 | `green-is-enough` | CI passing |
 | `tests-are-enough` | CI passing, and a test that exercises the change |
@@ -72,7 +72,7 @@ Each pull request gets a **route**, naming what evidence is sufficient before it
 | `human-required` | a person reads it, whatever the machines say |
 | `human-plus-author` | a person reads it line by line, with the author walking them through |
 
-The route comes from two numbers: **consequence**, the max of the four questions about what breaks if this is wrong, and **effort**, the weighted mean of nine. Consequence sets the floor and effort can only raise it. Nothing here says merge.
+The route comes from two numbers: **consequence**, the max of the four questions about what breaks if this is wrong, and **effort**, the weighted mean of nine. Consequence sets the floor and effort can only raise it. None of these says merge it now, and the tool never merges anything: they name what a merge would need.
 
 Three things in that output need reading with care.
 

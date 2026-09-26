@@ -1,85 +1,54 @@
 # Triage: apache/airflow
 
-18 pull requests, 11 questions each, one call apiece, on 26 September 2026 with `jev-1.13.0`.
-87,483 input tokens, $0.00367 at $0.042 per million.
+8 pull requests, 11 questions each, one call apiece, on 26 September 2026 with `jev-1.13.0`.
+24,317 input tokens, $0.00102 at $0.042 per million.
 
-| PR     | Files | Lines      | Kind    | Load            | Cons | Route                          | Title                                                      |
-| ------ | ----- | ---------- | ------- | --------------- | ---- | ------------------------------ | ---------------------------------------------------------- |
-| #73698 | 8     | +626/-73   | bugfix  | 0.63 (on a cut) | 0.99 | human-plus-author              | Bind the AWS auth manager SAML response to the browser ... |
-| #73696 | 7     | +136/-5    | bugfix  | 0.53            | 0.99 | human-required                 | Check admin-only views against a dedicated Keycloak res... |
-| #73704 | 9     | +57/-32    | bugfix  | 0.51            | 0.84 | human-required                 | Fix socket leaks and add missing request timeouts acros... |
-| #73706 | 17    | +2634/-117 | bugfix  | 0.50 (size)     | 0.77 | human-required                 | Account for AgentOperator spend on failed runs and acro... |
-| #73701 | 4     | +360/-39   | feature | 0.47            | 0.54 | ai-review-is-enough            | Add durable reconnect option to EmrServerlessStartJobOp... |
-| #73703 | 5     | +64/-0     | feature | 0.44            | 0.87 | human-required                 | [chart/v1-2x-test] Helm: Allow hostAliases and log groo... |
-| #73723 | 10    | +558/-121  | feature | 0.43 (on a cut) | 0.77 | human-required                 | TS SDK: embed one source region per native Dag file        |
-| #73702 | 4     | +291/-3    | bugfix  | 0.41 (on a cut) | 0.36 | ai-review-is-enough (on a cut) | Stop AWS Glue job run when a deferred task is cleared      |
-| #73724 | 4     | +209/-12   | bugfix  | 0.38            | 0.32 | tests-are-enough               | Fix Grid and Graph 500 errors for cyclic TaskGroup depe... |
-| #73713 | 54    | +467/-131  | feature | 0.37 (size)     | 0.97 | human-required                 | UI: Group digits of counters according to the selected ... |
-| #73720 | 2     | +98/-6     | bugfix  | 0.36            | 0.60 | human-required (on a cut)      | [v3-3-test] Raise DeadlockImminentError for sync comms ... |
-| #73719 | 4     | +103/-8    | bugfix  | 0.36            | 0.32 | tests-are-enough               | Fix masked failure reason for deferrable EMR Serverless... |
-| #73718 | 2     | +14/-2     | bugfix  | 0.30            | 0.84 | human-required                 | Fix merge_dicts crash when overwriting a non-dict value... |
-| #73709 | 2     | +113/-30   | bugfix  | 0.29            | 0.10 | green-is-enough                | Avoid repeated KubernetesExecutor pod deletion for dupl... |
-| #73717 | 3     | +16/-6     | feature | 0.29            | 0.22 | tests-are-enough               | add bundle_name to dag processor timeouts metric           |
-| #73711 | 2     | +89/-0     | bugfix  | 0.27            | 0.09 | green-is-enough                | Emit queued_duration metric when a task enters RUNNING ... |
-| #73722 | 1     | +2/-1      | docs    | 0.19            | 0.04 | green-is-enough                | Clarify max_db_retries doc wording to avoid off-by-one ... |
-| #73725 | 4     | +32/-8     | bugfix  | 0.18            | 0.14 | green-is-enough (on a cut)     | Fix Elasticsearch and OpenSearch response wrapper bugs     |
+10 pull requests skipped Jev, not being in a reviewable condition:
+
+- **draft** (1): [#73720](https://github.com/apache/airflow/pull/73720)
+- **ci-failing** (8): [#73743](https://github.com/apache/airflow/pull/73743), [#73737](https://github.com/apache/airflow/pull/73737), [#73734](https://github.com/apache/airflow/pull/73734), [#73732](https://github.com/apache/airflow/pull/73732), [#73730](https://github.com/apache/airflow/pull/73730), [#73726](https://github.com/apache/airflow/pull/73726), [#73724](https://github.com/apache/airflow/pull/73724), [#73723](https://github.com/apache/airflow/pull/73723)
+- **ci-pending** (1): [#73740](https://github.com/apache/airflow/pull/73740)
+
+| PR     | Files | Lines    | Kind       | Load | Cons | Route                       | Title                                                      |
+| ------ | ----- | -------- | ---------- | ---- | ---- | --------------------------- | ---------------------------------------------------------- |
+| #73728 | 3     | +203/-34 | feature    | 0.49 | 0.54 | ai-review-is-enough         | Discover a bundle's Dag definitions through the importe... |
+| #73741 | 2     | +11/-3   | bugfix     | 0.40 | 0.97 | human-required              | Improve DAG tag length validation error                    |
+| #73719 | 4     | +103/-8  | bugfix     | 0.35 | 0.28 | tests-are-enough            | Fix masked failure reason for deferrable EMR Serverless... |
+| #73727 | 2     | +53/-23  | bugfix     | 0.35 | 0.22 | tests-are-enough            | Speed up zip Dag discovery and keep member file names      |
+| #73736 | 4     | +4/-4    | dependency | 0.28 | 0.99 | human-required              | Bump astral-sh/setup-uv from 10.1.0 to 10.2.0 in the gi... |
+| #73742 | 3     | +36/-0   | docs       | 0.27 | 0.07 | green-is-enough             | Account for the open pull request limit in the PR triag... |
+| #73729 | 2     | +51/-2   | bugfix     | 0.27 | 0.15 | tests-are-enough (on a cut) | Fix clearing with upstream and downstream selecting unr... |
+| #73722 | 1     | +2/-1    | docs       | 0.20 | 0.04 | green-is-enough             | Clarify max_db_retries doc wording to avoid off-by-one ... |
 
 Load is the weighted average of nine questions, 0 to 1. Tier comes from that load, raised when size demands it: over 30 files or 1,500 lines is high whatever Jev returned.
 
-## high (3)
-
-a human reads this line by line, and the author walks them through it
-
-- [#73698](https://github.com/apache/airflow/pull/73698) load 0.63: Bind the AWS auth manager SAML response to the browser that started the login
-  - drivers: security surface, design decisions, mechanical
-- [#73706](https://github.com/apache/airflow/pull/73706) load 0.50, raised by the size floor: Account for AgentOperator spend on failed runs and across retries
-  - drivers: design decisions, blast radius, breaking change
-  - read from 47% of the changed files, so the load is a read on part of the diff
-- [#73713](https://github.com/apache/airflow/pull/73713) load 0.37, raised by the size floor: UI: Group digits of counters according to the selected locale
-  - drivers: blast radius, design decisions, scope creep
-  - read from 44% of the changed files, so the load is a read on part of the diff
-
-## medium (5)
+## medium (1)
 
 one reviewer who knows this area, reading the whole diff
 
-- [#73696](https://github.com/apache/airflow/pull/73696) load 0.53: Check admin-only views against a dedicated Keycloak resource in multi-team mode
-  - drivers: security surface, design decisions, mechanical
-- [#73704](https://github.com/apache/airflow/pull/73704) load 0.51: Fix socket leaks and add missing request timeouts across providers
-  - drivers: security surface, blast radius, has tests
-- [#73701](https://github.com/apache/airflow/pull/73701) load 0.47: Add durable reconnect option to EmrServerlessStartJobOperator
-  - drivers: design decisions, mechanical, security surface
-- [#73703](https://github.com/apache/airflow/pull/73703) load 0.44: [chart/v1-2x-test] Helm: Allow hostAliases and log groomer lifecycle hooks on the Dag processor (#73159)
-  - drivers: design decisions, mechanical, blast radius
-- [#73723](https://github.com/apache/airflow/pull/73723) load 0.43: TS SDK: embed one source region per native Dag file
+- [#73728](https://github.com/apache/airflow/pull/73728) load 0.49: Discover a bundle's Dag definitions through the importer registry
   - drivers: design decisions, blast radius, mechanical
 
-## low (8)
+## low (6)
 
 one reviewer, one pass, no meeting
 
-- [#73702](https://github.com/apache/airflow/pull/73702) load 0.41: Stop AWS Glue job run when a deferred task is cleared
+- [#73741](https://github.com/apache/airflow/pull/73741) load 0.40: Improve DAG tag length validation error
+  - drivers: security surface, blast radius, mechanical
+- [#73719](https://github.com/apache/airflow/pull/73719) load 0.35: Fix masked failure reason for deferrable EMR Serverless jobs
   - drivers: design decisions, mechanical, blast radius
-- [#73724](https://github.com/apache/airflow/pull/73724) load 0.38: Fix Grid and Graph 500 errors for cyclic TaskGroup dependencies
+- [#73727](https://github.com/apache/airflow/pull/73727) load 0.35: Speed up zip Dag discovery and keep member file names
   - drivers: design decisions, blast radius, mechanical
-- [#73720](https://github.com/apache/airflow/pull/73720) load 0.36: [v3-3-test] Raise DeadlockImminentError for sync comms calls from a paused event loop thread (#73521)
-  - drivers: design decisions, blast radius, mechanical
-- [#73719](https://github.com/apache/airflow/pull/73719) load 0.36: Fix masked failure reason for deferrable EMR Serverless jobs
-  - drivers: design decisions, mechanical, blast radius
-- [#73718](https://github.com/apache/airflow/pull/73718) load 0.30: Fix merge_dicts crash when overwriting a non-dict value with a dict
-  - drivers: blast radius, mechanical, design decisions
-- [#73709](https://github.com/apache/airflow/pull/73709) load 0.29: Avoid repeated KubernetesExecutor pod deletion for duplicate events
-  - drivers: design decisions, blast radius, mechanical
-- [#73717](https://github.com/apache/airflow/pull/73717) load 0.29: add bundle_name to dag processor timeouts metric
-  - drivers: blast radius, mechanical, design decisions
-- [#73711](https://github.com/apache/airflow/pull/73711) load 0.27: Emit queued_duration metric when a task enters RUNNING via the execution API
-  - drivers: design decisions, blast radius, mechanical
+- [#73736](https://github.com/apache/airflow/pull/73736) load 0.28: Bump astral-sh/setup-uv from 10.1.0 to 10.2.0 in the github-actions-updates group
+  - drivers: infra surface, has tests, blast radius
+- [#73742](https://github.com/apache/airflow/pull/73742) load 0.27: Account for the open pull request limit in the PR triage process
+  - drivers: mechanical, has tests, design decisions
+- [#73729](https://github.com/apache/airflow/pull/73729) load 0.27: Fix clearing with upstream and downstream selecting unrelated tasks
+  - drivers: blast radius, design decisions, mechanical
 
-## trivial (2)
+## trivial (1)
 
 merge on a glance: read the title, skim the diff, check that CI is green
 
-- [#73722](https://github.com/apache/airflow/pull/73722) load 0.19: Clarify max_db_retries doc wording to avoid off-by-one confusion
+- [#73722](https://github.com/apache/airflow/pull/73722) load 0.20: Clarify max_db_retries doc wording to avoid off-by-one confusion
   - drivers: has tests
-- [#73725](https://github.com/apache/airflow/pull/73725) load 0.18: Fix Elasticsearch and OpenSearch response wrapper bugs
-  - drivers: blast radius

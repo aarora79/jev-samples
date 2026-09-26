@@ -46,6 +46,9 @@ const (
 	// ghTokenTimeout caps the shell out to the gh CLI, which can sit waiting on a
 	// keyring prompt.
 	ghTokenTimeout = 10 * time.Second
+	// failing conclusions are the ones that mean the branch is broken. A skipped job
+	// did not run, a neutral one declined to judge, and a cancelled one was
+	// abandoned: none of those is a failure.
 	// maxPatchChars cuts one file's patch as it lands in the dataset. A generated
 	// lockfile diff runs to hundreds of thousands of characters and would dominate
 	// the file on disk. The triage half applies its own, smaller budget when it
@@ -75,6 +78,25 @@ var repoPattern = regexp.MustCompile(`^[\w.-]+/[\w.-]+$`)
 // so a repository name becomes a filename.
 var slugPattern = regexp.MustCompile(`[^a-z0-9]+`)
 
+// failingConclusions are the check outcomes that count as a failure.
+var failingConclusions = map[string]bool{
+	"failure":         true,
+	"timed_out":       true,
+	"action_required": true,
+}
+
+// checkSummary is what the checks API said about one commit.
+//
+// Counts plus the names that failed, which is what lets a reader tell one flaky
+// job out of ninety from a genuinely broken branch without opening the pull
+// request.
+type checkSummary struct {
+	Total   int            `json:"total"`
+	Pending int            `json:"pending"`
+	Counts  map[string]int `json:"counts"`
+	Failing []string       `json:"failing"`
+}
+
 // changedFile is one file in a pull request, as the dataset stores it.
 //
 // The json tags name the keys, and they match the Python sample's dataset exactly
@@ -95,20 +117,25 @@ type changedFile struct {
 
 // pullRequest is one pull request, as the dataset stores it.
 type pullRequest struct {
-	Number       int           `json:"number"`
-	Title        string        `json:"title"`
-	Body         string        `json:"body"`
-	Author       string        `json:"author"`
-	CreatedAt    string        `json:"created_at"`
-	UpdatedAt    string        `json:"updated_at"`
-	Draft        bool          `json:"draft"`
-	Labels       []string      `json:"labels"`
-	Base         string        `json:"base"`
-	URL          string        `json:"url"`
-	ChangedFiles int           `json:"changed_files"`
-	Additions    int           `json:"additions"`
-	Deletions    int           `json:"deletions"`
-	Files        []changedFile `json:"files"`
+	Number       int      `json:"number"`
+	Title        string   `json:"title"`
+	Body         string   `json:"body"`
+	Author       string   `json:"author"`
+	CreatedAt    string   `json:"created_at"`
+	UpdatedAt    string   `json:"updated_at"`
+	Draft        bool     `json:"draft"`
+	Labels       []string `json:"labels"`
+	Base         string   `json:"base"`
+	URL          string   `json:"url"`
+	ChangedFiles int      `json:"changed_files"`
+	Additions    int      `json:"additions"`
+	Deletions    int      `json:"deletions"`
+	// HeadSHA is the commit the checks ran against.
+	HeadSHA string `json:"head_sha"`
+	// Checks summarises those check runs, so the triage half can tell a reviewable
+	// pull request from one waiting on its build.
+	Checks checkSummary  `json:"checks"`
+	Files  []changedFile `json:"files"`
 	// FilesTruncated says whether pagination cut the file list short, which GitHub
 	// also does at 3,000 files.
 	FilesTruncated bool `json:"files_truncated"`
@@ -466,11 +493,55 @@ func pullFiles(tgt target, token string, number int) ([]changedFile, bool, error
 	return files, true, nil
 }
 
-// pullDetail carries the three counts the list endpoint leaves out.
+// pullDetail carries the counts and the head commit the list endpoint leaves out.
 type pullDetail struct {
 	ChangedFiles int `json:"changed_files"`
 	Additions    int `json:"additions"`
 	Deletions    int `json:"deletions"`
+	Head         struct {
+		SHA string `json:"sha"`
+	} `json:"head"`
+}
+
+// pullChecks summarises the check runs on one commit. One call per pull request.
+func pullChecks(tgt target, token, sha string) (checkSummary, error) {
+	query := url.Values{}
+	query.Set("per_page", strconv.Itoa(perPage))
+	endpoint := fmt.Sprintf(
+		"%s/repos/%s/commits/%s/check-runs?%s", tgt.APIBase, tgt.Repo, sha, query.Encode(),
+	)
+
+	var body struct {
+		CheckRuns []struct {
+			Name       string `json:"name"`
+			Status     string `json:"status"`
+			Conclusion string `json:"conclusion"`
+		} `json:"check_runs"`
+	}
+	if err := getJSON(endpoint, token, &body); err != nil {
+		return checkSummary{}, err
+	}
+
+	summary := checkSummary{
+		Total:   len(body.CheckRuns),
+		Counts:  map[string]int{},
+		Failing: []string{},
+	}
+	for _, run := range body.CheckRuns {
+		if run.Status != "completed" {
+			summary.Pending++
+			continue
+		}
+		conclusion := run.Conclusion
+		if conclusion == "" {
+			conclusion = "none"
+		}
+		summary.Counts[conclusion]++
+		if failingConclusions[conclusion] {
+			summary.Failing = append(summary.Failing, run.Name)
+		}
+	}
+	return summary, nil
 }
 
 // pullRecord turns one list entry into a dataset record, fetching what it lacks.
@@ -487,6 +558,11 @@ func pullRecord(tgt target, token string, entry listEntry) (pullRequest, error) 
 	}
 
 	files, truncated, err := pullFiles(tgt, token, entry.Number)
+	if err != nil {
+		return pullRequest{}, err
+	}
+
+	checks, err := pullChecks(tgt, token, detail.Head.SHA)
 	if err != nil {
 		return pullRequest{}, err
 	}
@@ -513,6 +589,8 @@ func pullRecord(tgt target, token string, entry listEntry) (pullRequest, error) 
 		ChangedFiles:   detail.ChangedFiles,
 		Additions:      detail.Additions,
 		Deletions:      detail.Deletions,
+		HeadSHA:        detail.Head.SHA,
+		Checks:         checks,
 		Files:          files,
 		FilesTruncated: truncated,
 	}, nil
@@ -544,6 +622,11 @@ func pullOne(tgt target, token string) (pullRequest, error) {
 		return pullRequest{}, err
 	}
 
+	checks, err := pullChecks(tgt, token, combined.Head.SHA)
+	if err != nil {
+		return pullRequest{}, err
+	}
+
 	labels := make([]string, 0, len(combined.Labels))
 	for _, label := range combined.Labels {
 		labels = append(labels, label.Name)
@@ -563,6 +646,8 @@ func pullOne(tgt target, token string) (pullRequest, error) {
 		ChangedFiles:   combined.ChangedFiles,
 		Additions:      combined.Additions,
 		Deletions:      combined.Deletions,
+		HeadSHA:        combined.Head.SHA,
+		Checks:         checks,
 		Files:          files,
 		FilesTruncated: truncated,
 	}, nil
