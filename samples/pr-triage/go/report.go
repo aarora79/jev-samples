@@ -107,7 +107,7 @@ func writeReports(
 		return "", "", err
 	}
 
-	body := strings.Join(markdownLines(data, results, specs, set), "\n") + "\n"
+	body := strings.Join(markdownLines(data, results, specs, set, skipped), "\n") + "\n"
 	if err := os.WriteFile(mdPath, []byte(body), 0o644); err != nil {
 		return "", "", fmt.Errorf("writing %s: %w", mdPath, err)
 	}
@@ -214,20 +214,30 @@ func buildReport(data dataset, results []result, specs []spec, set settings, ski
 	}
 }
 
-// markdownLines builds the markdown report: the same table and groups the run
-// printed, with links a reader can follow.
-func markdownLines(data dataset, results []result, specs []spec, set settings) []string {
+// markdownLines builds the markdown report: a summary table, a detail table, then
+// the groups, with links a reader can follow.
+//
+// The summary answers how the queue came out, the detail table answers what each
+// pull request scored, and the groups carry the reasoning and the links.
+func markdownLines(
+	data dataset,
+	results []result,
+	specs []spec,
+	set settings,
+	skipped []notReviewable,
+) []string {
 	tokens := 0
 	for _, r := range results {
 		tokens += r.Usage.InputTokens
 	}
+	total := len(results) + len(skipped)
 
 	lines := []string{
 		fmt.Sprintf("# Triage: %s", data.Repo),
 		"",
 		fmt.Sprintf(
-			"%s, %d questions each, one call apiece, on %s with `%s`.",
-			plural(len(results), "pull request"), len(specs),
+			"%s, of which %d reached Jev at %d questions each, one call apiece, on %s with `%s`.",
+			plural(total, "pull request"), len(results), len(specs),
 			time.Now().UTC().Format("2 January 2006"), set.Model,
 		),
 		fmt.Sprintf(
@@ -235,28 +245,91 @@ func markdownLines(data dataset, results []result, specs []spec, set settings) [
 			commas(tokens), costUSD(results, set), set.InputUSDPerMillion,
 		),
 		"",
-	}
-	lines = append(lines, paddedLines(triageHeader, triageRows(results))...)
-	lines = append(lines,
+		"## Summary",
 		"",
-		fmt.Sprintf(
-			"Load is the weighted average of nine questions, 0 to 1. Tier comes from that load, "+
-				"raised when size demands it: over %d files or %s lines is high whatever Jev returned.",
-			sizeFloors[0].files, commas(sizeFloors[0].lines),
-		),
-	)
+	}
+	lines = append(lines, paddedLines(summaryHeader, summaryRows(results, skipped))...)
+	lines = append(lines, summaryNote(len(skipped) > 0, len(results) > 0)...)
+
+	if len(results) > 0 {
+		lines = append(lines,
+			"",
+			fmt.Sprintf("## The %s that reached Jev", plural(len(results), "pull request")),
+			"",
+		)
+		lines = append(lines, paddedLines(triageHeader, triageRows(results))...)
+		lines = append(lines,
+			"",
+			fmt.Sprintf(
+				"Effort is the weighted mean of nine questions, 0 to 1, and consequence is the "+
+					"max of four. `Cons from` names the question that produced the consequence, "+
+					"which is what set the route. Effort is raised when size demands it: over %d "+
+					"files or %s lines is high whatever Jev returned.",
+				sizeFloors[0].files, commas(sizeFloors[0].lines),
+			),
+		)
+	}
+
+	lines = append(lines, markdownNotReviewable(skipped)...)
 	return append(lines, markdownGroups(results)...)
 }
 
-// markdownGroups builds one section per tier, heaviest tier first.
+// markdownNotReviewable builds the section for the pull requests that never reached
+// Jev, so the markdown accounts for the whole queue rather than the routed part.
+func markdownNotReviewable(skipped []notReviewable) []string {
+	if len(skipped) == 0 {
+		return nil
+	}
+
+	lines := []string{"", fmt.Sprintf("## Not reviewable yet (%d)", len(skipped))}
+	for _, state := range preTriageStates {
+		members := make([]notReviewable, 0, len(skipped))
+		shared := 0
+		for _, entry := range skipped {
+			if entry.State == state {
+				members = append(members, entry)
+				if entry.Shared {
+					shared++
+				}
+			}
+		}
+		if len(members) == 0 {
+			continue
+		}
+
+		lines = append(lines,
+			"",
+			fmt.Sprintf("### %s (%d)", state, len(members)),
+			"",
+			stateAdvice[state],
+			"",
+		)
+		if shared > 0 {
+			lines = append(lines, fmt.Sprintf(
+				"%d of these fail only on a check that fails elsewhere too, so they are waiting "+
+					"on the checks rather than on their authors.",
+				shared,
+			), "")
+		}
+		for _, entry := range members {
+			lines = append(lines, fmt.Sprintf(
+				"- [#%d](%s) %s", entry.Pull.Number, entry.Pull.URL, entry.Pull.Title,
+			))
+			lines = append(lines, fmt.Sprintf("  - %s", entry.Reason))
+		}
+	}
+	return lines
+}
+
+// markdownGroups builds one section per route, most consequential route first.
 func markdownGroups(results []result) []string {
 	var lines []string
 
-	for index := len(tiers) - 1; index >= 0; index-- {
-		tier := tiers[index]
+	for index := len(routes) - 1; index >= 0; index-- {
+		route := routes[index]
 		members := make([]result, 0, len(results))
-		for _, r := range byLoad(results) {
-			if r.Tier == tier {
+		for _, r := range byConsequence(results) {
+			if r.Route == route {
 				members = append(members, r)
 			}
 		}
@@ -266,9 +339,9 @@ func markdownGroups(results []result) []string {
 
 		lines = append(lines,
 			"",
-			fmt.Sprintf("## %s (%d)", tier, len(members)),
+			fmt.Sprintf("## %s (%d)", route, len(members)),
 			"",
-			tierAdvice[tier],
+			routeAdvice[route],
 			"",
 		)
 		for _, r := range members {
@@ -277,13 +350,19 @@ func markdownGroups(results []result) []string {
 				note = ", raised by the size floor"
 			}
 			lines = append(lines, fmt.Sprintf(
-				"- [#%d](%s) load %.2f%s: %s",
-				r.Pull.Number, r.Pull.URL, r.Load, note, r.Pull.Title,
+				"- [#%d](%s) %s", r.Pull.Number, r.Pull.URL, r.Pull.Title,
+			))
+			lines = append(lines, fmt.Sprintf(
+				"  - consequence %.2f from %s, effort %.2f%s",
+				r.Consequence, r.ConsequenceLabel, r.Load, note,
 			))
 			lines = append(lines, fmt.Sprintf("  - drivers: %s", driverText(r)))
+			if r.Downgrade != "" {
+				lines = append(lines, fmt.Sprintf("  - would drop a route with: %s", r.Downgrade))
+			}
 			if r.Coverage < lowCoverageBelow {
 				lines = append(lines, fmt.Sprintf(
-					"  - read from %.0f%% of the changed files, so the load is a read on part of the diff",
+					"  - read from %.0f%% of the changed files, so both numbers read part of the diff",
 					r.Coverage*100,
 				))
 			}

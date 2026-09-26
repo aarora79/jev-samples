@@ -12,13 +12,26 @@ import (
 	"strings"
 )
 
-// triageHeader names the columns of the one-row-per-pull-request table.
+// summaryHeader names the columns of the summary table: how the whole queue came
+// out, one row per outcome. It covers the pre-triage states as well as the routes,
+// so the counts account for every pull request fetched rather than only the ones
+// that reached Jev.
+var summaryHeader = []string{"Outcome", "Count", "Pull requests"}
+
+// summaryNumbersShown is how many numbers the summary names per row before it stops
+// listing them. A queue with ninety pull requests on one route would otherwise
+// print a cell nobody reads.
+const summaryNumbersShown = 12
+
+// triageHeader names the columns of the one-row-per-pull-request table. Number and
+// title come first, because those are what a reader scans for, then the two scores,
+// then what produced the consequence, then the route it bought.
 var triageHeader = []string{
-	"PR", "Files", "Lines", "Kind", "Load", "Cons", "Route", "Title",
+	"PR", "Title", "Files", "Lines", "Kind", "Effort", "Cons", "Cons from", "Route",
 }
 
 // maxTitleChars cuts a title so the table stays inside a terminal.
-const maxTitleChars = 58
+const maxTitleChars = 44
 
 // lowCoverageBelow is the coverage that earns a line saying how much of the diff
 // Jev read. Above it, the reading covers enough of the change to stand on its own.
@@ -113,7 +126,7 @@ func printNotReviewable(skipped []notReviewable, total int) {
 		return
 	}
 
-	fmt.Printf("\n## Not reviewable yet: %d of %d\n\n", len(skipped), total)
+	fmt.Printf("\n### Not reviewable yet: %d of %d\n\n", len(skipped), total)
 	for _, state := range preTriageStates {
 		members := make([]notReviewable, 0, len(skipped))
 		shared := 0
@@ -148,7 +161,7 @@ func printNotReviewable(skipped []notReviewable, total int) {
 	if float64(len(skipped))/float64(total) >= 0.5 {
 		fmt.Printf(
 			"%.0f%% of this queue cannot be reviewed as it stands. Fix that before reading "+
-				"anything into the routes below.\n",
+				"anything into the routes.\n",
 			100*float64(len(skipped))/float64(total),
 		)
 	}
@@ -186,20 +199,27 @@ func triage(opts options, data dataset, set settings, specs []spec, key string) 
 		results = append(results, r)
 	}
 
-	printNotReviewable(skipped, len(data.PullRequests))
-	fmt.Printf("\n## Triage: %s, %s\n\n", data.Repo, plural(len(results), "reviewable pull request"))
+	fmt.Printf("\n## Triage: %s, %s\n\n", data.Repo, plural(len(data.PullRequests), "pull request"))
+	printPadded(summaryHeader, summaryRows(results, skipped))
+	for _, line := range summaryNote(len(skipped) > 0, len(results) > 0) {
+		fmt.Println(line)
+	}
 	if len(results) == 0 {
-		fmt.Println("Nothing reached Jev, so there is no route to report.")
+		fmt.Println("\nNothing reached Jev, so there is no route to report.")
+		printNotReviewable(skipped, len(data.PullRequests))
 		return exitOK, nil
 	}
+
+	fmt.Printf("\n### The %s that reached Jev\n\n", plural(len(results), "pull request"))
 	printPadded(triageHeader, triageRows(results))
 	fmt.Printf(
-		"\nLoad is the weighted average of nine questions, 0 to 1. Tier comes from that load, "+
-			"raised when size demands it: over %d files or %d lines cannot be trivial, over %d "+
-			"files or %d lines is high whatever Jev returned.\n",
+		"\nEffort is the weighted mean of nine questions, 0 to 1, and consequence is the max of "+
+			"four. Effort is raised when size demands it: over %d files or %d lines cannot be "+
+			"trivial, over %d files or %d lines is high whatever Jev returned.\n",
 		sizeFloors[len(sizeFloors)-1].files, sizeFloors[len(sizeFloors)-1].lines,
 		sizeFloors[0].files, sizeFloors[0].lines,
 	)
+	printNotReviewable(skipped, len(data.PullRequests))
 	printGroups(results)
 
 	if opts.explain != 0 {
@@ -291,16 +311,93 @@ func triageRows(results []result) [][]string {
 	for _, r := range byLoad(results) {
 		rows = append(rows, []string{
 			fmt.Sprintf("#%d", r.Pull.Number),
+			trimTitle(r.Pull.Title),
 			fmt.Sprintf("%d", r.Pull.ChangedFiles),
 			fmt.Sprintf("+%d/-%d", r.Pull.Additions, r.Pull.Deletions),
 			r.Answers["change_kind"].Choice,
 			loadLabel(r),
 			fmt.Sprintf("%.2f", r.Consequence),
+			r.ConsequenceLabel,
 			routeLabel(r),
-			trimTitle(r.Pull.Title),
 		})
 	}
 	return rows
+}
+
+// summaryNumbers names the pull requests in one summary row, stopping before the
+// cell is unreadable.
+func summaryNumbers(pulls []pullRequest) string {
+	numbers := make([]string, 0, len(pulls))
+	for _, pull := range pulls {
+		numbers = append(numbers, fmt.Sprintf("#%d", pull.Number))
+	}
+	if len(numbers) <= summaryNumbersShown {
+		return strings.Join(numbers, ", ")
+	}
+	return fmt.Sprintf(
+		"%s, and %d more",
+		strings.Join(numbers[:summaryNumbersShown], ", "), len(numbers)-summaryNumbersShown,
+	)
+}
+
+// summaryRows builds the summary table: every outcome the queue produced, with its
+// members.
+//
+// The rows run in pipeline order, so the pre-triage states come before the routes
+// they short-circuit. Empty outcomes are dropped rather than printed as zeros.
+func summaryRows(results []result, skipped []notReviewable) [][]string {
+	var rows [][]string
+
+	for _, state := range preTriageStates {
+		var pulls []pullRequest
+		for _, entry := range skipped {
+			if entry.State == state {
+				pulls = append(pulls, entry.Pull)
+			}
+		}
+		if len(pulls) > 0 {
+			rows = append(rows, []string{
+				state, fmt.Sprintf("%d", len(pulls)), summaryNumbers(pulls),
+			})
+		}
+	}
+
+	for _, route := range routes {
+		var pulls []pullRequest
+		for _, r := range byConsequence(results) {
+			if r.Route == route {
+				pulls = append(pulls, r.Pull)
+			}
+		}
+		if len(pulls) > 0 {
+			rows = append(rows, []string{
+				route, fmt.Sprintf("%d", len(pulls)), summaryNumbers(pulls),
+			})
+		}
+	}
+
+	return rows
+}
+
+// summaryNote says what separates the two kinds of summary row. Both the terminal
+// and the markdown report print it, so the wording lives in one place.
+//
+// A queue can be all states, all routes, or both, and the note has to be true of
+// whichever table it sits under.
+func summaryNote(anySkipped bool, anyRouted bool) []string {
+	switch {
+	case anySkipped && anyRouted:
+		return []string{
+			"",
+			"The state rows come first: plain rules settle those before any model call. " +
+				"Each route below them names what would be enough to merge.",
+		}
+	case anySkipped:
+		return []string{"", "Plain rules settled every one of these, so no model call happened."}
+	case anyRouted:
+		return []string{"", "Each route names what would be enough to merge that pull request."}
+	}
+	return nil
 }
 
 // trimTitle cuts a title to the column width, ending in an ellipsis so a reader
