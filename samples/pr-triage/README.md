@@ -36,9 +36,9 @@ Consequence sets the floor and effort can only raise it. Of those eighteen, 8 we
 
 Eleven questions go to Jev in one call: how far the change reaches, whether it touches auth or secrets, how many judgment calls a reviewer has to agree with, and eight more. Nine carry a weight in [questions.yml](questions.yml). Four of those nine also feed the consequence axis, marked below.
 
-![The pr-triage pipeline: read one pull request, stop early on anything not reviewable because CI is failing or pending or it is a draft, ask eleven questions in one call, read the answers on two axes as an effort mean and a consequence max, turn the pair into a route naming what evidence is sufficient, let the file and line counts raise the effort tier, then print the route with the one thing that would change it.](assets/pipeline.png)
+![The pr-triage flow: a pull request goes through pre-triage, which is plain rules and no model. Any of draft, a failing check or a running check stops there and reports that state. Otherwise one Jev call asks eleven questions, nine weighted and two labels, the nine become an effort and consequence pair, and the pair picks one route saying what the repo owner should do. Two worked examples end the diagram.](assets/flow.png)
 
-That diagram is built from [assets/pipeline.html](assets/pipeline.html). Edit the HTML and run `python3 assets/render.py` to rebuild the PNG.
+That diagram is built from [assets/flow.html](assets/flow.html). Edit the HTML and run `python3 assets/render.py` to rebuild the PNG.
 
 | Question | Type | Weight | What a high answer means |
 | --- | --- | --- | --- |

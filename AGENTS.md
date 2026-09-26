@@ -26,7 +26,7 @@ jev-samples/
       fetch_prs.py        builds the dataset from the GitHub API, needs no Jev key
       pr_triage.py        the Jev call, the tiers, the tables
       data/               triage reports, committed; the datasets they scored, gitignored
-      assets/             the pipeline diagram: HTML source, rendered PNG, renderer
+      assets/             the flow diagram: HTML source, rendered PNG, renderer
       go/                 both halves in one static binary, github.com and GHES
       vend/               a SKILL.md and an installer, so any repo can use it
 ```
