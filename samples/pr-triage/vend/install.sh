@@ -33,12 +33,17 @@ command -v curl >/dev/null 2>&1 || fail "curl is required"
 # go/install.sh resolves the newest pr-triage release, checks the published
 # SHA256SUMS, and picks the build for this platform. VERSION and BINDIR pass
 # straight through to it.
+#
+# This installs even when a binary is already on PATH. An earlier version of this
+# script skipped that step, which left anyone re-running it on an older binary
+# while the skill downloaded beside it expected the current one. Pin with VERSION
+# if you want a specific release rather than the newest.
 if command -v "$BINARY" >/dev/null 2>&1; then
-  echo "found $BINARY on PATH: $($BINARY -version)"
+  echo "replacing the $BINARY already on PATH: $($BINARY -version)"
 else
   echo "installing the $BINARY binary"
-  curl -fsSL "$RAW/go/install.sh" | sh
 fi
+curl -fsSL "$RAW/go/install.sh" | sh
 
 # Then the skill. One file, so a plain download is the whole install.
 echo "installing the skill into $SKILL_DIR"
@@ -49,8 +54,10 @@ curl -fsSL "$RAW/vend/SKILL.md" -o "$SKILL_DIR/SKILL.md" ||
 echo
 echo "installed:"
 echo "  skill   $SKILL_DIR/SKILL.md"
-printf '  binary  '
-command -v "$BINARY" || echo "not on PATH yet, see the note above"
+# The binary's path comes from go/install.sh above, which prints where it landed
+# and warns when that is off PATH. Reporting it again here would read it back off
+# PATH, which names a different binary whenever BINDIR is somewhere else.
+echo "  binary  see the path printed above"
 
 # The skill cannot work without these, and finding out now beats finding out
 # halfway through a triage.
