@@ -1,6 +1,6 @@
 ---
 name: pr-triage
-description: Sort a repository's open pull requests into review tiers, so a maintainer knows which ones a glance clears and which ones need an hour. Use when asked to triage, prioritise, or plan a review queue, to say which pull requests need attention first, or to gate a branch on how much review its queue is carrying. Works against github.com and GitHub Enterprise Server.
+description: Say what evidence each open pull request needs before it merges, routing each one to a green tick, a test, an AI review, or a person. Use when asked to triage, prioritise, or plan a review queue, to say which pull requests need a human and which clear on CI, to work out where to start reading, or to gate a branch on how much review its queue is carrying. Works against github.com and GitHub Enterprise Server.
 license: Apache-2.0
 metadata:
   author: aarora79
@@ -9,9 +9,9 @@ metadata:
 
 # pr-triage
 
-Ask one question per pull request that a reviewer actually has: how much review does this need? The `pr-triage` binary fetches a repository's pull requests, asks Jev eleven questions about each one in a single call, and sorts them into four tiers with the advice for each.
+Answer the question a reviewer actually has: what does this change need before it can merge? The `pr-triage` binary fetches a repository's pull requests, asks Jev eleven questions about each one in a single call, and routes each to the cheapest evidence that would settle it, from a green tick up to a person reading it with the author.
 
-One pull request costs about a third of a cent to read at 2026 prices, and a queue of twenty-six takes about four seconds.
+One pull request costs about two hundredths of a cent at 2026 prices. Seven hundred and ten of them cost $0.14 and two minutes.
 
 ## Before you run it
 
