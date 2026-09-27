@@ -61,18 +61,26 @@ echo "  binary  see the path printed above"
 
 # The skill cannot work without these, and finding out now beats finding out
 # halfway through a triage.
+#
+# Each credential gets its own flag, so the report names only what is actually
+# missing. Listing both every time sent people looking for a GITHUB_TOKEN they
+# already had through a logged-in gh.
 echo
-missing=""
-[ -n "${TYPESAFE_API_KEY:-}" ] || missing="TYPESAFE_API_KEY"
+need_github=""
+need_typesafe=""
+
 if [ -z "${GITHUB_TOKEN:-}${GH_TOKEN:-}${GH_ENTERPRISE_TOKEN:-}" ] &&
   ! gh auth token >/dev/null 2>&1; then
-  missing="$missing GITHUB_TOKEN"
+  need_github="yes"
 fi
+[ -n "${TYPESAFE_API_KEY:-}" ] || need_typesafe="yes"
 
-if [ -n "$missing" ]; then
-  echo "still needed before the first run:$missing" >&2
-  echo "  GitHub   GITHUB_TOKEN, GH_TOKEN, GH_ENTERPRISE_TOKEN, or gh auth login" >&2
-  echo "  TypeSafe TYPESAFE_API_KEY" >&2
+if [ -n "$need_github" ] || [ -n "$need_typesafe" ]; then
+  echo "still needed before the first run:" >&2
+  [ -z "$need_github" ] ||
+    echo "  GitHub    GITHUB_TOKEN, GH_TOKEN, GH_ENTERPRISE_TOKEN, or gh auth login" >&2
+  [ -z "$need_typesafe" ] ||
+    echo "  TypeSafe  TYPESAFE_API_KEY" >&2
 else
   echo "credentials found for GitHub and TypeSafe"
 fi
