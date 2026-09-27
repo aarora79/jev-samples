@@ -30,6 +30,31 @@ command -v pr-triage || curl -fsSL https://raw.githubusercontent.com/aarora79/je
 
 If `TYPESAFE_API_KEY` is unset, ask the user for it rather than guessing. Never print it back.
 
+## When the request names no repository
+
+Ask before running anything. Two things decide the whole run, and guessing either one reads the wrong queue or spends calls the user did not want:
+
+**Which repository.** If the working directory is a git checkout with a GitHub remote, offer that first, named, as the likely answer. Offer it, do not assume it: a request to triage pull requests is often about a different repository than the one open in the terminal. If that repository has no open pull requests, say so and ask which one they meant rather than picking another.
+
+**How much of the queue.** Say what forms the answer can take, because the user cannot guess them. Any of these works, and they combine:
+
+| They say | You run | Means |
+| --- | --- | --- |
+| nothing, or "the recent ones" | `pr-triage owner/repo` | the 10 most recent open, the default |
+| "the last 25" | `-limit 25` | the most recent N |
+| "everything open" | `-all` | every open one, however many |
+| "the last 30 days" | `-since 30` | a number of days back |
+| "since August" | `-since 2026-08-01` | on or after a date, `YYYY-MM-DD` |
+| "just this one" plus a link | `pr-triage https://github.com/owner/repo/pull/1803` | that pull request, fetched directly |
+| "why did #1803 come out like that" | `-explain 1803` | every question and what each contributed |
+| "the ones we merged last month" | `-state closed -since 30` | closed instead of open, for checking the routes against history |
+
+A pasted pull request URL works as the whole argument, so a user who drops a link into the conversation needs nothing else. A list of several numbers has no flag: triage the repository with a selector wide enough to contain them, then report those rows.
+
+`-explain` reads a pull request out of the run it just did, so the number has to fall inside the selector. `-explain 1803` on a default run of ten prints that it is not in the dataset. Pass the pull request's own URL, or widen the selector until it is included.
+
+Say what it will cost before running: about two hundredths of a cent per pull request that reaches Jev, and nothing for the ones pre-triage stops. A few hundred is cheap and fast, so `-all` is a reasonable answer on most repositories. Warn first when the count runs to thousands.
+
 ## Running it
 
 ```bash
@@ -83,6 +108,20 @@ Three things in that output need reading with care.
 **Anything marked `(on a cut)` sits within 0.02 of a threshold.** Repeat calls move a load by about 0.03 and a consequence by about 0.07, so it could land either side next run. Treat it as either of the two it straddles.
 
 **A line saying it read part of the diff means the patch overflowed the budget.** A load drawn from 44% of a change is a weaker claim than the same number drawn from all of it.
+
+## Reporting it back
+
+**Every pull request number you show the user is a clickable link.** The point of a triage is that somebody opens the pull requests it names, and a bare `#1693` makes them search for it. Write each one as a markdown link:
+
+```markdown
+| human-required | 9 | [#1795](https://github.com/owner/repo/pull/1795), [#1794](...) |
+```
+
+Take the address from the `url` field the JSON report carries for every pull request, in `pull_requests[]` and in `not_reviewable[]`. Never assemble a `github.com` URL from the number, because a GitHub Enterprise Server host has a different one and the report already knows it.
+
+The binary's own tables print bare numbers on purpose, so they stay readable in a terminal and line up as padded markdown. Adding the links is your job when you relay the result. The grouped sections lower down in the markdown report already carry linked numbers, so those can be copied as they are.
+
+Report the whole queue, not only the routed part. A run where most of the queue is `ci-failing` is saying that review capacity is not the bottleneck, and a summary that lists only the routes hides that.
 
 ## Gating a branch
 
