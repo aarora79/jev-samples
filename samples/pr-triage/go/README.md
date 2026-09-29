@@ -62,17 +62,20 @@ repository acme/widgets through https://ghe.example.com/api/v3
 
 ## It stops before Jev on anything not reviewable
 
-One call to the checks API per pull request settles three states, and none of them spends a question:
+Two calls per pull request, one to the checks API and one to the reviews API, settle four states, and none of them spends a question:
 
 | State | Means | Waiting on |
 | --- | --- | --- |
+| `draft` | the author marked it draft | the author, who is not asking |
+| `pending-author-rework` | a reviewer asked for changes against the commit the branch still points at | the author, who has not answered yet |
 | `ci-failing` | a check concluded failure, timed out, or wants action | the checks, or the branch |
 | `ci-pending` | a check is still running | nobody, come back later |
-| `draft` | the author marked it draft | the author, who is not asking |
 
 `ci-failing` states a fact and never judges the author. A check name that fails on several unrelated pull requests is the check being broken rather than each change breaking it, so the binary counts the names across the queue and says which failures belong to the checks. That costs no extra call, because the names are already in the dataset.
 
-On the eighteen most recent open `apache/airflow` pull requests this skipped ten.
+`pending-author-rework` compares each reviewer's latest verdict against the head commit. The reviews API returns the commit every review judged, so a change request whose `commit_id` equals the current head means the author has pushed nothing since, and that needs no commit list and no clock arithmetic. Pushing a commit answers the request and clears the state.
+
+On the eighteen most recent open `apache/airflow` pull requests this skipped ten, all of them on the draft and check states. Over the 23 open on `agentic-community/mcp-gateway-registry` it skipped six, two of those because a reviewer had asked for changes the author had not answered.
 
 ## What it writes
 

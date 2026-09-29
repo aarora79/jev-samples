@@ -21,17 +21,30 @@ A maintainer with a queue of open pull requests wants to know which ones a glanc
 
 Nine of the answers become two numbers, because effort and consequence are different questions. **Effort** is their weighted mean: how long this takes to read. **Consequence** is the *max* of the four that say what breaks if it is wrong, never the mean, because a change that is safe in three ways and dangerous in one is a dangerous change.
 
-Before any of that, a pull request has to be worth reading. One call to the checks API per pull request settles three terminal states, and none of them spends a Jev call:
+Before any of that, a pull request has to be worth reading. Two calls per pull request, one to the checks API and one to the reviews API, settle four terminal states, and none of them spends a Jev call:
 
 | State | Means | Waiting on |
 | --- | --- | --- |
+| `draft` | the author marked it draft | the author, who is not asking |
+| `pending-author-rework` | a reviewer asked for changes against the commit the branch still points at | the author, who has not answered yet |
 | `ci-failing` | a check concluded failure, timed out, or wants action | the checks, or the branch |
 | `ci-pending` | a check is still running | nobody, come back later |
-| `draft` | the author marked it draft | the author, who is not asking |
 
 `ci-failing` states a fact and never judges the author. A check name that fails on several unrelated pull requests is the check being broken, and the output marks those failures as the checks' own.
 
-Those three states took ten of eighteen out of the queue before Jev saw a single one.
+`pending-author-rework` compares each reviewer's latest verdict against the pull request's head commit. A change request submitted against the current head means the author has pushed nothing since, so the next move is theirs and a second reviewer reading it now would be reading a diff its first reviewer has already rejected. Pushing a commit answers the request, and the state clears without anyone dismissing anything. It sits above the check states because a person has already read the diff and named the work, which says more than a red build.
+
+On the eighteen airflow pull requests worked through below, three of those states fired and took ten out of the queue before Jev saw a single one. The fourth needs a repository where reviewers are active: over the 23 open pull requests on `agentic-community/mcp-gateway-registry`, one reviewer had asked for changes on two of them and the authors had pushed nothing since.
+
+```text
+PENDING-AUTHOR-REWORK  (2)  -> a reviewer asked for changes and the author has not pushed since: the next move belongs to the author, not to another reviewer
+  #1748   changes requested by omrishiv, and no commits since
+          fix(prm): resolve RFC 9728 path-aware per-server PRM under a path-prefixed registry_url
+          https://github.com/agentic-community/mcp-gateway-registry/pull/1748
+  #1713   changes requested by omrishiv, and no commits since
+          fix(auth): normalize IdP group names before matching scope mappings
+          https://github.com/agentic-community/mcp-gateway-registry/pull/1713
+```
 
 The pair picks a route, and the route answers one question: **what would be enough to merge this change?** Enough for a green tick to settle it, or enough that it wants a test, an AI review, or a person.
 

@@ -57,6 +57,11 @@ MAX_PAGES: int = 20
 # branch being broken.
 FAILING_CONCLUSIONS: tuple[str, ...] = ("failure", "timed_out", "action_required")
 
+# Review states that decide something. A COMMENTED review is conversation, and a
+# busy pull request carries dozens of them, so keeping those would bloat every
+# dataset without changing any outcome.
+DECISIVE_REVIEW_STATES: tuple[str, ...] = ("APPROVED", "CHANGES_REQUESTED", "DISMISSED")
+
 # Where the environment carries a token, in the order checked.
 TOKEN_ENV_NAMES: tuple[str, ...] = ("GITHUB_TOKEN", "GH_TOKEN")
 
@@ -323,6 +328,51 @@ def _pull_checks(
     }
 
 
+def _pull_reviews(
+    repo: str,
+    number: int,
+    token: str | None,
+) -> dict:
+    """Summarise who has reviewed one pull request and what they last said.
+
+    One call per pull request. Only the latest decisive review per reviewer is
+    kept, which is what GitHub itself gates on: an approval after a change request
+    replaces it, and a dismissal cancels it.
+
+    Each entry keeps the commit it was submitted against. That is what lets triage
+    tell a change request the author has already answered from one they have not
+    touched, without fetching the commit list to compare dates.
+
+    Args:
+        repo: The repository as `owner/repo`.
+        number: The pull request number.
+        token: Bearer token, or None.
+
+    Returns:
+        A count of decisive reviews and the latest one per reviewer.
+    """
+    query = urllib.parse.urlencode({"per_page": PER_PAGE})
+    entries = _get_json(f"{API_ROOT}/repos/{repo}/pulls/{number}/reviews?{query}", token)
+    if not isinstance(entries, list):
+        return {"total": 0, "latest": []}
+
+    decisive = [entry for entry in entries if entry.get("state") in DECISIVE_REVIEW_STATES]
+
+    # Oldest first, so the last write per reviewer is their most recent verdict.
+    # The API returns submitted_at as an ISO string, which sorts correctly as text.
+    latest: dict[str, dict] = {}
+    for entry in sorted(decisive, key=lambda item: item.get("submitted_at") or ""):
+        login = (entry.get("user") or {}).get("login", "")
+        latest[login] = {
+            "user": login,
+            "state": entry.get("state", ""),
+            "submitted_at": entry.get("submitted_at") or "",
+            "commit_id": entry.get("commit_id") or "",
+        }
+
+    return {"total": len(decisive), "latest": list(latest.values())}
+
+
 def _pull_record(
     repo: str,
     entry: dict,
@@ -351,6 +401,7 @@ def _pull_record(
         "number": number,
         "head_sha": head_sha,
         "checks": _pull_checks(repo, head_sha, token),
+        "reviews": _pull_reviews(repo, number, token),
         "title": entry["title"],
         "body": entry.get("body") or "",
         "author": (entry.get("user") or {}).get("login", ""),
@@ -396,6 +447,7 @@ def _pull_one(
         "number": detail["number"],
         "head_sha": head_sha,
         "checks": _pull_checks(repo, head_sha, token),
+        "reviews": _pull_reviews(repo, number, token),
         "title": detail["title"],
         "body": detail.get("body") or "",
         "author": (detail.get("user") or {}).get("login", ""),

@@ -19,6 +19,7 @@ import (
 	"os"
 	"os/exec"
 	"regexp"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -97,6 +98,33 @@ type checkSummary struct {
 	Failing []string       `json:"failing"`
 }
 
+// decisiveReviewStates are the review states that decide something. A COMMENTED
+// review is conversation, and a busy pull request carries dozens, so keeping
+// those would bloat every dataset without changing any outcome.
+var decisiveReviewStates = map[string]bool{
+	"APPROVED":          true,
+	"CHANGES_REQUESTED": true,
+	"DISMISSED":         true,
+}
+
+// reviewVerdict is one reviewer's latest decisive review.
+//
+// CommitID is the commit the review judged. Comparing it against the pull
+// request's head tells triage whether the author has pushed anything since,
+// which needs no extra call and no clock arithmetic.
+type reviewVerdict struct {
+	User        string `json:"user"`
+	State       string `json:"state"`
+	SubmittedAt string `json:"submitted_at"`
+	CommitID    string `json:"commit_id"`
+}
+
+// reviewSummary is who has reviewed a pull request and what they last said.
+type reviewSummary struct {
+	Total  int             `json:"total"`
+	Latest []reviewVerdict `json:"latest"`
+}
+
 // changedFile is one file in a pull request, as the dataset stores it.
 //
 // The json tags name the keys, and they match the Python sample's dataset exactly
@@ -134,8 +162,11 @@ type pullRequest struct {
 	HeadSHA string `json:"head_sha"`
 	// Checks summarises those check runs, so the triage half can tell a reviewable
 	// pull request from one waiting on its build.
-	Checks checkSummary  `json:"checks"`
-	Files  []changedFile `json:"files"`
+	Checks checkSummary `json:"checks"`
+	// Reviews summarises the verdicts, so the triage half can tell a pull request
+	// waiting on a reviewer from one waiting on its author.
+	Reviews reviewSummary `json:"reviews"`
+	Files   []changedFile `json:"files"`
 	// FilesTruncated says whether pagination cut the file list short, which GitHub
 	// also does at 3,000 files.
 	FilesTruncated bool `json:"files_truncated"`
@@ -544,6 +575,66 @@ func pullChecks(tgt target, token, sha string) (checkSummary, error) {
 	return summary, nil
 }
 
+// pullReviews summarises who has reviewed one pull request and what they last
+// said. One call per pull request.
+//
+// Only the latest decisive review per reviewer is kept, which is what GitHub
+// itself gates on: an approval after a change request replaces it, and a
+// dismissal cancels it.
+func pullReviews(tgt target, token string, number int) (reviewSummary, error) {
+	query := url.Values{}
+	query.Set("per_page", strconv.Itoa(perPage))
+	endpoint := fmt.Sprintf(
+		"%s/repos/%s/pulls/%d/reviews?%s", tgt.APIBase, tgt.Repo, number, query.Encode(),
+	)
+
+	var body []struct {
+		State       string `json:"state"`
+		SubmittedAt string `json:"submitted_at"`
+		CommitID    string `json:"commit_id"`
+		User        struct {
+			Login string `json:"login"`
+		} `json:"user"`
+	}
+	if err := getJSON(endpoint, token, &body); err != nil {
+		return reviewSummary{}, err
+	}
+
+	decisive := make([]reviewVerdict, 0, len(body))
+	for _, entry := range body {
+		if !decisiveReviewStates[entry.State] {
+			continue
+		}
+		decisive = append(decisive, reviewVerdict{
+			User:        entry.User.Login,
+			State:       entry.State,
+			SubmittedAt: entry.SubmittedAt,
+			CommitID:    entry.CommitID,
+		})
+	}
+
+	// Oldest first, so the last write per reviewer is their most recent verdict.
+	// submitted_at arrives as an ISO string, which sorts correctly as text.
+	sort.SliceStable(decisive, func(i, j int) bool {
+		return decisive[i].SubmittedAt < decisive[j].SubmittedAt
+	})
+
+	// A map alone would randomise the order, so the logins are tracked separately
+	// to keep the output stable between runs of the same dataset.
+	seen := map[string]int{}
+	latest := make([]reviewVerdict, 0, len(decisive))
+	for _, verdict := range decisive {
+		if index, found := seen[verdict.User]; found {
+			latest[index] = verdict
+			continue
+		}
+		seen[verdict.User] = len(latest)
+		latest = append(latest, verdict)
+	}
+
+	return reviewSummary{Total: len(decisive), Latest: latest}, nil
+}
+
 // pullRecord turns one list entry into a dataset record, fetching what it lacks.
 //
 // The list endpoint carries no line counts, so this reads the pull request itself
@@ -563,6 +654,11 @@ func pullRecord(tgt target, token string, entry listEntry) (pullRequest, error) 
 	}
 
 	checks, err := pullChecks(tgt, token, detail.Head.SHA)
+	if err != nil {
+		return pullRequest{}, err
+	}
+
+	reviews, err := pullReviews(tgt, token, entry.Number)
 	if err != nil {
 		return pullRequest{}, err
 	}
@@ -591,6 +687,7 @@ func pullRecord(tgt target, token string, entry listEntry) (pullRequest, error) 
 		Deletions:      detail.Deletions,
 		HeadSHA:        detail.Head.SHA,
 		Checks:         checks,
+		Reviews:        reviews,
 		Files:          files,
 		FilesTruncated: truncated,
 	}, nil
@@ -627,6 +724,11 @@ func pullOne(tgt target, token string) (pullRequest, error) {
 		return pullRequest{}, err
 	}
 
+	reviews, err := pullReviews(tgt, token, combined.Number)
+	if err != nil {
+		return pullRequest{}, err
+	}
+
 	labels := make([]string, 0, len(combined.Labels))
 	for _, label := range combined.Labels {
 		labels = append(labels, label.Name)
@@ -648,6 +750,7 @@ func pullOne(tgt target, token string) (pullRequest, error) {
 		Deletions:      combined.Deletions,
 		HeadSHA:        combined.Head.SHA,
 		Checks:         checks,
+		Reviews:        reviews,
 		Files:          files,
 		FilesTruncated: truncated,
 	}, nil
