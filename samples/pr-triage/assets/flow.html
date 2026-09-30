@@ -109,14 +109,15 @@
 
 <div class="box">
   <div class="t">A pull request</div>
-  <div class="s">title, description, file list, diff, and its check runs</div>
+  <div class="s">title, description, file list, diff, its check runs, and its reviews</div>
 </div>
 
 <div class="down"></div>
 
 <div class="box gate">
   <div class="t">Pre-triage: plain rules, no model</div>
-  <div class="s">Is it a draft? Is a check failing? Is a check still running?</div>
+  <div class="s">Is it a draft? Did a reviewer ask for changes the author has not pushed for?<br>
+    Is a check failing? Is a check still running?</div>
 </div>
 
 <div class="split">
@@ -124,7 +125,8 @@
     <div class="leg leg-stop">any of them yes</div>
     <div class="box stop">
       <div class="t">Stop. Report the state.</div>
-      <div class="s"><span class="mono">draft</span> &middot; <span class="mono">ci-failing</span> &middot; <span class="mono">ci-pending</span><br>
+      <div class="s"><span class="mono">draft</span> &middot; <span class="mono">pending-author-rework</span><br>
+        <span class="mono">ci-failing</span> &middot; <span class="mono">ci-pending</span><br>
         No model call, nothing spent, nothing to review yet.</div>
     </div>
   </div>

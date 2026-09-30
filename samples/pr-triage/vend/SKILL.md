@@ -89,7 +89,18 @@ Every run prints two tables, then the same pull requests grouped by route with t
 
 The first table is the summary: one row per outcome, with a count and the numbers in it. It covers the whole queue, so the pre-triage states are rows alongside the routes and the counts add up to what was fetched. Read it first, then the second table, which carries one row per pull request that reached Jev: number, title, size, effort, consequence, the question that produced the consequence, and the route it bought.
 
-Each pull request gets a **route**, answering one question: what would be enough to merge this change? Cheapest first:
+Four states come before any of that, settled by rules at no cost, and a pull request in one of them never reaches Jev:
+
+| State | Means | Waiting on |
+| --- | --- | --- |
+| `draft` | the author marked it draft | the author, who is not asking |
+| `pending-author-rework` | a reviewer asked for changes against the commit the branch still points at | the author, who has not answered |
+| `ci-failing` | a check failed, timed out, or wants action | the checks, or the branch |
+| `ci-pending` | a check is still running | nobody, come back later |
+
+Report these, and do not read them as a backlog of review work. A queue that is mostly `pending-author-rework` or `ci-failing` is waiting on its authors, so telling the user to go and review those wastes their time. `pending-author-rework` clears when the author pushes a commit, with nobody dismissing anything.
+
+Everything else gets a **route**, answering one question: what would be enough to merge this change? Cheapest first:
 
 | Route | Enough to merge on |
 | --- | --- |

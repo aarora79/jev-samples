@@ -172,11 +172,24 @@ CONSEQUENCE_FLOORS: tuple[tuple[float, str], ...] = (
 # of five failing pull requests measured on apache/airflow failed one check out of
 # ninety, which is a flake or an optional job rather than a broken change, so the
 # state names what failed and leaves the judgement to a reader.
-PRE_TRIAGE_STATES: tuple[str, ...] = ("draft", "ci-failing", "ci-pending")
+# Checked in this order. pending-author-rework sits above the check states because
+# a reviewer has already read the diff and named work to do, which is a more
+# specific answer than a red build: the branch is waiting on its author either way,
+# and saying so points at the person who can move it.
+PRE_TRIAGE_STATES: tuple[str, ...] = (
+    "draft",
+    "pending-author-rework",
+    "ci-failing",
+    "ci-pending",
+)
 
 # What each state means for a reader, and who it is waiting on.
 STATE_ADVICE: dict[str, str] = {
     "draft": "the author is still working: nothing to review, and nothing to decide",
+    "pending-author-rework": (
+        "a reviewer asked for changes and the author has not pushed since: "
+        "the next move belongs to the author, not to another reviewer"
+    ),
     "ci-failing": "the branch cannot merge until the checks pass, so review waits on that",
     "ci-pending": "checks are still running: come back when they land",
 }
@@ -603,6 +616,12 @@ def _mark_shared_failures(skipped: list[dict]) -> None:
     It costs no extra API call, because the names are already in the dataset. It
     edits the reasons in place.
 
+    The tally counts every failing name in the queue, since a name that breaks
+    elsewhere is evidence wherever it appears. Only `ci-failing` entries get
+    marked, because a pull request held up by a reviewer is waiting on its author
+    whatever its checks are doing, and a note about flaky jobs would read as the
+    reason it stopped.
+
     Args:
         skipped: Entries from the pre-triage pass.
     """
@@ -613,10 +632,44 @@ def _mark_shared_failures(skipped: list[dict]) -> None:
 
     shared = {name for name, count in seen.items() if count > 1}
     for entry in skipped:
+        if entry["state"] != "ci-failing":
+            continue
         failing = (entry["pull"].get("checks") or {}).get("failing") or []
         if failing and all(name in shared for name in failing):
             entry["shared_failure"] = True
             entry["reason"] += ", which also fails on other pull requests"
+
+
+def _awaiting_author(pull: dict) -> tuple[bool, str]:
+    """Say whether a reviewer asked for changes that the author has not answered.
+
+    A change request is answered by pushing a commit, so the test is whether the
+    review was submitted against the commit the branch still points at. The
+    fetcher records each reviewer's latest verdict with the commit it judged, so
+    this needs no extra API call and no clock arithmetic.
+
+    Datasets built before reviews were fetched carry no `reviews` key, and those
+    read as not waiting rather than failing.
+
+    Args:
+        pull: One pull request record from the dataset.
+
+    Returns:
+        Tuple of (waiting, reason). The reason is "" when nobody is waiting.
+    """
+    head = pull.get("head_sha") or ""
+    latest = (pull.get("reviews") or {}).get("latest") or []
+
+    waiting = [
+        entry
+        for entry in latest
+        if entry.get("state") == "CHANGES_REQUESTED" and entry.get("commit_id") == head
+    ]
+    if not waiting or not head:
+        return False, ""
+
+    names = ", ".join(entry.get("user") or "a reviewer" for entry in waiting)
+    return True, f"changes requested by {names}, and no commits since"
 
 
 def _pre_triage_state(pull: dict) -> tuple[str, str]:
@@ -639,6 +692,10 @@ def _pre_triage_state(pull: dict) -> tuple[str, str]:
 
     if pull.get("draft"):
         return "draft", "marked draft by the author"
+
+    waiting, reason = _awaiting_author(pull)
+    if waiting:
+        return "pending-author-rework", reason
 
     if failing:
         named = failing[0] if len(failing) == 1 else f"{len(failing)} checks"

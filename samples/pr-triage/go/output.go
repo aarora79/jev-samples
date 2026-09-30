@@ -39,11 +39,18 @@ const lowCoverageBelow = 0.70
 
 // preTriageStates are checked in this order. Each one is terminal: the pull request
 // is not in a reviewable condition, so no Jev call happens and no route is computed.
-var preTriageStates = []string{"draft", "ci-failing", "ci-pending"}
+//
+// pending-author-rework sits above the check states because a reviewer has already
+// read the diff and named work to do, which is a more specific answer than a red
+// build: the branch is waiting on its author either way, and saying so points at
+// the person who can move it.
+var preTriageStates = []string{"draft", "pending-author-rework", "ci-failing", "ci-pending"}
 
 // stateAdvice says what each state means for a reader, and who it is waiting on.
 var stateAdvice = map[string]string{
-	"draft":      "the author is still working: nothing to review, and nothing to decide",
+	"draft": "the author is still working: nothing to review, and nothing to decide",
+	"pending-author-rework": "a reviewer asked for changes and the author has not pushed since: " +
+		"the next move belongs to the author, not to another reviewer",
 	"ci-failing": "the branch cannot merge until the checks pass, so review waits on that",
 	"ci-pending": "checks are still running: come back when they land",
 }
@@ -58,15 +65,54 @@ type notReviewable struct {
 	Shared bool
 }
 
+// awaitingAuthor says whether a reviewer asked for changes that the author has not
+// answered.
+//
+// A change request is answered by pushing a commit, so the test is whether the
+// review was submitted against the commit the branch still points at. The fetcher
+// records each reviewer's latest verdict with the commit it judged, so this needs
+// no extra API call and no clock arithmetic.
+//
+// Datasets built before reviews were fetched carry no reviews, and those read as
+// not waiting rather than failing.
+func awaitingAuthor(pull pullRequest) (bool, string) {
+	if pull.HeadSHA == "" {
+		return false, ""
+	}
+
+	var names []string
+	for _, verdict := range pull.Reviews.Latest {
+		if verdict.State == "CHANGES_REQUESTED" && verdict.CommitID == pull.HeadSHA {
+			who := verdict.User
+			if who == "" {
+				who = "a reviewer"
+			}
+			names = append(names, who)
+		}
+	}
+	if len(names) == 0 {
+		return false, ""
+	}
+
+	return true, fmt.Sprintf("changes requested by %s, and no commits since", strings.Join(names, ", "))
+}
+
 // preTriageState says whether a pull request is in no condition to be triaged.
 //
 // Skipping these is the cheapest thing this binary does: it costs no Jev call at
 // all. Measured on eighteen apache/airflow pull requests, ten were in one of these
 // states.
 func preTriageState(pull pullRequest) (string, string) {
-	switch {
-	case pull.Draft:
+	if pull.Draft {
 		return "draft", "marked draft by the author"
+	}
+
+	// A switch cannot bind the reason this returns, so this one reads on its own.
+	if waiting, reason := awaitingAuthor(pull); waiting {
+		return "pending-author-rework", reason
+	}
+
+	switch {
 	case len(pull.Checks.Failing) > 0:
 		named := fmt.Sprintf("%d checks", len(pull.Checks.Failing))
 		if len(pull.Checks.Failing) == 1 {
@@ -98,7 +144,15 @@ func markSharedFailures(skipped []notReviewable) {
 		}
 	}
 
+	// The tally above counts every failing name in the queue, since a name that
+	// breaks elsewhere is evidence wherever it appears. Only ci-failing entries get
+	// marked, because a pull request held up by a reviewer is waiting on its author
+	// whatever its checks are doing, and a note about flaky jobs would read as the
+	// reason it stopped.
 	for index := range skipped {
+		if skipped[index].State != "ci-failing" {
+			continue
+		}
 		failing := skipped[index].Pull.Checks.Failing
 		if len(failing) == 0 {
 			continue
