@@ -29,6 +29,10 @@ jev-samples/
       assets/             the flow diagram: HTML source, rendered PNG, renderer
       go/                 both halves in one static binary, github.com and GHES
       vend/               a SKILL.md and an installer, so any repo can use it
+    next-watch/           the fourth sample, one Jev call per MovieLens member
+      fetch_movielens.py  downloads MovieLens small and checks its MD5, needs no Jev key
+      next_watch.py       the shortlist, the Jev call, the blend, the metrics
+      data/               the recorded evaluation, committed; the CSVs, gitignored
 ```
 
 ## Setup and commands
@@ -55,7 +59,7 @@ One check runs in CI: `.github/workflows/agents-md-readiness.yml` scores this fi
 
 1. `uv run python -m py_compile <file>` on every Python file you touched.
 2. `uvx ruff check .` and `uvx ruff format --check .` both report clean.
-3. The sample runs against a live key, and every code path you changed runs at least once. For readme-check that means a local file, a GitHub repo root, a `/blob/` file page, and an `http://` URL it should refuse. For agents-md-readiness add a repo holding neither AGENTS.md nor CLAUDE.md, and a directory with neither. For pr-triage that means a live fetch, a `--dataset` replay, `--explain` on a number in the dataset and on one that is absent, and a repo whose pull requests include a diff too large to send whole.
+3. The sample runs against a live key, and every code path you changed runs at least once. For readme-check that means a local file, a GitHub repo root, a `/blob/` file page, and an `http://` URL it should refuse. For agents-md-readiness add a repo holding neither AGENTS.md nor CLAUDE.md, and a directory with neither. For pr-triage that means a live fetch, a `--dataset` replay, `--explain` on a number in the dataset and on one that is absent, and a repo whose pull requests include a diff too large to send whole. For next-watch that means an evaluation, `--baselines-only`, `--explain` on a ranked member and on a cold-start one (member 54), and `--user` on a member with history and on member 54.
 4. Any output shown in a README comes from a run you just did, with the date next to it.
 5. `samples/agents-md-readiness/go/` and `samples/pr-triage/go/` each compile a sample into one static binary, so a change to a `questions.yml` or to any Go file in those folders means `gofmt -l .`, `go vet ./...`, `go test ./...` and `./build.sh <version>` in that folder, then one live run of the binary you built. The Python stays canonical, and `payload_test.go` fails when the embedded copy of the payload drifts.
 

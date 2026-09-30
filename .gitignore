@@ -38,6 +38,13 @@ samples/pr-triage/data/*
 !samples/pr-triage/data/apache-airflow-open-latest-18-triage.json
 !samples/pr-triage/data/apache-airflow-open-latest-18-triage.md
 
+# next-watch downloads MovieLens into data/ml-latest-small/ and writes two reports
+# per run. The repo keeps the run behind the README's table and drops the rest.
+# The dataset stays out because fetch_movielens.py rebuilds it and checks its MD5,
+# and because GroupLens asks that copies travel under its own license terms.
+samples/next-watch/data/*
+!samples/next-watch/data/movielens-small-100-members-seed-7-jev.json
+!samples/next-watch/data/movielens-small-100-members-seed-7-jev.md
 # Compiled binaries from samples/agents-md-readiness/go/. build.sh writes dist/,
 # `go build -o agents-md-readiness .` writes that name beside the source, and a
 # plain `go build` names its output after the directory, which is `go`. A release
