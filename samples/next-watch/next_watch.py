@@ -82,6 +82,9 @@ ENV_FILES: tuple[pathlib.Path, ...] = (
 # Every evaluation writes one JSON report and one markdown report here.
 REPORT_DIR: pathlib.Path = pathlib.Path(__file__).parent / "data"
 
+# Shortlist scores in the report keep this many decimal places.
+REPORT_DECIMALS: int = 4
+
 # A rating at or above this counts as a like: it is what the evaluation hides and
 # what the state lists. MovieLens rates in half stars from 0.5 to 5.
 LIKED_FLOOR: float = 4.0
@@ -1138,6 +1141,23 @@ def _report_stem(
     return f"movielens-small-{users}-members-seed-{seed}-{kind}"
 
 
+def _rounded(candidate: dict) -> dict:
+    """Round a shortlist entry's scores to four places for the report.
+
+    The ranking uses full precision; the report only needs enough to read.
+
+    Args:
+        candidate: One shortlist entry.
+
+    Returns:
+        A copy with float values rounded.
+    """
+    return {
+        key: round(value, REPORT_DECIMALS) if isinstance(value, float) else value
+        for key, value in candidate.items()
+    }
+
+
 def _write_reports(
     stem: str,
     results: list[dict],
@@ -1156,9 +1176,15 @@ def _write_reports(
         Tuple of (JSON path, markdown path).
     """
     REPORT_DIR.mkdir(exist_ok=True)
+    # Per-ranker scores stay out: the free ones follow from each shortlist entry,
+    # and the Jev ones are the probabilities under `jev`. Keeping them tripled the
+    # file without adding a number nobody could rebuild.
+    skipped = ("history", "response", "scores")
     rows = []
     for result in results:
-        row = {key: value for key, value in result.items() if key not in ("history", "response")}
+        row = {key: value for key, value in result.items() if key not in skipped}
+        if "shortlist" in row:
+            row["shortlist"] = [_rounded(candidate) for candidate in row["shortlist"]]
         if result.get("response"):
             row["jev"] = result["response"].model_dump(mode="json")
         rows.append(row)
