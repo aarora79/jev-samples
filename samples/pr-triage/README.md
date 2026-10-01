@@ -34,6 +34,19 @@ Before any of that, a pull request has to be worth reading. Two calls per pull r
 
 `pending-author-rework` compares each reviewer's latest verdict against the pull request's head commit. A change request submitted against the current head means the author has pushed nothing since, so the next move is theirs and a second reviewer reading it now would be reading a diff its first reviewer has already rejected. Pushing a commit answers the request, and the state clears without anyone dismissing anything. It sits above the check states because a person has already read the diff and named the work, which says more than a red build.
 
+The same comparison answers the opposite question, and the run prints that as its own table. A change request judged against an *older* commit than the head means the author has answered, so the pull request is back with the reviewer who asked:
+
+```text
+| Reviewer | Waiting | Pull requests       |
+| -------- | ------- | ------------------- |
+| omrishiv | 3       | #1678, #1764, #1783 |
+
+Each of these asked for changes and the author has pushed since, so the pull request is back with that reviewer, oldest first.
+1 of them cannot merge yet whatever the reviewer decides, being held up by a state above: #1764.
+```
+
+Those pull requests still take a route, because they are reviewable and the route still says what evidence a merge would need. The table answers who is holding them, which no route can. The second line matters on a busy queue: a reviewer sent to #1764 would find a red build waiting whatever they decide. The grouping lands in the JSON report as `awaiting_reviewer`, keyed by login, so a bot can go and ask.
+
 On the eighteen airflow pull requests worked through below, three of those states fired and took ten out of the queue before Jev saw a single one. The fourth needs a repository where reviewers are active: over the 23 open pull requests on `agentic-community/mcp-gateway-registry`, one reviewer had asked for changes on two of them and the authors had pushed nothing since.
 
 ```text
@@ -177,7 +190,9 @@ From a run against the eighteen most recent open pull requests of [apache/airflo
 | human-required      | 2     | #73736, #73741                                                 |
 ```
 
-The first three rows are the pre-triage states, settled by rules before any model call. Ten of the eighteen stopped there. The eight that reached Jev, one row each:
+The first three rows are the pre-triage states, settled by rules before any model call. Ten of the eighteen stopped there. The re-review table comes next, and this run predates it: the committed report in [data/](data/) holds the two tables below and not that one. On a queue where nobody is owed a second look it prints one line saying so.
+
+The eight that reached Jev, one row each:
 
 ```text
 | PR     | Title                                        | Files | Lines    | Kind       | Effort | Cons | Cons from        | Route                       |
@@ -275,7 +290,7 @@ Then what the run cost:
 8 pull requests, 11 questions each, one call apiece. 24,317 input tokens, 1,367 ms total, 171 ms per call on average, $0.00102 at $0.042 per million input tokens.
 ```
 
-Every run writes two reports into [data/](data/). The JSON one holds each answer as Jev sent it, next to the credit, the consequence, the route and the tier the sample derived from it, plus a `route_counts` roll-up so a job can read the shape of a queue without walking every entry. The markdown one carries the same two tables and the same route sections, with the numbers as links, so a triage pastes into a pull request or an issue without reformatting. This repo commits the `apache-airflow` pair as the worked example and ignores the rest, because triaging somebody's open pull requests is their business.
+Every run writes two reports into [data/](data/). The JSON one holds each answer as Jev sent it, next to the credit, the consequence, the route and the tier the sample derived from it, plus `route_counts` and `awaiting_reviewer` roll-ups so a job can read the shape of a queue, and who is holding it, without walking every entry. The markdown one carries the same three tables and the same route sections, with the numbers as links, so a triage pastes into a pull request or an issue without reformatting. This repo commits the `apache-airflow` pair as the worked example and ignores the rest, because triaging somebody's open pull requests is their business.
 
 ### One pull request, from eleven answers to one route
 

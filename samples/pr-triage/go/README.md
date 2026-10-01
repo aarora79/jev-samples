@@ -75,6 +75,8 @@ Two calls per pull request, one to the checks API and one to the reviews API, se
 
 `pending-author-rework` compares each reviewer's latest verdict against the head commit. The reviews API returns the commit every review judged, so a change request whose `commit_id` equals the current head means the author has pushed nothing since, and that needs no commit list and no clock arithmetic. Pushing a commit answers the request and clears the state.
 
+The same comparison the other way round gives the re-review table. A change request judged against an older commit means the author has answered, so the run prints one row per reviewer who owes a second look, oldest pull request first, and the JSON report carries the same grouping as `awaiting_reviewer`. Those pull requests still take a route, since the table answers who holds them rather than what would settle them.
+
 On the eighteen most recent open `apache/airflow` pull requests this skipped ten, all of them on the draft and check states. Over the 23 open on `agentic-community/mcp-gateway-registry` it skipped six, two of those because a reviewer had asked for changes the author had not answered.
 
 ## What it writes

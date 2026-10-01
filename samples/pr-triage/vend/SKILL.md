@@ -85,9 +85,21 @@ Add `-quiet` when you are going to read the output rather than show it, which dr
 
 ## Reading what comes back
 
-Every run prints two tables, then the same pull requests grouped by route with the advice for each, then what the run cost. It also writes two files into `-out` (default `./data`): a JSON report holding every answer, and a markdown report that pastes into an issue or a pull request without reformatting.
+Every run prints three tables, then the same pull requests grouped by route with the advice for each, then what the run cost. It also writes two files into `-out` (default `./data`): a JSON report holding every answer, and a markdown report that pastes into an issue or a pull request without reformatting.
 
-The first table is the summary: one row per outcome, with a count and the numbers in it. It covers the whole queue, so the pre-triage states are rows alongside the routes and the counts add up to what was fetched. Read it first, then the second table, which carries one row per pull request that reached Jev: number, title, size, effort, consequence, the question that produced the consequence, and the route it bought.
+The first table is the summary: one row per outcome, with a count and the numbers in it. It covers the whole queue, so the pre-triage states are rows alongside the routes and the counts add up to what was fetched.
+
+The second answers a different question: who owes a second look. One row per reviewer who asked for changes on a pull request whose author has pushed since, oldest first. That pull request is back in the reviewer's court, and no route can move it, so pass the row to the person named rather than reading it as work for whoever asked you.
+
+```text
+| Reviewer | Waiting | Pull requests       |
+| -------- | ------- | ------------------- |
+| omrishiv | 3       | #1678, #1764, #1783 |
+```
+
+The same grouping lands in the JSON report as `awaiting_reviewer`, keyed by login. A line under the table names any of those that cannot merge whatever the reviewer decides, being held up by a pre-triage state as well.
+
+The third table carries one row per pull request that reached Jev: number, title, size, effort, consequence, the question that produced the consequence, and the route it bought.
 
 Four states come before any of that, settled by rules at no cost, and a pull request in one of them never reaches Jev:
 
