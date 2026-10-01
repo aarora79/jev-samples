@@ -207,7 +207,24 @@ From a run against the eighteen most recent open pull requests of [apache/airflo
 | human-required      | 2     | #73736, #73741                                                 |
 ```
 
-The first three rows are the pre-triage states, settled by rules before any model call. Ten of the eighteen stopped there. The re-review table comes next, and this run predates it: the committed report in [data/](data/) holds the two tables below and not that one. On a queue where nobody is owed a second look it prints one line saying so.
+The first three rows are the pre-triage states, settled by rules before any model call. Ten of the eighteen stopped there.
+
+Then the part that answers what to do this morning:
+
+```text
+### Start here: 3 to clear first
+
+1. #73722  green-is-enough  1 file, +2/-1  merge when CI is green: nothing here needs a person
+   Clarify max_db_retries doc wording to avoid off-by-one confusion
+2. #73742  green-is-enough  3 files, +36/-0  merge when CI is green: nothing here needs a person
+   Account for the open pull request limit in the PR triage process
+3. #73729  tests-are-enough  2 files, +51/-2  merge when CI is green and a test exercises the change
+   Fix clearing with upstream and downstream selecting unrelated tasks
+```
+
+Cheapest evidence first, and the smallest diff inside each route, so both green ticks come before the test and the one-file change comes before the three-file one. On a queue where nothing clears without a person the list falls back to the shortest human reads and says so, which is what `agentic-community/mcp-gateway-registry` does: every route there needs somebody, so it offers the one-file change first. The picks land in the JSON report as `start_here`.
+
+The re-review table comes next, and this run predates it: the committed report in [data/](data/) holds the summary and the table below, and not that one. On a queue where nobody is owed a second look it prints one line saying so.
 
 The eight that reached Jev, one row each:
 

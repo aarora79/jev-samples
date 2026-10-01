@@ -106,6 +106,121 @@ func awaitingAuthor(pull pullRequest) (bool, string) {
 	return true, fmt.Sprintf("changes requested by %s, and no commits since", strings.Join(names, ", "))
 }
 
+// startHereCount is how many pull requests the start-here block names. Three is a
+// morning, and a longer list stops being a decision about what to do next.
+const startHereCount = 3
+
+// startHereRoutes are the routes a start-here pick comes from before it settles for a
+// human read. Each of these clears without anybody reading the whole diff.
+var startHereRoutes = map[string]bool{
+	"green-is-enough":     true,
+	"tests-are-enough":    true,
+	"ai-review-is-enough": true,
+}
+
+// readSize sizes a pull request by how long it takes to read, smallest first.
+//
+// Files first, because a change spread over twenty paths costs more attention than one
+// long edit in a single file. Lines break the ties, since seven files holding 34
+// changed lines and seven holding 954 are not the same afternoon.
+func readSize(pull pullRequest) (int, int) {
+	return pull.ChangedFiles, pull.Additions + pull.Deletions
+}
+
+// lighterRead says whether a sorts before b by reading effort.
+func lighterRead(a, b pullRequest) bool {
+	aFiles, aLines := readSize(a)
+	bFiles, bLines := readSize(b)
+	if aFiles != bFiles {
+		return aFiles < bFiles
+	}
+	return aLines < bLines
+}
+
+// startHere picks the pull requests to clear first, cheapest evidence and smallest
+// diff.
+//
+// A queue tells you what each change needs and still leaves the question of what to do
+// this morning. These are the ones that move with the least work: a green tick, then a
+// test, then an AI review, and inside each route the smallest change first.
+//
+// When fewer than startHereCount of those exist, the rest of the list comes from the
+// human routes by reading effort, because the shortest read is the one to start on when
+// every read is unavoidable. The second return says when that happened.
+func startHere(results []result) ([]result, bool) {
+	var cheap, rest []result
+	for _, r := range results {
+		if startHereRoutes[r.Route] {
+			cheap = append(cheap, r)
+			continue
+		}
+		rest = append(rest, r)
+	}
+
+	sort.SliceStable(cheap, func(i, j int) bool {
+		if cheap[i].Route != cheap[j].Route {
+			return routeIndex(cheap[i].Route) < routeIndex(cheap[j].Route)
+		}
+		return lighterRead(cheap[i].Pull, cheap[j].Pull)
+	})
+	if len(cheap) >= startHereCount {
+		return cheap[:startHereCount], false
+	}
+
+	sort.SliceStable(rest, func(i, j int) bool {
+		if readSizeEqual(rest[i].Pull, rest[j].Pull) {
+			return routeIndex(rest[i].Route) < routeIndex(rest[j].Route)
+		}
+		return lighterRead(rest[i].Pull, rest[j].Pull)
+	})
+	wanted := startHereCount - len(cheap)
+	if wanted > len(rest) {
+		wanted = len(rest)
+	}
+	return append(cheap, rest[:wanted]...), wanted > 0
+}
+
+// readSizeEqual says whether two pull requests are the same size to read, which is
+// what sends the sort on to its tie-breaker.
+func readSizeEqual(a, b pullRequest) bool {
+	aFiles, aLines := readSize(a)
+	bFiles, bLines := readSize(b)
+	return aFiles == bFiles && aLines == bLines
+}
+
+// startHereLines builds the start-here block, which both outputs print under the
+// summary.
+func startHereLines(results []result) []string {
+	picks, settled := startHere(results)
+	if len(picks) == 0 {
+		return []string{"Nothing reached a route, so there is nothing to start on."}
+	}
+
+	lines := make([]string, 0, len(picks)*2+2)
+	for position, r := range picks {
+		lines = append(lines, fmt.Sprintf(
+			"%d. #%d  %s  %s, +%d/-%d  %s",
+			position+1, r.Pull.Number, r.Route, plural(r.Pull.ChangedFiles, "file"),
+			r.Pull.Additions, r.Pull.Deletions, routeAdvice[r.Route],
+		))
+		lines = append(lines, "   "+r.Pull.Title)
+	}
+
+	if settled {
+		lines = append(lines, "",
+			"Nothing on this queue clears without a person, so the list falls back to the "+
+				"shortest reads.")
+	}
+	return lines
+}
+
+// printStartHere prints the start-here block.
+func printStartHere(results []result) {
+	for _, line := range startHereLines(results) {
+		fmt.Println(line)
+	}
+}
+
 // templateRepeats is how many pull requests a comment has to repeat across before it
 // counts as a template rather than a reviewer. Two is enough: a person writing the
 // same hundred characters twice in one queue is rarer than a bot posting the same
@@ -572,6 +687,9 @@ func triage(opts options, data dataset, set settings, specs []spec, key string) 
 	for _, line := range summaryNote(len(skipped) > 0, len(results) > 0, fromComment) {
 		fmt.Println(line)
 	}
+
+	fmt.Printf("\n### Start here: %d to clear first\n\n", startHereCount)
+	printStartHere(results)
 
 	fmt.Printf("\n### Waiting on a reviewer\n\n")
 	printRereviewTable(data.PullRequests, skipped)

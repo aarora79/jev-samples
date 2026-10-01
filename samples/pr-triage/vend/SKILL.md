@@ -87,11 +87,22 @@ Add `-quiet` when you are going to read the output rather than show it, which dr
 
 ## Reading what comes back
 
-Every run prints three tables, then the same pull requests grouped by route with the advice for each, then what the run cost. It also writes two files into `-out` (default `./data`): a JSON report holding every answer, and a markdown report that pastes into an issue or a pull request without reformatting.
+Every run prints a summary, a short list of what to clear first, two more tables, then the same pull requests grouped by route with the advice for each, then what the run cost. It also writes two files into `-out` (default `./data`): a JSON report holding every answer, and a markdown report that pastes into an issue or a pull request without reformatting.
 
 The first table is the summary: one row per outcome, with a count and the numbers in it. It covers the whole queue, so the pre-triage states are rows alongside the routes and the counts add up to what was fetched.
 
-The second answers a different question: who owes a second look. One row per reviewer who asked for changes on a pull request whose author has pushed since, oldest first. That pull request is back in the reviewer's court, and no route can move it, so pass the row to the person named rather than reading it as work for whoever asked you.
+**Start here answers what to do this morning, and it is the part to lead with.** Three pull requests, cheapest evidence first and smallest diff inside that, so a green tick comes before a test and a test before an AI review:
+
+```text
+1. #73722  green-is-enough  1 file, +2/-1  merge when CI is green: nothing here needs a person
+   Clarify max_db_retries doc wording to avoid off-by-one confusion
+2. #73729  tests-are-enough  2 files, +51/-2  merge when CI is green and a test exercises the change
+   Fix clearing with upstream and downstream selecting unrelated tasks
+```
+
+When nothing on the queue clears without a person, the list falls back to the shortest human reads and says so. Either way these three are the answer to "what should I work on", so give them before the counts when somebody asks that. The same picks land in the JSON report as `start_here`, in order.
+
+The next table answers a different question: who owes a second look. One row per reviewer who asked for changes on a pull request whose author has pushed since, oldest first. That pull request is back in the reviewer's court, and no route can move it, so pass the row to the person named rather than reading it as work for whoever asked you.
 
 ```text
 | Reviewer | Waiting | Pull requests       |
@@ -101,7 +112,7 @@ The second answers a different question: who owes a second look. One row per rev
 
 The same grouping lands in the JSON report as `awaiting_reviewer`, keyed by login. A line under the table names any of those that cannot merge whatever the reviewer decides, being held up by a pre-triage state as well.
 
-The third table carries one row per pull request that reached Jev: number, title, size, effort, consequence, the question that produced the consequence, and the route it bought.
+The last table carries one row per pull request that reached Jev: number, title, size, effort, consequence, the question that produced the consequence, and the route it bought.
 
 Four states come before a route. Rules settle three of them at no cost, and a pull request in one never reaches Jev:
 
