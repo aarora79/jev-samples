@@ -98,6 +98,7 @@ func writeReports(
 	specs []spec,
 	set settings,
 	skipped []notReviewable,
+	asked []result,
 ) (string, string, error) {
 	if err := os.MkdirAll(opts.out, 0o755); err != nil {
 		return "", "", fmt.Errorf("making %s: %w", opts.out, err)
@@ -107,11 +108,15 @@ func writeReports(
 	jsonPath := stem + ".json"
 	mdPath := stem + ".md"
 
-	if err := writeJSON(jsonPath, buildReport(data, results, specs, set, skipped)); err != nil {
+	report := buildReport(data, results, specs, set, skipped)
+	// Priced on the calls that happened, which is more than the routes left when the
+	// comment question sent some back.
+	report.CostUSD = round8(costUSD(asked, set))
+	if err := writeJSON(jsonPath, report); err != nil {
 		return "", "", err
 	}
 
-	body := strings.Join(markdownLines(data, results, specs, set, skipped), "\n") + "\n"
+	body := strings.Join(markdownLines(data, results, specs, set, skipped, asked), "\n") + "\n"
 	if err := os.WriteFile(mdPath, []byte(body), 0o644); err != nil {
 		return "", "", fmt.Errorf("writing %s: %w", mdPath, err)
 	}
@@ -242,9 +247,11 @@ func markdownLines(
 	specs []spec,
 	set settings,
 	skipped []notReviewable,
+	asked []result,
 ) []string {
+	// Everything that cost a call, which is more than what still carries a route.
 	tokens := 0
-	for _, r := range results {
+	for _, r := range asked {
 		tokens += r.Usage.InputTokens
 	}
 	total := len(results) + len(skipped)
@@ -254,12 +261,12 @@ func markdownLines(
 		"",
 		fmt.Sprintf(
 			"%s, of which %d reached Jev at %d questions each, one call apiece, on %s with `%s`.",
-			plural(total, "pull request"), len(results), len(specs),
+			plural(total, "pull request"), len(asked), len(specs),
 			time.Now().UTC().Format("2 January 2006"), set.Model,
 		),
 		fmt.Sprintf(
 			"%s input tokens, $%.5f at $%v per million.",
-			commas(tokens), costUSD(results, set), set.InputUSDPerMillion,
+			commas(tokens), costUSD(asked, set), set.InputUSDPerMillion,
 		),
 		"",
 		"## Summary",

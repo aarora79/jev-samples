@@ -1564,8 +1564,8 @@ def _print_not_reviewable(
     share = len(skipped) / total if total else 0
     if share >= 0.5:
         print(
-            f"{share:.0%} of this queue cannot be reviewed as it stands. Fix that before "
-            "reading anything into the routes."
+            f"{share:.0%} of this queue cannot be reviewed as it stands, which is the thing "
+            "to fix before anybody reads a route."
         )
 
 
@@ -1763,6 +1763,7 @@ def _write_report(
     specs: dict,
     settings: dict,
     skipped: list[dict] | None = None,
+    asked: list[dict] | None = None,
 ) -> pathlib.Path:
     """Write one JSON report: every answer as Jev sent it, plus the judgment.
 
@@ -1815,7 +1816,7 @@ def _write_report(
             }
             for entry in (skipped or [])
         ],
-        "cost_usd": round(_cost_usd(results, settings), 8),
+        "cost_usd": round(_cost_usd(asked if asked is not None else results, settings), 8),
         "pull_requests": [
             {
                 "number": result["pull"]["number"],
@@ -1870,6 +1871,7 @@ def _markdown_lines(
     specs: dict,
     settings: dict,
     skipped: list[dict] | None = None,
+    asked: list[dict] | None = None,
 ) -> list[str]:
     """Build the markdown report: a summary table, a detail table, then the groups.
 
@@ -1887,8 +1889,11 @@ def _markdown_lines(
         Markdown lines, without trailing newlines.
     """
     skipped = skipped or []
+    # Everything that cost a call, which is more than what still carries a route when
+    # the comment question sent some back.
+    asked = asked if asked is not None else results
     ordered = sorted(results, key=lambda item: item["load"], reverse=True)
-    tokens = sum(result["response"].usage.input_tokens for result in results)
+    tokens = sum(result["response"].usage.input_tokens for result in asked)
     stamp = datetime.datetime.now(datetime.UTC).strftime("%d %B %Y")
     total = len(results) + len(skipped)
 
@@ -1896,12 +1901,12 @@ def _markdown_lines(
         f"# Triage: {repo}",
         "",
         (
-            f"{_plural(total, 'pull request')}, of which {len(results)} reached Jev at "
+            f"{_plural(total, 'pull request')}, of which {len(asked)} reached Jev at "
             f"{len(specs)} questions each, one call apiece, on {stamp} with "
             f"`{settings['model']}`."
         ),
         (
-            f"{tokens:,} input tokens, ${_cost_usd(results, settings):.5f} at "
+            f"{tokens:,} input tokens, ${_cost_usd(asked, settings):.5f} at "
             f"${settings['input_usd_per_million']} per million."
         ),
         "",
@@ -2029,6 +2034,7 @@ def _write_markdown(
     specs: dict,
     settings: dict,
     skipped: list[dict] | None = None,
+    asked: list[dict] | None = None,
 ) -> pathlib.Path:
     """Write the markdown report beside the JSON one, same stem.
 
@@ -2043,7 +2049,7 @@ def _write_markdown(
         The path written.
     """
     path = _report_path(repo, selector).with_suffix(".md")
-    body = "\n".join(_markdown_lines(repo, results, specs, settings, skipped))
+    body = "\n".join(_markdown_lines(repo, results, specs, settings, skipped, asked))
     path.write_text(body + "\n", "utf-8")
     return path
 
@@ -2119,6 +2125,10 @@ def triage(
 
     # The one state a rule cannot settle, so it is decided after the call rather
     # than before it.
+    # asked is everything that cost a call. results is what still carries a route
+    # after the comment question sent some back, so the run is priced on asked and
+    # the routes are printed from results.
+    asked = results
     results, skipped = _send_back_on_comments(results, skipped)
 
     print(f"\n## Triage: {repo}, {_plural(len(pulls), 'pull request')}\n")
@@ -2127,33 +2137,42 @@ def triage(
     print("\n### Waiting on a reviewer\n")
     _print_rereview_table(pulls, skipped)
 
-    if not results:
-        print("\nNothing reached Jev, so there is no route to report.")
-        _print_not_reviewable(skipped, len(pulls))
-        return
+    if results:
+        print(f"\n### The {_plural(len(results), 'pull request')} that reached Jev\n")
+        _print_triage_table(results)
+        print(
+            "\nEffort is the weighted mean of nine questions, 0 to 1, and consequence is the "
+            f"max of four. Effort is raised when size demands it: over {SIZE_FLOORS[-1][0]} "
+            f"files or {SIZE_FLOORS[-1][1]} lines cannot be trivial, over {SIZE_FLOORS[0][0]} "
+            f"files or {SIZE_FLOORS[0][1]} lines is high whatever Jev returned."
+        )
+    elif asked:
+        print(
+            "\nEverything that reached Jev went back to an author, so there is no route to "
+            "report. The calls still happened, and the cost below counts them."
+        )
+    else:
+        print("\nNothing reached Jev, so there is no route to report and nothing was spent.")
 
-    print(f"\n### The {_plural(len(results), 'pull request')} that reached Jev\n")
-    _print_triage_table(results)
-    print(
-        "\nEffort is the weighted mean of nine questions, 0 to 1, and consequence is the max of "
-        f"four. Effort is raised when size demands it: over {SIZE_FLOORS[-1][0]} files or "
-        f"{SIZE_FLOORS[-1][1]} lines cannot be trivial, over {SIZE_FLOORS[0][0]} files or "
-        f"{SIZE_FLOORS[0][1]} lines is high whatever Jev returned."
-    )
     _print_not_reviewable(skipped, len(pulls))
     _print_groups(results)
 
     if explain is not None:
-        wanted = [result for result in results if result["pull"]["number"] == explain]
+        wanted = [result for result in asked if result["pull"]["number"] == explain]
         if not wanted:
             print(f"\n#{explain} is not in this dataset, so there is nothing to explain.")
         else:
             _print_detail(wanted[0], specs)
 
-    _print_totals(results, specs, settings)
+    # A run that asked anything has a bill and a report, even when every answer sent
+    # its pull request back.
+    if not asked:
+        return
+
+    _print_totals(asked, specs, settings)
     selector = dataset.get("selector", {})
-    print(f"Report: {_write_report(repo, selector, results, specs, settings, skipped)}")
-    print(f"Markdown: {_write_markdown(repo, selector, results, specs, settings, skipped)}")
+    print(f"Report: {_write_report(repo, selector, results, specs, settings, skipped, asked)}")
+    print(f"Markdown: {_write_markdown(repo, selector, results, specs, settings, skipped, asked)}")
 
 
 def main() -> None:

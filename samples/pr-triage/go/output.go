@@ -508,8 +508,8 @@ func printNotReviewable(skipped []notReviewable, total int) {
 
 	if float64(len(skipped))/float64(total) >= 0.5 {
 		fmt.Printf(
-			"%.0f%% of this queue cannot be reviewed as it stands. Fix that before reading "+
-				"anything into the routes.\n",
+			"%.0f%% of this queue cannot be reviewed as it stands, which is the thing to fix "+
+				"before anybody reads a route.\n",
 			100*float64(len(skipped))/float64(total),
 		)
 	}
@@ -554,6 +554,10 @@ func triage(opts options, data dataset, set settings, specs []spec, key string) 
 
 	// The one state a rule cannot settle, so it is decided after the call rather than
 	// before it.
+	// asked is everything that cost a call. results is what still carries a route
+	// after the comment question sent some back, so the run is priced on asked and the
+	// routes are printed from results.
+	asked := results
 	results, skipped = sendBackOnComments(results, skipped)
 	fromComment := false
 	for _, entry := range skipped {
@@ -572,31 +576,40 @@ func triage(opts options, data dataset, set settings, specs []spec, key string) 
 	fmt.Printf("\n### Waiting on a reviewer\n\n")
 	printRereviewTable(data.PullRequests, skipped)
 
-	if len(results) == 0 {
-		fmt.Println("\nNothing reached Jev, so there is no route to report.")
-		printNotReviewable(skipped, len(data.PullRequests))
-		return exitOK, nil
+	switch {
+	case len(results) > 0:
+		fmt.Printf("\n### The %s that reached Jev\n\n", plural(len(results), "pull request"))
+		printPadded(triageHeader, triageRows(results))
+		fmt.Printf(
+			"\nEffort is the weighted mean of nine questions, 0 to 1, and consequence is the max "+
+				"of four. Effort is raised when size demands it: over %d files or %d lines cannot "+
+				"be trivial, over %d files or %d lines is high whatever Jev returned.\n",
+			sizeFloors[len(sizeFloors)-1].files, sizeFloors[len(sizeFloors)-1].lines,
+			sizeFloors[0].files, sizeFloors[0].lines,
+		)
+	case len(asked) > 0:
+		fmt.Println("\nEverything that reached Jev went back to an author, so there is no route " +
+			"to report. The calls still happened, and the cost below counts them.")
+	default:
+		fmt.Println("\nNothing reached Jev, so there is no route to report and nothing was spent.")
 	}
 
-	fmt.Printf("\n### The %s that reached Jev\n\n", plural(len(results), "pull request"))
-	printPadded(triageHeader, triageRows(results))
-	fmt.Printf(
-		"\nEffort is the weighted mean of nine questions, 0 to 1, and consequence is the max of "+
-			"four. Effort is raised when size demands it: over %d files or %d lines cannot be "+
-			"trivial, over %d files or %d lines is high whatever Jev returned.\n",
-		sizeFloors[len(sizeFloors)-1].files, sizeFloors[len(sizeFloors)-1].lines,
-		sizeFloors[0].files, sizeFloors[0].lines,
-	)
 	printNotReviewable(skipped, len(data.PullRequests))
 	printGroups(results)
 
 	if opts.explain != 0 {
-		printDetail(results, specs, opts.explain)
+		printDetail(asked, specs, opts.explain)
 	}
 
-	printTotals(results, specs, set)
+	// A run that asked anything has a bill and a report, even when every answer sent
+	// its pull request back.
+	if len(asked) == 0 {
+		return exitOK, nil
+	}
 
-	jsonPath, mdPath, err := writeReports(opts, data, results, specs, set, skipped)
+	printTotals(asked, specs, set)
+
+	jsonPath, mdPath, err := writeReports(opts, data, results, specs, set, skipped, asked)
 	if err != nil {
 		return exitError, err
 	}
