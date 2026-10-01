@@ -1,5 +1,5 @@
 # Everything this sample sends to Jev, plus the weights it triages with: the
-# model pin, the state budgets, and all eleven questions.
+# model pin, the state budgets, and all twelve questions.
 #
 # Nine questions carry a `weight`, and review load is the weighted average of
 # what they returned. Load runs 0 to 1, where 1 means a human should read every
@@ -12,8 +12,8 @@
 # A missing test and a thin description cost least: they slow a reviewer down
 # without hiding a fault.
 #
-# `change_kind` and `review_focus` carry no weight. They route the review rather
-# than sizing it.
+# `change_kind`, `review_focus` and `comment_awaits_author` carry no weight. The
+# first two route the review rather than sizing it, and the third decides a state.
 #
 # Adding a question means adding an entry here. Nothing else changes.
 
@@ -28,6 +28,10 @@ model: jev-1.13.0
 max_description_chars: 4000
 max_file_list_chars: 4000
 max_diff_chars: 24000
+# Enough for a reviewer's question and the sentence around it. A long comment that
+# runs past this is still a comment that asks for something, and the ask is almost
+# always at the top.
+max_comment_chars: 1500
 
 # TypeSafe's published price for input tokens, September 2026. Output tokens are
 # counted and not charged, and the reports use this to price each run.
@@ -64,6 +68,25 @@ questions:
       tests: Whether the change is covered, and whether the tests assert anything
       deployment: Whether this rolls out and rolls back safely
       readability: Naming, structure, and whether the next reader follows it
+
+  # No weight: this one decides a state rather than sizing a review. A reviewer who
+  # asks the author a question in a comment, rather than submitting a formal change
+  # request, leaves the pull request waiting on its author with nothing in the
+  # reviews API to show it. Rules cannot tell that comment from a status report, so
+  # this question reads it.
+  #
+  # The sample ignores this answer when the state carries no such comment, and when
+  # the author has pushed since it was written.
+  comment_awaits_author:
+    type: noul
+    label: comment awaits author
+    instructions: >
+      The state may hold the newest comment on this pull request written by somebody
+      other than its author. Does that comment ask the author to answer something or
+      change something before the pull request can move forward? A report from an
+      automated tool, a reviewer describing work they did themselves, and a remark
+      that asks for nothing are all no. Answer no when the state holds no such
+      comment.
 
   # Each score rubric runs 0 to 2 with evenly spaced steps, so dividing by the
   # top level gives an honest fraction.

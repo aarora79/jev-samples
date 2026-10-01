@@ -7,6 +7,7 @@ package main
 
 import (
 	"fmt"
+	"math"
 	"path/filepath"
 	"sort"
 	"strings"
@@ -68,6 +69,9 @@ type notReviewable struct {
 	// Shared marks a failure whose check names also fail on other pull requests,
 	// which points at the checks rather than at this branch.
 	Shared bool
+	// RouteIfAnswered is set only on the one state a Jev call decides, so a reader
+	// knows what the change will need once its author answers.
+	RouteIfAnswered string
 }
 
 // awaitingAuthor says whether a reviewer asked for changes that the author has not
@@ -100,6 +104,140 @@ func awaitingAuthor(pull pullRequest) (bool, string) {
 	}
 
 	return true, fmt.Sprintf("changes requested by %s, and no commits since", strings.Join(names, ", "))
+}
+
+// templateRepeats is how many pull requests a comment has to repeat across before it
+// counts as a template rather than a reviewer. Two is enough: a person writing the
+// same hundred characters twice in one queue is rarer than a bot posting the same
+// report everywhere.
+const templateRepeats = 2
+
+// templatePrefixChars is how much of a comment to fingerprint. Long enough that two
+// reviewers raising the same concern in their own words stay distinct, short enough
+// that a template with a pull request number in its footer still matches itself.
+const templatePrefixChars = 120
+
+// commentAsksFloor is how sure Jev has to be that a comment asks the author for
+// something before the pull request moves to pending-author-rework.
+//
+// Measured over two runs of twenty-two pull requests, the answers come back bimodal:
+// 0.09 to 0.45 where nothing is asked, 0.53 to 0.97 where something is, and nothing
+// between. This sits in that gap, where it also reads as more likely than not. A
+// comment landing inside the gap is a genuinely borderline comment, and the output
+// marks those rather than pretending they settled.
+const commentAsksFloor = 0.50
+
+// nearTheFloor says whether a comment answer sits close enough to the floor to flip
+// between runs. The same deadband every other threshold here uses.
+func nearTheFloor(probability float64) bool {
+	return math.Abs(probability-commentAsksFloor) <= deadband+1e-9
+}
+
+// markTemplatedComments marks the comments that repeat across the queue, which no
+// reviewer wrote.
+//
+// The same reasoning as the shared-failure check. Nobody reading this change would
+// write the same hundred characters on five others, so a comment that repeats came
+// from a machine. codecov-commenter posts as an ordinary user rather than an app, so
+// no account type catches it, and its text begins "Please install", which reads as a
+// request to anybody including a model.
+//
+// Measured on twenty-two open pull requests: one account posted the same comment on
+// six of them, and every comment a person wrote was unique. Dropping these also keeps
+// a two-kilobyte coverage report out of six states.
+func markTemplatedComments(pulls []pullRequest) {
+	type fingerprint struct {
+		user   string
+		prefix string
+	}
+
+	seen := map[fingerprint][]int{}
+	for index, pull := range pulls {
+		body := strings.Join(strings.Fields(pull.LastComment.Body), " ")
+		if body == "" {
+			continue
+		}
+		if len(body) > templatePrefixChars {
+			body = body[:templatePrefixChars]
+		}
+		key := fingerprint{user: pull.LastComment.User, prefix: body}
+		seen[key] = append(seen[key], index)
+	}
+
+	for _, indexes := range seen {
+		if len(indexes) < templateRepeats {
+			continue
+		}
+		for _, index := range indexes {
+			pulls[index].LastComment.Templated = true
+		}
+	}
+}
+
+// commentSendsBack says whether Jev read the unanswered comment as a request to the
+// author.
+//
+// Rules cannot do this one. A reviewer who asks a question in a comment instead of
+// submitting a change request leaves nothing in the reviews API, and a timestamp
+// cannot tell that question from a coverage report or from a reviewer describing
+// their own work. So this pull request reaches Jev, pays for the call it was going to
+// make anyway, and the answer decides.
+//
+// The guard matters: when the state carried no comment the question has nothing to
+// read, so the answer is ignored rather than trusted.
+func commentSendsBack(r result) (bool, string) {
+	comment := unansweredComment(r.Pull)
+	if comment.CreatedAt == "" {
+		return false, ""
+	}
+
+	probability := r.Answers["comment_awaits_author"].Noul
+	if probability < commentAsksFloor {
+		return false, ""
+	}
+
+	who := comment.User
+	if who == "" {
+		who = "a reviewer"
+	}
+	near := ""
+	if nearTheFloor(probability) {
+		near = " and close enough to the cut to read either way"
+	}
+	return true, fmt.Sprintf(
+		"%s asked the author for something in a comment, and no commits since "+
+			"(Jev read it at %.2f%s)",
+		who, probability, near,
+	)
+}
+
+// sendBackOnComments moves the pull requests Jev says are waiting on their authors
+// out of the routes.
+//
+// These cost a Jev call, unlike the states rules settle, and the route they earned
+// travels with them so a reader knows what the change will need once the author
+// answers.
+func sendBackOnComments(results []result, skipped []notReviewable) ([]result, []notReviewable) {
+	kept := make([]result, 0, len(results))
+	moved := 0
+	for _, r := range results {
+		sendBack, reason := commentSendsBack(r)
+		if !sendBack {
+			kept = append(kept, r)
+			continue
+		}
+		moved++
+		skipped = append(skipped, notReviewable{
+			Pull:            r.Pull,
+			State:           "pending-author-rework",
+			Reason:          reason,
+			RouteIfAnswered: r.Route,
+		})
+	}
+	if moved > 0 {
+		logf("%d moved to pending-author-rework on a comment Jev read", moved)
+	}
+	return kept, skipped
 }
 
 // wholeQueue puts the routed and the skipped pull requests back together, which is
@@ -359,6 +497,9 @@ func printNotReviewable(skipped []notReviewable, total int) {
 		}
 		for _, entry := range members {
 			fmt.Printf("  #%-6d %s\n", entry.Pull.Number, entry.Reason)
+			if entry.RouteIfAnswered != "" {
+				fmt.Printf("          once answered it needs: %s\n", entry.RouteIfAnswered)
+			}
 			fmt.Printf("          %s\n", entry.Pull.Title)
 			fmt.Printf("          %s\n", entry.Pull.URL)
 		}
@@ -380,7 +521,12 @@ func printNotReviewable(skipped []notReviewable, total int) {
 // It returns the exit code, so -fail-on-tier can turn a queue that needs attention
 // into a failed CI job.
 func triage(opts options, data dataset, set settings, specs []spec, key string) (int, error) {
-	// Pre-triage first, so a draft or a red branch costs nothing.
+	// Mark the templated comments before anything copies a pull request. A
+	// pullRequest is a value in Go, so the loop below hands out copies, and a mark
+	// written afterwards would never reach them.
+	markTemplatedComments(data.PullRequests)
+
+	// Pre-triage next, so a draft or a red branch costs nothing.
 	var skipped []notReviewable
 	var reviewable []pullRequest
 	for _, pull := range data.PullRequests {
@@ -406,9 +552,20 @@ func triage(opts options, data dataset, set settings, specs []spec, key string) 
 		results = append(results, r)
 	}
 
+	// The one state a rule cannot settle, so it is decided after the call rather than
+	// before it.
+	results, skipped = sendBackOnComments(results, skipped)
+	fromComment := false
+	for _, entry := range skipped {
+		if entry.RouteIfAnswered != "" {
+			fromComment = true
+			break
+		}
+	}
+
 	fmt.Printf("\n## Triage: %s, %s\n\n", data.Repo, plural(len(data.PullRequests), "pull request"))
 	printPadded(summaryHeader, summaryRows(results, skipped))
-	for _, line := range summaryNote(len(skipped) > 0, len(results) > 0) {
+	for _, line := range summaryNote(len(skipped) > 0, len(results) > 0, fromComment) {
 		fmt.Println(line)
 	}
 
@@ -605,16 +762,22 @@ func summaryRows(results []result, skipped []notReviewable) [][]string {
 //
 // A queue can be all states, all routes, or both, and the note has to be true of
 // whichever table it sits under.
-func summaryNote(anySkipped bool, anyRouted bool) []string {
+func summaryNote(anySkipped bool, anyRouted bool, anyFromComment bool) []string {
+	settled := "Plain rules settle those before any model call."
+	if anyFromComment {
+		settled = "Rules settle most of those before any model call, and a comment Jev read " +
+			"can add to pending-author-rework after one."
+	}
+
 	switch {
 	case anySkipped && anyRouted:
 		return []string{
 			"",
-			"The state rows come first: plain rules settle those before any model call. " +
-				"Each route below them names what would be enough to merge.",
+			"The state rows come first. " + settled +
+				" Each route below them names what would be enough to merge.",
 		}
 	case anySkipped:
-		return []string{"", "Plain rules settled every one of these, so no model call happened."}
+		return []string{"", "These never reached a route. " + settled}
 	case anyRouted:
 		return []string{"", "Each route names what would be enough to merge that pull request."}
 	}
