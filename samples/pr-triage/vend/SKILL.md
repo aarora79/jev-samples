@@ -9,7 +9,7 @@ metadata:
 
 # pr-triage
 
-Answer the question a reviewer actually has: what does this change need before it can merge? The `pr-triage` binary fetches a repository's pull requests, asks Jev eleven questions about each one in a single call, and routes each to the cheapest evidence that would settle it, from a green tick up to a person reading it with the author.
+Answer the question a reviewer has in front of a queue: what does this change need before it can merge? The `pr-triage` binary fetches a repository's pull requests, asks Jev twelve questions about each one in a single call, and routes each to the cheapest evidence that would settle it, from a green tick up to a person reading it with the author.
 
 One pull request costs about two hundredths of a cent at 2026 prices. Seven hundred and ten of them cost $0.14 and two minutes.
 
@@ -40,7 +40,7 @@ Ask before running anything. Two things decide the whole run, and guessing eithe
 
 | They say | You run | Means |
 | --- | --- | --- |
-| nothing, or "the recent ones" | `pr-triage owner/repo` | the 10 most recent open, the default |
+| nothing, or "the recent ones" | `pr-triage owner/repo` | the 25 most recent open, the default |
 | "the last 25" | `-limit 25` | the most recent N |
 | "everything open" | `-all` | every open one, however many |
 | "the last 30 days" | `-since 30` | a number of days back |
@@ -51,14 +51,16 @@ Ask before running anything. Two things decide the whole run, and guessing eithe
 
 A pasted pull request URL works as the whole argument, so a user who drops a link into the conversation needs nothing else. A list of several numbers has no flag: triage the repository with a selector wide enough to contain them, then report those rows.
 
-`-explain` reads a pull request out of the run it just did, so the number has to fall inside the selector. `-explain 1803` on a default run of ten prints that it is not in the dataset. Pass the pull request's own URL, or widen the selector until it is included.
+`-explain` reads a pull request out of the run it just did, so the number has to fall inside the selector. `-explain 1803` on a default run of twenty-five prints that it is not in the dataset when the number is older than that. Pass the pull request's own URL, or widen the selector until it is included.
+
+The default stops at twenty-five because fetching one pull request costs seven GitHub calls. The cost is invisible on a default run and real on `-all` against a repository with hundreds open, where the authenticated limit of 5,000 calls an hour caps one run at roughly seven hundred pull requests. Use `-fetch-only` once and then `-dataset` to re-triage without paying for the fetch again.
 
 Say what it will cost before running: about two hundredths of a cent per pull request that reaches Jev, and nothing for the ones pre-triage stops. A few hundred is cheap and fast, so `-all` is a reasonable answer on most repositories. Warn first when the count runs to thousands.
 
 ## Running it
 
 ```bash
-# The ten most recent open pull requests
+# The 25 most recent open pull requests
 pr-triage owner/repo
 
 # Every open one, or a window
@@ -101,16 +103,18 @@ The same grouping lands in the JSON report as `awaiting_reviewer`, keyed by logi
 
 The third table carries one row per pull request that reached Jev: number, title, size, effort, consequence, the question that produced the consequence, and the route it bought.
 
-Four states come before any of that, settled by rules at no cost, and a pull request in one of them never reaches Jev:
+Four states come before a route. Rules settle three of them at no cost, and a pull request in one never reaches Jev:
 
 | State | Means | Waiting on |
 | --- | --- | --- |
 | `draft` | the author marked it draft | the author, who is not asking |
-| `pending-author-rework` | a reviewer asked for changes against the commit the branch still points at | the author, who has not answered |
+| `pending-author-rework` | a reviewer asked for changes, or asked for something in a comment, and the author has not pushed since | the author, who has not answered |
 | `ci-failing` | a check failed, timed out, or wants action | the checks, or the branch |
 | `ci-pending` | a check is still running | nobody, come back later |
 
-Report these, and do not read them as a backlog of review work. A queue that is mostly `pending-author-rework` or `ci-failing` is waiting on its authors, so telling the user to go and review those wastes their time. `pending-author-rework` clears when the author pushes a commit, with nobody dismissing anything.
+`pending-author-rework` has a second path that does cost a call. When a reviewer asks for something in a comment rather than a formal review, nothing appears in the reviews API, so Jev reads the comment and the pull request moves after the call instead of before it. Those rows carry the route they earned, printed as `once answered it needs: ...`, so you can say what the change will need once its author replies.
+
+Report these, and do not read them as a backlog of review work. A queue that is mostly `pending-author-rework` or `ci-failing` is waiting on its authors, so telling the user to go and review those wastes their time. Pushing a commit clears it, with nobody dismissing anything.
 
 Everything else gets a **route**, answering one question: what would be enough to merge this change? Cheapest first:
 
@@ -144,7 +148,7 @@ Take the address from the `url` field the JSON report carries for every pull req
 
 The binary's own tables print bare numbers on purpose, so they stay readable in a terminal and line up as padded markdown. Adding the links is your job when you relay the result. The grouped sections lower down in the markdown report already carry linked numbers, so those can be copied as they are.
 
-Report the whole queue, not only the routed part. A run where most of the queue is `ci-failing` is saying that review capacity is not the bottleneck, and a summary that lists only the routes hides that.
+Report the whole queue, states included. A run where most of the queue is `ci-failing` is saying that the checks are the bottleneck, and a summary listing only the routes hides that.
 
 ## Gating a branch
 

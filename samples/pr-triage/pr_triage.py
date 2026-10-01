@@ -183,6 +183,26 @@ PRE_TRIAGE_STATES: tuple[str, ...] = (
     "ci-pending",
 )
 
+# A comment repeating across this many pull requests is a template, not a reviewer.
+# Two is enough: a person writing the same hundred characters twice in one queue is
+# rarer than a bot posting the same report everywhere.
+TEMPLATE_REPEATS: int = 2
+
+# How much of a comment to fingerprint. Long enough that two reviewers raising the
+# same concern in their own words stay distinct, short enough that a template with a
+# pull request number in its footer still matches itself.
+TEMPLATE_PREFIX_CHARS: int = 120
+
+# How sure Jev has to be that a comment asks the author for something before the
+# pull request moves to pending-author-rework.
+#
+# Measured over two runs of twenty-two pull requests, the answers come back bimodal:
+# 0.09 to 0.45 where nothing is asked, 0.53 to 0.97 where something is, and nothing
+# between. This sits in that gap, where it also reads as more likely than not. A
+# comment landing inside the gap is a genuinely borderline comment, and the output
+# marks those rather than pretending they settled.
+COMMENT_ASKS_FLOOR: float = 0.50
+
 # What each state means for a reader, and who it is waiting on.
 STATE_ADVICE: dict[str, str] = {
     "draft": "the author is still working: nothing to review, and nothing to decide",
@@ -269,7 +289,7 @@ def _load_payload() -> tuple[dict, dict]:
     """Read the settings and the questions from questions.yml.
 
     Returns:
-        Tuple of (settings, specs). Settings holds the model, the three state
+        Tuple of (settings, specs). Settings holds the model, the four state
         budgets and the input-token price; specs holds each question entry keyed
         by id, in file order.
 
@@ -282,6 +302,7 @@ def _load_payload() -> tuple[dict, dict]:
         "max_description_chars",
         "max_file_list_chars",
         "max_diff_chars",
+        "max_comment_chars",
         "input_usd_per_million",
         "questions",
     }
@@ -362,6 +383,86 @@ def _require_api_key() -> None:
     os.environ[API_KEY_ENV] = key
 
 
+def _mark_templated_comments(pulls: list[dict]) -> None:
+    """Mark the comments that repeat across the queue, which no reviewer wrote.
+
+    The same reasoning as the shared-failure check. Nobody reading this change would
+    write the same hundred characters on five others, so a comment that repeats came
+    from a machine. `codecov-commenter` posts as an ordinary user rather than an app,
+    so no account type catches it, and its text begins "Please install", which reads
+    as a request to anybody including a model.
+
+    Measured on twenty-two open pull requests: one account posted the same comment
+    on six of them, and every comment a person wrote was unique.
+
+    Dropping these also keeps a two-kilobyte coverage report out of six states.
+
+    Args:
+        pulls: Every pull request in the dataset. Edited in place.
+    """
+    seen: dict[tuple[str, str], list[dict]] = {}
+    for pull in pulls:
+        comment = pull.get("last_comment") or {}
+        if not comment.get("body"):
+            continue
+        fingerprint = " ".join(comment["body"].split())[:TEMPLATE_PREFIX_CHARS]
+        seen.setdefault((comment.get("user", ""), fingerprint), []).append(comment)
+
+    for comments in seen.values():
+        if len(comments) < TEMPLATE_REPEATS:
+            continue
+        for comment in comments:
+            comment["templated"] = True
+
+
+def _unanswered_comment(pull: dict) -> dict:
+    """Return the newest comment the author has not answered with code, or nothing.
+
+    A comment older than the head commit has been answered by pushing, whatever it
+    asked. Comparing the two ISO timestamps as text is the whole test, since both
+    come from GitHub in the same format and sort correctly that way.
+
+    Datasets written before comments were fetched carry neither field and read as
+    no comment.
+
+    Args:
+        pull: One pull request record from the dataset.
+
+    Returns:
+        The comment as user, created_at and body, or an empty dict.
+    """
+    comment = pull.get("last_comment") or {}
+    if comment.get("templated"):
+        return {}
+
+    written = comment.get("created_at") or ""
+    pushed = pull.get("pushed_at") or ""
+    if not written or not pushed or written <= pushed:
+        return {}
+    return comment
+
+
+def _comment_text(
+    pull: dict,
+    budget: int,
+) -> str:
+    """Render the unanswered comment for the state, inside its budget.
+
+    Args:
+        pull: One pull request record from the dataset.
+        budget: `max_comment_chars` from questions.yml.
+
+    Returns:
+        The comment with its author named, or a line saying there is none.
+    """
+    comment = _unanswered_comment(pull)
+    if not comment:
+        return "(no comment from anybody other than the author since the last commit)"
+
+    who = comment.get("user") or "somebody"
+    return f"{who} wrote, after the most recent commit:\n{(comment.get('body') or '')[:budget]}"
+
+
 def _file_list_text(
     files: list[dict],
     budget: int,
@@ -440,7 +541,7 @@ def _build_state(
     Args:
         repo: The repository as `owner/repo`.
         pull: One pull request record from the dataset.
-        settings: Settings from questions.yml, holding the three budgets.
+        settings: Settings from questions.yml, holding the four budgets.
 
     Returns:
         Tuple of (state, coverage). Coverage is the share of changed files whose
@@ -472,6 +573,11 @@ def _build_state(
         "scope": scope,
         "changed_files": _file_list_text(files, settings["max_file_list_chars"]),
         "diff": diff or "(no textual diff: binary files, or none GitHub would render)",
+        # Named the way the description field is named, because a comment is somebody
+        # else's claim and the state says whose rather than presenting it as fact.
+        "newest_comment_not_written_by_the_author": _comment_text(
+            pull, settings["max_comment_chars"]
+        ),
     }
     return state, coverage
 
@@ -523,7 +629,7 @@ def _review_load(
     """Weight every weighted answer into one number, from 0 to 1.
 
     Jev cannot do arithmetic, so the weighting happens here. Dividing by the
-    weights actually present means an edited weight needs no rebalancing.
+    weights present means an edited weight needs no rebalancing.
 
     Args:
         answers: Answers keyed by question id, as returned by Jev.
@@ -803,6 +909,95 @@ def _print_rereview_table(
     _print_padded(REREVIEW_HEADER, rows)
     for line in _rereview_note(pulls, skipped):
         print(line)
+
+
+def _near_the_floor(probability: float) -> bool:
+    """Say whether a comment answer sits close enough to the floor to flip between runs.
+
+    The same deadband every other threshold here uses. Repeat calls move an answer
+    by more than this, so a value inside the band could land either side next run,
+    and the reason line says so instead of reading as settled.
+
+    Args:
+        probability: What Jev returned for comment_awaits_author.
+
+    Returns:
+        True when it is within DEADBAND of the floor.
+    """
+    return round(abs(probability - COMMENT_ASKS_FLOOR), 6) <= DEADBAND
+
+
+def _comment_sends_back(result: dict) -> tuple[bool, str]:
+    """Say whether Jev read the unanswered comment as a request to the author.
+
+    Rules cannot do this one. A reviewer who asks a question in a comment instead
+    of submitting a change request leaves nothing in the reviews API, and a
+    timestamp cannot tell that question from a coverage report or from a reviewer
+    describing their own work. So this pull request reaches Jev, pays for the call
+    it was going to make anyway, and the answer decides.
+
+    The guard matters: when the state carried no comment the question has nothing
+    to read, so the answer is ignored rather than trusted.
+
+    Args:
+        result: One triage result, holding the pull request and the answers.
+
+    Returns:
+        Tuple of (send back, reason). The reason is "" when it stays reviewable.
+    """
+    comment = _unanswered_comment(result["pull"])
+    if not comment:
+        return False, ""
+
+    answer = result["answers"].get("comment_awaits_author")
+    probability = getattr(answer, "noul", 0.0) if answer else 0.0
+    if probability < COMMENT_ASKS_FLOOR:
+        return False, ""
+
+    who = comment.get("user") or "a reviewer"
+    near = " and close enough to the cut to read either way" if _near_the_floor(probability) else ""
+    return True, (
+        f"{who} asked the author for something in a comment, and no commits since "
+        f"(Jev read it at {probability:.2f}{near})"
+    )
+
+
+def _send_back_on_comments(
+    results: list[dict],
+    skipped: list[dict],
+) -> tuple[list[dict], list[dict]]:
+    """Move the pull requests Jev says are waiting on their authors out of the routes.
+
+    These cost a Jev call, unlike the states rules settle, and the route they earned
+    travels with them so a reader knows what the change will need once the author
+    answers.
+
+    Args:
+        results: Triage results for everything that reached Jev.
+        skipped: Entries from the pre-triage pass.
+
+    Returns:
+        Tuple of (results still routed, skipped including the moved ones).
+    """
+    moved = []
+    for result in results:
+        send_back, reason = _comment_sends_back(result)
+        if send_back:
+            moved.append(
+                {
+                    "pull": result["pull"],
+                    "state": "pending-author-rework",
+                    "reason": reason,
+                    "route_if_answered": result["route"],
+                }
+            )
+
+    if not moved:
+        return results, skipped
+
+    numbers = {entry["pull"]["number"] for entry in moved}
+    logger.info(f"{len(moved)} moved to pending-author-rework on a comment Jev read")
+    return [r for r in results if r["pull"]["number"] not in numbers], skipped + moved
 
 
 def _pre_triage_state(pull: dict) -> tuple[str, str]:
@@ -1258,6 +1453,7 @@ def _summary_rows(
 def _summary_note(
     any_skipped: bool,
     any_routed: bool,
+    any_from_comment: bool = False,
 ) -> list[str]:
     """Say what separates the two kinds of summary row.
 
@@ -1265,23 +1461,35 @@ def _summary_note(
     so the wording lives in one place. A queue can be all states, all routes, or
     both, and the note has to be true of whichever table it sits under.
 
+    The cost claim has to stay honest. Rules settle most states for nothing, but
+    pending-author-rework can also come from a comment Jev read, and that one paid
+    for its call.
+
     Args:
         any_skipped: Whether any pull request was settled before Jev.
         any_routed: Whether any pull request reached Jev and got a route.
+        any_from_comment: Whether any state came from a comment Jev read.
 
     Returns:
         A blank line, then the note, or nothing when there is no table to explain.
     """
+    settled = (
+        "Rules settle most of those before any model call, and a comment Jev read can add "
+        "to pending-author-rework after one."
+        if any_from_comment
+        else "Plain rules settle those before any model call."
+    )
+
     if any_skipped and any_routed:
         return [
             "",
             (
-                "The state rows come first: plain rules settle those before any model call. "
+                f"The state rows come first. {settled} "
                 "Each route below them names what would be enough to merge."
             ),
         ]
     if any_skipped:
-        return ["", "Plain rules settled every one of these, so no model call happened."]
+        return ["", f"These never reached a route. {settled}"]
     if any_routed:
         return ["", "Each route names what would be enough to merge that pull request."]
     return []
@@ -1298,7 +1506,9 @@ def _print_summary_table(
         skipped: Entries from the pre-triage pass, each with a state.
     """
     _print_padded(SUMMARY_HEADER, _summary_rows(results, skipped))
-    for line in _summary_note(bool(skipped), bool(results)):
+    for line in _summary_note(
+        bool(skipped), bool(results), any(e.get("route_if_answered") for e in skipped)
+    ):
         print(line)
 
 
@@ -1345,6 +1555,8 @@ def _print_not_reviewable(
         for entry in members:
             pull = entry["pull"]
             print(f"  #{pull['number']:<6} {entry['reason']}")
+            if entry.get("route_if_answered"):
+                print(f"          once answered it needs: {entry['route_if_answered']}")
             print(f"          {pull['title']}")
             print(f"          {pull['url']}")
         print()
@@ -1596,6 +1808,9 @@ def _write_report(
                 "state": entry["state"],
                 "reason": entry["reason"],
                 "shared_failure": bool(entry.get("shared_failure")),
+                # Set only on the one state a Jev call decides, so a reader knows
+                # what the change will need once its author answers.
+                "route_if_answered": entry.get("route_if_answered"),
                 "checks": entry["pull"].get("checks"),
             }
             for entry in (skipped or [])
@@ -1693,7 +1908,9 @@ def _markdown_lines(
         "## Summary",
         "",
         *_padded_lines(SUMMARY_HEADER, _summary_rows(results, skipped)),
-        *_summary_note(bool(skipped), bool(results)),
+        *_summary_note(
+            bool(skipped), bool(results), any(e.get("route_if_answered") for e in skipped)
+        ),
         "",
         "## Waiting on a reviewer",
         "",
@@ -1760,6 +1977,8 @@ def _markdown_not_reviewable(skipped: list[dict]) -> list[str]:
             pull = entry["pull"]
             lines.append(f"- [#{pull['number']}]({pull['url']}) {pull['title']}")
             lines.append(f"  - {entry['reason']}")
+            if entry.get("route_if_answered"):
+                lines.append(f"  - once answered it needs: {entry['route_if_answered']}")
     return lines
 
 
@@ -1886,6 +2105,7 @@ def triage(
         else:
             reviewable.append(pull)
 
+    _mark_templated_comments(pulls)
     if skipped:
         _mark_shared_failures(skipped)
         logger.info(f"{len(skipped)} of {len(pulls)} are not reviewable yet, so they skip Jev")
@@ -1896,6 +2116,10 @@ def triage(
         for result in results:
             print(f"\nRaw response for #{result['pull']['number']}:")
             print(json.dumps(result["response"].model_dump(mode="json"), indent=2))
+
+    # The one state a rule cannot settle, so it is decided after the call rather
+    # than before it.
+    results, skipped = _send_back_on_comments(results, skipped)
 
     print(f"\n## Triage: {repo}, {_plural(len(pulls), 'pull request')}\n")
     _print_summary_table(results, skipped)
@@ -1973,7 +2197,7 @@ the repo root. Fetching also reads GITHUB_TOKEN, GH_TOKEN, or `gh auth token`.
         "--limit",
         type=int,
         default=10,
-        help="How many of the most recent to fetch (default: 10)",
+        help="How many of the most recent to fetch (default: 25)",
     )
     parser.add_argument(
         "--all",

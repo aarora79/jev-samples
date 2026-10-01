@@ -17,16 +17,16 @@ Say what evidence each open pull request needs before it merges, one Jev call ea
 
 That bracketed row is the run worked through below. Rules remove ten before any model call, and Jev sorts the other eight by what evidence would settle each one: two clear on a green tick, three want a test, one wants an AI review, and two go to a person. The maintainer reads those two.
 
-A maintainer with a queue of open pull requests wants to know which ones a glance clears and which ones need an hour. The sample sends Jev the title, the description, the file list and as much of the diff as fits, then asks eleven questions about each pull request in one call.
+A maintainer with a queue of open pull requests wants to know which ones a glance clears and which ones need an hour. The sample sends Jev the title, the description, the file list and as much of the diff as fits, then asks twelve questions about each pull request in one call.
 
 Nine of the answers become two numbers, because effort and consequence are different questions. **Effort** is their weighted mean: how long this takes to read. **Consequence** is the *max* of the four that say what breaks if it is wrong, never the mean, because a change that is safe in three ways and dangerous in one is a dangerous change.
 
-Before any of that, a pull request has to be worth reading. Two calls per pull request, one to the checks API and one to the reviews API, settle four terminal states, and none of them spends a Jev call:
+Before any of that, a pull request has to be worth reading. Rules over the checks API and the reviews API settle four terminal states, three of them without spending a Jev call:
 
 | State | Means | Waiting on |
 | --- | --- | --- |
 | `draft` | the author marked it draft | the author, who is not asking |
-| `pending-author-rework` | a reviewer asked for changes against the commit the branch still points at | the author, who has not answered yet |
+| `pending-author-rework` | a reviewer asked for changes, or asked for something in a comment, and the author has not pushed since | the author, who has not answered yet |
 | `ci-failing` | a check concluded failure, timed out, or wants action | the checks, or the branch |
 | `ci-pending` | a check is still running | nobody, come back later |
 
@@ -46,6 +46,23 @@ Each of these asked for changes and the author has pushed since, so the pull req
 ```
 
 Those pull requests still take a route, because they are reviewable and the route still says what evidence a merge would need. The table answers who is holding them, which no route can. The second line matters on a busy queue: a reviewer sent to #1764 would find a red build waiting whatever they decide. The grouping lands in the JSON report as `awaiting_reviewer`, keyed by login, so a bot can go and ask.
+
+## The one state a rule cannot settle
+
+A reviewer who asks a question in a comment instead of submitting a change request leaves nothing in the reviews API. `agentic-community/mcp-gateway-registry#1801` is that case: the head commit landed at 08:28, a maintainer wrote "can you check #1713 and clarify the differences" at 17:28, and no formal review exists. The pull request is waiting on its author and every rule above reads it as reviewable.
+
+A timestamp cannot settle it either, since it cannot tell that question from a coverage report or from a reviewer describing work they did themselves. So the twelfth question reads the comment. The state carries the newest one nobody but the author wrote, `comment_awaits_author` asks whether it requests something, and an answer over `COMMENT_ASKS_FLOOR` moves the pull request to `pending-author-rework` after the call rather than before it.
+
+That makes it the only state costing a Jev call, so the route it earned travels with it:
+
+```text
+  #1801   omrishiv asked the author for something in a comment, and no commits since (Jev read it at 0.77)
+          once answered it needs: human-required
+```
+
+A comment that repeats across the queue came from a machine. `codecov-commenter` posts as account type `User`, so no account check catches it, and its text opens with "Please install", which reads as a request to anybody including a model. The shared-failure check already works this way: over twenty-two open pull requests one account posted the identical comment on six of them, and every comment a person wrote was unique. Dropping those keeps a two-kilobyte coverage report out of six states as well.
+
+The floor comes from the measurement. Over two runs the answers came back bimodal, 0.09 to 0.45 where nothing is asked and 0.53 to 0.97 where something is, with nothing between, so the floor sits at 0.50 inside that gap. A first attempt at 0.70 cut through the middle of the genuine-ask cluster, and the two implementations then disagreed about one pull request that scored 0.68 and 0.73 on consecutive runs. A comment landing inside the gap prints as close enough to the cut to read either way.
 
 On the eighteen airflow pull requests worked through below, three of those states fired and took ten out of the queue before Jev saw a single one. The fourth needs a repository where reviewers are active: over the 23 open pull requests on `agentic-community/mcp-gateway-registry`, one reviewer had asked for changes on two of them and the authors had pushed nothing since.
 
@@ -79,7 +96,7 @@ Of the eighteen pull requests below, a frontier review is the deciding evidence 
 
 Pre-triage is `if` statements over the checks API. No model can do that stage, because no model knows whether CI passed.
 
-Routing the eight is a closed question: eleven judgements, two numbers, one route. A frontier model can answer it, reading the same diff and returning the same eleven answers at its own price. Routing one pull request costs about 3,000 input tokens whoever does it, which is $0.00013 at TypeSafe's $0.042 per million, published September 2026. Divide your model's input price by 0.042 for the multiple.
+Routing the eight is a closed question: twelve judgements, two numbers, one route. A frontier model can answer it, reading the same diff and returning the same twelve answers at its own price. Routing one pull request costs about 3,000 input tokens whoever does it, which is $0.00013 at TypeSafe's $0.042 per million, published September 2026. Divide your model's input price by 0.042 for the multiple.
 
 Reading code for defects needs a model that can read code, which on this queue is one pull request in eighteen. Routing one takes 164 ms, so 710 of them took two minutes.
 
@@ -89,7 +106,7 @@ The saving holds while the cheap routes are right. A pull request sent to `green
 
 Eleven questions go to Jev in one call: how far the change reaches, whether it touches auth or secrets, how many judgment calls a reviewer has to agree with, and eight more. Nine carry a weight in [questions.yml](questions.yml). Four of those nine also feed the consequence axis, marked below.
 
-![The pr-triage flow: a pull request goes through pre-triage, which is plain rules and no model. Any of draft, a failing check or a running check stops there and reports that state. Otherwise one Jev call asks eleven questions, nine weighted and two labels, the nine become an effort and consequence pair, and the pair picks one route saying what the repo owner should do. Two worked examples end the diagram.](assets/flow.png)
+![The pr-triage flow: a pull request goes through pre-triage, which is plain rules and no model. Any of draft, a reviewer waiting on the author, a failing check or a running check stops there and reports that state. Otherwise one Jev call asks twelve questions, nine weighted and three that are not scored, the nine become an effort and consequence pair, and the pair picks one route saying what the repo owner should do. Two worked examples end the diagram.](assets/flow.png)
 
 [assets/flow.html](assets/flow.html) is the source. Edit the HTML and run `python3 assets/render.py` to rebuild the PNG.
 
@@ -114,7 +131,7 @@ Eleven questions go to Jev in one call: how far the change reaches, whether it t
 ```bash
 cd samples/pr-triage
 
-# The 10 most recent open pull requests, fetched and triaged in one command
+# The 25 most recent open pull requests, fetched and triaged in one command
 uv run pr_triage.py agentic-community/mcp-gateway-registry
 
 # Every open one, or everything opened in the last 30 days
@@ -292,7 +309,7 @@ Then what the run cost:
 
 Every run writes two reports into [data/](data/). The JSON one holds each answer as Jev sent it, next to the credit, the consequence, the route and the tier the sample derived from it, plus `route_counts` and `awaiting_reviewer` roll-ups so a job can read the shape of a queue, and who is holding it, without walking every entry. The markdown one carries the same three tables and the same route sections, with the numbers as links, so a triage pastes into a pull request or an issue without reformatting. This repo commits the `apache-airflow` pair as the worked example and ignores the rest, because triaging somebody's open pull requests is their business.
 
-### One pull request, from eleven answers to one route
+### One pull request, from twelve answers to one route
 
 Airflow #73741 improves the error a DAG tag length check raises. Two files, +11/-3, and Jev read all of the diff. The nine weighted answers, heaviest contribution first, with the four that also feed consequence marked **(c)**:
 
@@ -323,7 +340,7 @@ The run also prints the one thing that would move it: a test exercising that sec
 
 **One set of cuts produces two different distributions.** The same cuts over 710 airflow pull requests opened in the last 100 days took 342 of them, 48%, off the human queue. Run against a repository where every change touches authentication or deployment credentials, they took none of 24, because that queue contains no low-consequence work to find. Airflow's cheap tail is its 48 docs pull requests, 20 dependency bumps and 22 test-only changes. A repository without those has no cheap tail, and a router that invented one would be wrong.
 
-**Nine files can outrank fifty-four.** #73704 changes 89 lines across 9 files and routes `human-required` at consequence 0.84, because it fixes socket leaks and adds request timeouts across providers and `security_surface` came back 0.84. #73713 changes 598 lines across 54 files and its effort is only 0.37, because `mechanical` came back 0.81 on one locale-formatting edit repeated through the UI. The eleven questions sort by what a review has to catch, and the driver line names the one that did it.
+**Nine files can outrank fifty-four.** #73704 changes 89 lines across 9 files and routes `human-required` at consequence 0.84, because it fixes socket leaks and adds request timeouts across providers and `security_surface` came back 0.84. #73713 changes 598 lines across 54 files and its effort is only 0.37, because `mechanical` came back 0.81 on one locale-formatting edit repeated through the UI. The twelve questions sort by what a review has to catch, and the driver line names the one that did it.
 
 **Arithmetic stays in code.** Jev cannot count, so the file and line totals reach it as a sentence for context, and every threshold on a number lives in [pr_triage.py](pr_triage.py) and its Go twin. `SIZE_FLOORS` names the lowest effort tier a change of a given size can land in: over 30 files or 1,500 lines is high whatever Jev returned. `CONSEQUENCE_FLOORS` and `EFFORT_RAISES` turn the two axes into a route. Every one of them only ever raises, and the output marks the rows where it did, so a reader sees the disagreement instead of inheriting it.
 

@@ -58,13 +58,15 @@ type pullReport struct {
 // notReviewableJSON is one pull request that never reached Jev, as the report
 // stores it.
 type notReviewableJSON struct {
-	Number        int          `json:"number"`
-	Title         string       `json:"title"`
-	URL           string       `json:"url"`
-	State         string       `json:"state"`
-	Reason        string       `json:"reason"`
-	SharedFailure bool         `json:"shared_failure"`
-	Checks        checkSummary `json:"checks"`
+	Number        int    `json:"number"`
+	Title         string `json:"title"`
+	URL           string `json:"url"`
+	State         string `json:"state"`
+	Reason        string `json:"reason"`
+	SharedFailure bool   `json:"shared_failure"`
+	// RouteIfAnswered is set only on the one state a Jev call decides.
+	RouteIfAnswered string       `json:"route_if_answered,omitempty"`
+	Checks          checkSummary `json:"checks"`
 }
 
 // triageReport is the whole JSON report.
@@ -202,13 +204,14 @@ func buildReport(data dataset, results []result, specs []spec, set settings, ski
 	for _, entry := range skipped {
 		stateCounts[entry.State]++
 		notReviewable = append(notReviewable, notReviewableJSON{
-			Number:        entry.Pull.Number,
-			Title:         entry.Pull.Title,
-			URL:           entry.Pull.URL,
-			State:         entry.State,
-			Reason:        entry.Reason,
-			SharedFailure: entry.Shared,
-			Checks:        entry.Pull.Checks,
+			Number:          entry.Pull.Number,
+			Title:           entry.Pull.Title,
+			URL:             entry.Pull.URL,
+			State:           entry.State,
+			Reason:          entry.Reason,
+			SharedFailure:   entry.Shared,
+			RouteIfAnswered: entry.RouteIfAnswered,
+			Checks:          entry.Pull.Checks,
 		})
 	}
 
@@ -263,7 +266,14 @@ func markdownLines(
 		"",
 	}
 	lines = append(lines, paddedLines(summaryHeader, summaryRows(results, skipped))...)
-	lines = append(lines, summaryNote(len(skipped) > 0, len(results) > 0)...)
+	fromComment := false
+	for _, entry := range skipped {
+		if entry.RouteIfAnswered != "" {
+			fromComment = true
+			break
+		}
+	}
+	lines = append(lines, summaryNote(len(skipped) > 0, len(results) > 0, fromComment)...)
 
 	lines = append(lines, "", "## Waiting on a reviewer", "")
 	queue := wholeQueue(results, skipped)
@@ -340,6 +350,10 @@ func markdownNotReviewable(skipped []notReviewable) []string {
 				"- [#%d](%s) %s", entry.Pull.Number, entry.Pull.URL, entry.Pull.Title,
 			))
 			lines = append(lines, fmt.Sprintf("  - %s", entry.Reason))
+			if entry.RouteIfAnswered != "" {
+				lines = append(lines, fmt.Sprintf(
+					"  - once answered it needs: %s", entry.RouteIfAnswered))
+			}
 		}
 	}
 	return lines

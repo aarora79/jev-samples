@@ -64,7 +64,8 @@ func TestEmbeddedPayloadLoads(t *testing.T) {
 	switch {
 	case set.Model == "":
 		t.Fatalf("no model pinned: %+v", set)
-	case set.MaxDescriptionChars == 0 || set.MaxFileListChars == 0 || set.MaxDiffChars == 0:
+	case set.MaxDescriptionChars == 0 || set.MaxFileListChars == 0 ||
+		set.MaxDiffChars == 0 || set.MaxCommentChars == 0:
 		t.Fatalf("a state budget came back zero: %+v", set)
 	case set.InputUSDPerMillion == 0:
 		t.Fatalf("no price, so every run would report as free: %+v", set)

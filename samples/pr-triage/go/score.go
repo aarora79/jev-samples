@@ -216,7 +216,7 @@ type result struct {
 // happens in Go.
 //
 // It returns the state and the coverage: the share of changed files whose patch
-// fit the budget, which says how much of the change Jev actually read.
+// fit the budget, which says how much of the change Jev read.
 func buildState(repo string, pull pullRequest, set settings) (map[string]string, float64) {
 	diff, shown := diffText(pull.Files, set.MaxDiffChars)
 	omitted := len(pull.Files) - shown
@@ -260,7 +260,45 @@ func buildState(repo string, pull pullRequest, set settings) (map[string]string,
 		"scope":                             scope,
 		"changed_files":                     fileListText(pull.Files, set.MaxFileListChars),
 		"diff":                              diff,
+		// Named the way the description is named, because a comment is somebody
+		// else's claim and the state says whose rather than presenting it as fact.
+		"newest_comment_not_written_by_the_author": commentText(pull, set.MaxCommentChars),
 	}, coverage
+}
+
+// unansweredComment returns the newest comment the author has not answered with
+// code, or the zero value.
+//
+// A comment older than the head commit has been answered by pushing, whatever it
+// asked. Comparing the two ISO timestamps as text is the whole test, since both come
+// from GitHub in the same format and sort correctly that way.
+//
+// Datasets written before comments were fetched carry neither field and read as no
+// comment.
+func unansweredComment(pull pullRequest) lastComment {
+	c := pull.LastComment
+	if c.Templated || c.CreatedAt == "" || pull.PushedAt == "" || c.CreatedAt <= pull.PushedAt {
+		return lastComment{}
+	}
+	return c
+}
+
+// commentText renders the unanswered comment for the state, inside its budget.
+func commentText(pull pullRequest, budget int) string {
+	c := unansweredComment(pull)
+	if c.CreatedAt == "" {
+		return "(no comment from anybody other than the author since the last commit)"
+	}
+
+	who := c.User
+	if who == "" {
+		who = "somebody"
+	}
+	body := c.Body
+	if len(body) > budget {
+		body = body[:budget]
+	}
+	return fmt.Sprintf("%s wrote, after the most recent commit:\n%s", who, body)
 }
 
 // fileListText lists every changed path with its line counts, one per line.
@@ -462,7 +500,7 @@ func contribution(s spec, a answer, total float64) float64 {
 
 // reviewLoad weights every weighted answer into one number, from 0 to 1.
 //
-// Dividing by the weights actually present means an edited weight needs no
+// Dividing by the weights present means an edited weight needs no
 // rebalancing of the others.
 func reviewLoad(answers map[string]answer, specs []spec) float64 {
 	total := weightedTotal(specs)

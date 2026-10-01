@@ -2,7 +2,7 @@
 
 The Python sample one directory up is canonical. This is the same check compiled into a single static executable, for a machine with no Python: a CI runner, a bastion host, a developer laptop that should not grow a virtualenv to sort a review queue.
 
-One binary does both halves. It fetches pull requests from the GitHub API and asks Jev eleven questions about each one, so nothing has to run before it.
+One binary does both halves. It fetches pull requests from the GitHub API and asks Jev twelve questions about each one, so nothing has to run before it.
 
 ## Install
 
@@ -17,7 +17,7 @@ To install the skill alongside the binary, so an agent knows when to reach for i
 ## Run it
 
 ```bash
-pr-triage apache/airflow                      # the 10 most recent open ones
+pr-triage apache/airflow                      # the 25 most recent open ones
 pr-triage apache/airflow -all                 # every open one
 pr-triage apache/airflow -since 30            # opened in the last 30 days
 pr-triage apache/airflow -since 2026-08-01    # opened on or after a date
@@ -62,18 +62,20 @@ repository acme/widgets through https://ghe.example.com/api/v3
 
 ## It stops before Jev on anything not reviewable
 
-Two calls per pull request, one to the checks API and one to the reviews API, settle four states, and none of them spends a question:
+Rules over the checks API and the reviews API settle four states, three of them without spending a question:
 
 | State | Means | Waiting on |
 | --- | --- | --- |
 | `draft` | the author marked it draft | the author, who is not asking |
-| `pending-author-rework` | a reviewer asked for changes against the commit the branch still points at | the author, who has not answered yet |
+| `pending-author-rework` | a reviewer asked for changes, or asked for something in a comment, and the author has not pushed since | the author, who has not answered yet |
 | `ci-failing` | a check concluded failure, timed out, or wants action | the checks, or the branch |
 | `ci-pending` | a check is still running | nobody, come back later |
 
 `ci-failing` states a fact and never judges the author. A check name that fails on several unrelated pull requests is the check being broken rather than each change breaking it, so the binary counts the names across the queue and says which failures belong to the checks. That costs no extra call, because the names are already in the dataset.
 
 `pending-author-rework` compares each reviewer's latest verdict against the head commit. The reviews API returns the commit every review judged, so a change request whose `commit_id` equals the current head means the author has pushed nothing since, and that needs no commit list and no clock arithmetic. Pushing a commit answers the request and clears the state.
+
+A reviewer who asks for something in a comment rather than a formal review leaves nothing in the reviews API, so a twelfth question reads the newest comment and can move the pull request after the call. That one state costs a Jev call, and the row carries the route it earned.
 
 The same comparison the other way round gives the re-review table. A change request judged against an older commit means the author has answered, so the run prints one row per reviewer who owes a second look, oldest pull request first, and the JSON report carries the same grouping as `awaiting_reviewer`. Those pull requests still take a route, since the table answers who holds them rather than what would settle them.
 
@@ -134,7 +136,7 @@ Without that test the two tools would disagree about one pull request, for a rea
 
 ## Where this differs from the Python
 
-Nothing in the judgment: the same eleven questions, the same weights, the same two axes, the same route cuts, the same 0.02 deadband on both, and the same size floor. Two differences worth knowing:
+Nothing in the judgment: the same twelve questions, the same weights, the same two axes, the same route cuts, the same 0.02 deadband on both, and the same size floor. Two differences worth knowing:
 
 **The legend takes any value.** Jev echoes each rubric level back in a `legend`, and one level in the current payload arrives as an object rather than a string, because `- None: some text` is YAML for a mapping. The Go side accepts any value there, so a released binary keeps working against an older payload.
 

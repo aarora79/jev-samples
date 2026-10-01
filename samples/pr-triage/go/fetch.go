@@ -57,7 +57,11 @@ const (
 	maxPatchChars = 40000
 	// defaultLimit is how many recent pull requests to take when the caller names
 	// no selector.
-	defaultLimit = 10
+	//
+	// Capped rather than generous on purpose. Each pull request costs seven GitHub
+	// calls to fetch, so a default that walked a whole queue would spend somebody's
+	// rate limit before they had asked for anything. Pass -all for the queue.
+	defaultLimit = 25
 )
 
 // tokenEnvNames lists where the environment carries a GitHub token, in the order
@@ -125,6 +129,17 @@ type reviewSummary struct {
 	Latest []reviewVerdict `json:"latest"`
 }
 
+// lastComment is the newest comment on a pull request not written by its author.
+//
+// Templated is set by the triage half, not the fetcher: deciding that a comment
+// repeats takes the whole queue, and the fetcher sees one pull request at a time.
+type lastComment struct {
+	User      string `json:"user"`
+	CreatedAt string `json:"created_at"`
+	Body      string `json:"body"`
+	Templated bool   `json:"templated,omitempty"`
+}
+
 // changedFile is one file in a pull request, as the dataset stores it.
 //
 // The json tags name the keys, and they match the Python sample's dataset exactly
@@ -166,7 +181,13 @@ type pullRequest struct {
 	// Reviews summarises the verdicts, so the triage half can tell a pull request
 	// waiting on a reviewer from one waiting on its author.
 	Reviews reviewSummary `json:"reviews"`
-	Files   []changedFile `json:"files"`
+	// PushedAt is when the head commit was committed. A comment newer than this is
+	// one the author has not answered with code.
+	PushedAt string `json:"pushed_at"`
+	// LastComment is the newest comment somebody other than the author left, which
+	// rules cannot read and Jev can.
+	LastComment lastComment   `json:"last_comment"`
+	Files       []changedFile `json:"files"`
 	// FilesTruncated says whether pagination cut the file list short, which GitHub
 	// also does at 3,000 files.
 	FilesTruncated bool `json:"files_truncated"`
@@ -635,6 +656,82 @@ func pullReviews(tgt target, token string, number int) (reviewSummary, error) {
 	return reviewSummary{Total: len(decisive), Latest: latest}, nil
 }
 
+// isBot says whether a comment came from a machine.
+//
+// GitHub types a real app account as Bot, and some integrations post as an ordinary
+// user instead: codecov-commenter is typed User. The [bot] suffix catches the app
+// accounts, and whatever slips through is caught by the template check in the triage
+// half, which notices the same comment on several pull requests.
+func isBot(login, kind string) bool {
+	return kind == "Bot" || strings.HasSuffix(login, "[bot]")
+}
+
+// pullLastComment finds the newest comment on one pull request not written by its
+// author.
+//
+// Two calls, because GitHub keeps conversation comments on the issue and inline
+// comments on the pull request, and a reviewer can ask for something in either.
+// Neither endpoint honours a sort parameter, so both come back oldest first and this
+// picks the last.
+//
+// The author's own comments are dropped: an author who replies has answered, and
+// what matters is whether somebody else spoke last.
+func pullLastComment(tgt target, token string, number int, author string) (lastComment, error) {
+	query := url.Values{}
+	query.Set("per_page", strconv.Itoa(perPage))
+
+	type commentEntry struct {
+		Body      string `json:"body"`
+		CreatedAt string `json:"created_at"`
+		User      struct {
+			Login string `json:"login"`
+			Type  string `json:"type"`
+		} `json:"user"`
+	}
+
+	var newest lastComment
+	for _, path := range []string{
+		fmt.Sprintf("issues/%d/comments", number),
+		fmt.Sprintf("pulls/%d/comments", number),
+	} {
+		endpoint := fmt.Sprintf("%s/repos/%s/%s?%s", tgt.APIBase, tgt.Repo, path, query.Encode())
+		var batch []commentEntry
+		if err := getJSON(endpoint, token, &batch); err != nil {
+			return lastComment{}, err
+		}
+		for _, entry := range batch {
+			if isBot(entry.User.Login, entry.User.Type) || entry.User.Login == author {
+				continue
+			}
+			if entry.CreatedAt > newest.CreatedAt {
+				newest = lastComment{
+					User:      entry.User.Login,
+					CreatedAt: entry.CreatedAt,
+					Body:      entry.Body,
+				}
+			}
+		}
+	}
+	return newest, nil
+}
+
+// headPushedAt reads when the head commit was committed.
+//
+// The git endpoint rather than the repository one, because that returns the date in
+// 3 KB where the other carries the whole diff in 39 KB.
+func headPushedAt(tgt target, token, sha string) (string, error) {
+	endpoint := fmt.Sprintf("%s/repos/%s/git/commits/%s", tgt.APIBase, tgt.Repo, sha)
+	var body struct {
+		Committer struct {
+			Date string `json:"date"`
+		} `json:"committer"`
+	}
+	if err := getJSON(endpoint, token, &body); err != nil {
+		return "", err
+	}
+	return body.Committer.Date, nil
+}
+
 // pullRecord turns one list entry into a dataset record, fetching what it lacks.
 //
 // The list endpoint carries no line counts, so this reads the pull request itself
@@ -659,6 +756,16 @@ func pullRecord(tgt target, token string, entry listEntry) (pullRequest, error) 
 	}
 
 	reviews, err := pullReviews(tgt, token, entry.Number)
+	if err != nil {
+		return pullRequest{}, err
+	}
+
+	pushedAt, err := headPushedAt(tgt, token, detail.Head.SHA)
+	if err != nil {
+		return pullRequest{}, err
+	}
+
+	comment, err := pullLastComment(tgt, token, entry.Number, entry.User.Login)
 	if err != nil {
 		return pullRequest{}, err
 	}
@@ -688,6 +795,8 @@ func pullRecord(tgt target, token string, entry listEntry) (pullRequest, error) 
 		HeadSHA:        detail.Head.SHA,
 		Checks:         checks,
 		Reviews:        reviews,
+		PushedAt:       pushedAt,
+		LastComment:    comment,
 		Files:          files,
 		FilesTruncated: truncated,
 	}, nil
@@ -729,6 +838,16 @@ func pullOne(tgt target, token string) (pullRequest, error) {
 		return pullRequest{}, err
 	}
 
+	pushedAt, err := headPushedAt(tgt, token, combined.Head.SHA)
+	if err != nil {
+		return pullRequest{}, err
+	}
+
+	comment, err := pullLastComment(tgt, token, combined.Number, combined.User.Login)
+	if err != nil {
+		return pullRequest{}, err
+	}
+
 	labels := make([]string, 0, len(combined.Labels))
 	for _, label := range combined.Labels {
 		labels = append(labels, label.Name)
@@ -751,6 +870,8 @@ func pullOne(tgt target, token string) (pullRequest, error) {
 		HeadSHA:        combined.Head.SHA,
 		Checks:         checks,
 		Reviews:        reviews,
+		PushedAt:       pushedAt,
+		LastComment:    comment,
 		Files:          files,
 		FilesTruncated: truncated,
 	}, nil

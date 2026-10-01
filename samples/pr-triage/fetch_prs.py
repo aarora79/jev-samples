@@ -74,7 +74,11 @@ GH_TOKEN_TIMEOUT_SECONDS: int = 10
 MAX_PATCH_CHARS: int = 40000
 
 # How many recent pull requests to take when the caller names no selector.
-DEFAULT_LIMIT: int = 10
+#
+# Capped rather than generous on purpose. Each pull request costs seven GitHub calls
+# to fetch, so a default that walked a whole queue would spend somebody's rate limit
+# before they had asked for anything. Pass --all when you want the queue.
+DEFAULT_LIMIT: int = 25
 
 DATASET_DIR: pathlib.Path = pathlib.Path(__file__).parent / "data"
 
@@ -373,6 +377,98 @@ def _pull_reviews(
     return {"total": len(decisive), "latest": list(latest.values())}
 
 
+def _is_bot(user: dict) -> bool:
+    """Say whether a comment came from a machine.
+
+    GitHub types a real app account as `Bot`, and some integrations post as an
+    ordinary user instead: `codecov-commenter` is typed `User`. The `[bot]` suffix
+    catches the app accounts, and whatever slips through reaches Jev, which reads
+    a coverage report for what it is.
+
+    Args:
+        user: The `user` object from a comment.
+
+    Returns:
+        True when the account is an app or looks like one.
+    """
+    login = (user or {}).get("login", "")
+    return (user or {}).get("type") == "Bot" or login.endswith("[bot]")
+
+
+def _pull_last_comment(
+    repo: str,
+    number: int,
+    author: str,
+    token: str | None,
+) -> dict:
+    """Find the newest comment on one pull request not written by its author.
+
+    Two calls, because GitHub keeps conversation comments on the issue and inline
+    comments on the pull request, and a reviewer can ask for something in either.
+    Neither endpoint honours a sort parameter, so both come back oldest first and
+    this picks the last.
+
+    The author's own comments are dropped: an author who replies has answered, and
+    what matters is whether somebody else spoke last.
+
+    Args:
+        repo: The repository as `owner/repo`.
+        number: The pull request number.
+        author: The login that opened the pull request.
+        token: Bearer token, or None.
+
+    Returns:
+        The newest such comment as user, created_at and body, or an empty dict.
+    """
+    query = urllib.parse.urlencode({"per_page": PER_PAGE})
+    entries: list[dict] = []
+    for path in (f"issues/{number}/comments", f"pulls/{number}/comments"):
+        batch = _get_json(f"{API_ROOT}/repos/{repo}/{path}?{query}", token)
+        if isinstance(batch, list):
+            entries.extend(batch)
+
+    theirs = [
+        entry
+        for entry in entries
+        if not _is_bot(entry.get("user") or {})
+        and (entry.get("user") or {}).get("login", "") != author
+    ]
+    if not theirs:
+        return {}
+
+    newest = max(theirs, key=lambda entry: entry.get("created_at") or "")
+    return {
+        "user": (newest.get("user") or {}).get("login", ""),
+        "created_at": newest.get("created_at") or "",
+        "body": newest.get("body") or "",
+    }
+
+
+def _head_pushed_at(
+    repo: str,
+    sha: str,
+    token: str | None,
+) -> str:
+    """Read when the head commit was committed.
+
+    The git endpoint rather than the repository one, because that returns the date
+    in 3 KB where the other carries the whole diff in 39 KB. A comment newer than
+    this date is a comment the author has not answered with code.
+
+    Args:
+        repo: The repository as `owner/repo`.
+        sha: The head commit of the pull request.
+        token: Bearer token, or None.
+
+    Returns:
+        An ISO timestamp, or "" when the call gave nothing usable.
+    """
+    commit = _get_json(f"{API_ROOT}/repos/{repo}/git/commits/{sha}", token)
+    if not isinstance(commit, dict):
+        return ""
+    return ((commit.get("committer") or {}).get("date")) or ""
+
+
 def _pull_record(
     repo: str,
     entry: dict,
@@ -400,8 +496,12 @@ def _pull_record(
     return {
         "number": number,
         "head_sha": head_sha,
+        "pushed_at": _head_pushed_at(repo, head_sha, token),
         "checks": _pull_checks(repo, head_sha, token),
         "reviews": _pull_reviews(repo, number, token),
+        "last_comment": _pull_last_comment(
+            repo, number, (entry.get("user") or {}).get("login", ""), token
+        ),
         "title": entry["title"],
         "body": entry.get("body") or "",
         "author": (entry.get("user") or {}).get("login", ""),
@@ -446,8 +546,12 @@ def _pull_one(
     return {
         "number": detail["number"],
         "head_sha": head_sha,
+        "pushed_at": _head_pushed_at(repo, head_sha, token),
         "checks": _pull_checks(repo, head_sha, token),
         "reviews": _pull_reviews(repo, number, token),
+        "last_comment": _pull_last_comment(
+            repo, number, (detail.get("user") or {}).get("login", ""), token
+        ),
         "title": detail["title"],
         "body": detail.get("body") or "",
         "author": (detail.get("user") or {}).get("login", ""),

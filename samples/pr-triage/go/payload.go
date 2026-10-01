@@ -95,6 +95,10 @@ type settings struct {
 	// in whole first, because triage asks how far a change reaches and whether one
 	// edit repeats, and both of those want breadth over depth.
 	MaxDiffChars int `yaml:"max_diff_chars"`
+	// MaxCommentChars caps the newest comment somebody other than the author left.
+	// A long comment that runs past this is still a comment that asks for
+	// something, and the ask is almost always at the top.
+	MaxCommentChars int `yaml:"max_comment_chars"`
 	// InputUSDPerMillion is TypeSafe's published input-token price, which the
 	// reports use to cost a run. Output tokens are counted and not charged.
 	InputUSDPerMillion float64 `yaml:"input_usd_per_million"`
@@ -123,6 +127,7 @@ type wholePayload struct {
 	MaxDescriptionChars int       `yaml:"max_description_chars"`
 	MaxFileListChars    int       `yaml:"max_file_list_chars"`
 	MaxDiffChars        int       `yaml:"max_diff_chars"`
+	MaxCommentChars     int       `yaml:"max_comment_chars"`
 	InputUSDPerMillion  float64   `yaml:"input_usd_per_million"`
 	Questions           yaml.Node `yaml:"questions"`
 }
@@ -167,6 +172,7 @@ func loadPayload(path string) (settings, []spec, error) {
 		MaxDescriptionChars: whole.MaxDescriptionChars,
 		MaxFileListChars:    whole.MaxFileListChars,
 		MaxDiffChars:        whole.MaxDiffChars,
+		MaxCommentChars:     whole.MaxCommentChars,
 		InputUSDPerMillion:  whole.InputUSDPerMillion,
 	}
 	// A switch with no value after it runs the first case whose condition holds,
