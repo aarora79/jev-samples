@@ -83,6 +83,9 @@ type triageReport struct {
 	// StateCounts covers the whole queue, so a job can see how much of it was even
 	// reviewable before any routing happened.
 	StateCounts map[string]int `json:"state_counts"`
+	// StartHere is the pull requests to clear first, in order, so a bot can post the
+	// same list.
+	StartHere []startHereEntry `json:"start_here"`
 	// AwaitingReviewer is who owes a second look, keyed by reviewer.
 	AwaitingReviewer map[string][]int    `json:"awaiting_reviewer"`
 	NotReviewable    []notReviewableJSON `json:"not_reviewable"`
@@ -130,6 +133,31 @@ func awaitingReviewerJSON(pulls []pullRequest) map[string][]int {
 	out := map[string][]int{}
 	for _, load := range awaitingReviewerMap(pulls) {
 		out[load.Reviewer] = load.Numbers
+	}
+	return out
+}
+
+// startHereEntry is one pull request in the start-here list.
+type startHereEntry struct {
+	Number       int    `json:"number"`
+	Title        string `json:"title"`
+	URL          string `json:"url"`
+	Route        string `json:"route"`
+	ChangedFiles int    `json:"changed_files"`
+}
+
+// startHereJSON reduces the picks to what a bot needs to post them.
+func startHereJSON(results []result) []startHereEntry {
+	picks, _ := startHere(results)
+	out := make([]startHereEntry, 0, len(picks))
+	for _, r := range picks {
+		out = append(out, startHereEntry{
+			Number:       r.Pull.Number,
+			Title:        r.Pull.Title,
+			URL:          r.Pull.URL,
+			Route:        r.Route,
+			ChangedFiles: r.Pull.ChangedFiles,
+		})
 	}
 	return out
 }
@@ -229,6 +257,7 @@ func buildReport(data dataset, results []result, specs []spec, set settings, ski
 		TierCounts:       counts,
 		RouteCounts:      routeCounts,
 		StateCounts:      stateCounts,
+		StartHere:        startHereJSON(results),
 		AwaitingReviewer: awaitingReviewerJSON(wholeQueue(results, skipped)),
 		NotReviewable:    notReviewable,
 		CostUSD:          round8(costUSD(results, set)),
@@ -281,6 +310,9 @@ func markdownLines(
 		}
 	}
 	lines = append(lines, summaryNote(len(skipped) > 0, len(results) > 0, fromComment)...)
+
+	lines = append(lines, "", fmt.Sprintf("## Start here: %d to clear first", startHereCount), "")
+	lines = append(lines, startHereLines(results)...)
 
 	lines = append(lines, "", "## Waiting on a reviewer", "")
 	queue := wholeQueue(results, skipped)

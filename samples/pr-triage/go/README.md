@@ -86,7 +86,7 @@ On the eighteen most recent open `apache/airflow` pull requests this skipped ten
 Two files per run, into `-out` (default `./data`), plus the dataset when it fetched one:
 
 - `<repo>-<selector>-triage.json`, every answer as Jev sent it, beside the credit, the effort, the consequence, the route and the size floor, with `route_counts` and `state_counts` rolling the queue up so a job reads its shape without walking every entry
-- `<repo>-<selector>-triage.md`, the summary table, the per-pull-request table and the route sections, ready to paste into a pull request
+- `<repo>-<selector>-triage.md`, the summary table, the start-here list, the per-reviewer table, the per-pull-request table and the route sections, ready to paste into a pull request
 
 Both match the Python sample's reports field for field, and the dataset matches too, so a dataset or report written by either tool reads in the other.
 

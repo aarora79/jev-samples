@@ -152,6 +152,18 @@ ROUTES: tuple[str, ...] = (
     "human-plus-author",
 )
 
+# How many pull requests the start-here block names. Three is a morning, and a
+# longer list stops being a decision about what to do next.
+START_HERE_COUNT: int = 3
+
+# The routes a start-here pick comes from before it settles for a human read. Each of
+# these clears without anybody reading the whole diff.
+START_HERE_ROUTES: tuple[str, ...] = (
+    "green-is-enough",
+    "tests-are-enough",
+    "ai-review-is-enough",
+)
+
 # What consequence buys which route, highest floor first. The cuts come from the
 # cost of being wrong: a change that probably touches auth cannot be waved through
 # on a green tick, whatever else is true of it.
@@ -1512,6 +1524,98 @@ def _print_summary_table(
         print(line)
 
 
+def _read_size(pull: dict) -> tuple[int, int]:
+    """Size a pull request by how long it takes to read, smallest first.
+
+    Files first, because a change spread over twenty paths costs more attention than
+    one long edit in a single file. Lines break the ties, since seven files holding
+    34 changed lines and seven holding 954 are not the same afternoon.
+
+    Args:
+        pull: One pull request record from the dataset.
+
+    Returns:
+        Tuple of (changed files, changed lines).
+    """
+    return pull["changed_files"], pull["additions"] + pull["deletions"]
+
+
+def _start_here(results: list[dict]) -> tuple[list[dict], bool]:
+    """Pick the pull requests to clear first, cheapest evidence and smallest diff.
+
+    A queue tells you what each change needs and still leaves the question of what to
+    do this morning. These are the ones that move with the least work: a green tick,
+    then a test, then an AI review, and inside each route the smallest change first.
+
+    When fewer than START_HERE_COUNT of those exist, the rest of the list comes from
+    the human routes by file count, because the shortest read is the one to start on
+    when every read is unavoidable.
+
+    Args:
+        results: Triage results for the pull requests that reached Jev.
+
+    Returns:
+        Tuple of (picks, settled for a human read).
+    """
+    cheap = sorted(
+        (result for result in results if result["route"] in START_HERE_ROUTES),
+        key=lambda item: (ROUTES.index(item["route"]), *_read_size(item["pull"])),
+    )
+    if len(cheap) >= START_HERE_COUNT:
+        return cheap[:START_HERE_COUNT], False
+
+    rest = sorted(
+        (result for result in results if result["route"] not in START_HERE_ROUTES),
+        key=lambda item: (*_read_size(item["pull"]), ROUTES.index(item["route"])),
+    )
+    wanted = START_HERE_COUNT - len(cheap)
+    return cheap + rest[:wanted], bool(rest[:wanted])
+
+
+def _start_here_lines(results: list[dict]) -> list[str]:
+    """Build the start-here block, which both outputs print under the summary.
+
+    Args:
+        results: Triage results for the pull requests that reached Jev.
+
+    Returns:
+        Lines, without trailing newlines.
+    """
+    picks, settled = _start_here(results)
+    if not picks:
+        return ["Nothing reached a route, so there is nothing to start on."]
+
+    lines = []
+    for position, result in enumerate(picks, start=1):
+        pull = result["pull"]
+        lines.append(
+            f"{position}. #{pull['number']}  {result['route']}  "
+            f"{_plural(pull['changed_files'], 'file')}, "
+            f"+{pull['additions']}/-{pull['deletions']}  {ROUTE_ADVICE[result['route']]}"
+        )
+        lines.append(f"   {pull['title']}")
+
+    if settled:
+        lines += [
+            "",
+            (
+                "Nothing on this queue clears without a person, so the list falls back to the "
+                "shortest reads."
+            ),
+        ]
+    return lines
+
+
+def _print_start_here(results: list[dict]) -> None:
+    """Print the start-here block.
+
+    Args:
+        results: Triage results for the pull requests that reached Jev.
+    """
+    for line in _start_here_lines(results):
+        print(line)
+
+
 def _print_triage_table(results: list[dict]) -> None:
     """Print one row per pull request, heaviest first.
 
@@ -1797,6 +1901,17 @@ def _write_report(
             for state in PRE_TRIAGE_STATES
         }
         | {"reviewable": len(results)},
+        # The pull requests to clear first, in order, so a bot can post the same list.
+        "start_here": [
+            {
+                "number": result["pull"]["number"],
+                "title": result["pull"]["title"],
+                "url": result["pull"]["url"],
+                "route": result["route"],
+                "changed_files": result["pull"]["changed_files"],
+            }
+            for result in _start_here(results)[0]
+        ],
         # Who owes a second look, keyed by reviewer, so a bot can go and ask them.
         "awaiting_reviewer": _awaiting_reviewer_map(
             [result["pull"] for result in results] + [entry["pull"] for entry in (skipped or [])]
@@ -1916,6 +2031,10 @@ def _markdown_lines(
         *_summary_note(
             bool(skipped), bool(results), any(e.get("route_if_answered") for e in skipped)
         ),
+        "",
+        f"## Start here: {START_HERE_COUNT} to clear first",
+        "",
+        *_start_here_lines(results),
         "",
         "## Waiting on a reviewer",
         "",
@@ -2133,6 +2252,9 @@ def triage(
 
     print(f"\n## Triage: {repo}, {_plural(len(pulls), 'pull request')}\n")
     _print_summary_table(results, skipped)
+
+    print(f"\n### Start here: {START_HERE_COUNT} to clear first\n")
+    _print_start_here(results)
 
     print("\n### Waiting on a reviewer\n")
     _print_rereview_table(pulls, skipped)
