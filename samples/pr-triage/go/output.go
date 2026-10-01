@@ -18,6 +18,11 @@ import (
 // that reached Jev.
 var summaryHeader = []string{"Outcome", "Count", "Pull requests"}
 
+// rereviewHeader names the columns of the re-review table: who owes a second look.
+// A reviewer asked for changes and the author has pushed since, so the pull request
+// is back in that reviewer's court and nobody else can clear it.
+var rereviewHeader = []string{"Reviewer", "Waiting", "Pull requests"}
+
 // summaryNumbersShown is how many numbers the summary names per row before it stops
 // listing them. A queue with ninety pull requests on one route would otherwise
 // print a cell nobody reads.
@@ -95,6 +100,154 @@ func awaitingAuthor(pull pullRequest) (bool, string) {
 	}
 
 	return true, fmt.Sprintf("changes requested by %s, and no commits since", strings.Join(names, ", "))
+}
+
+// wholeQueue puts the routed and the skipped pull requests back together, which is
+// what the re-review table reads: a reviewer is owed a look whether or not the pull
+// request also stopped at pre-triage.
+func wholeQueue(results []result, skipped []notReviewable) []pullRequest {
+	queue := make([]pullRequest, 0, len(results)+len(skipped))
+	for _, r := range results {
+		queue = append(queue, r.Pull)
+	}
+	for _, entry := range skipped {
+		queue = append(queue, entry.Pull)
+	}
+	return queue
+}
+
+// awaitingReviewer names the reviewers who asked for changes the author has since
+// answered.
+//
+// The mirror of awaitingAuthor, off the same two fields. A change request judged
+// against an older commit than the head means the author has pushed, so the pull
+// request is back with that reviewer and nobody else can clear it.
+//
+// Only CHANGES_REQUESTED counts. A COMMENTED review does not block a merge and
+// never reaches the dataset, and an approval or a dismissal owes nothing.
+func awaitingReviewer(pull pullRequest) []string {
+	if pull.HeadSHA == "" {
+		return nil
+	}
+
+	var owed []string
+	for _, verdict := range pull.Reviews.Latest {
+		if verdict.State != "CHANGES_REQUESTED" || verdict.CommitID == pull.HeadSHA {
+			continue
+		}
+		who := verdict.User
+		if who == "" {
+			who = "a reviewer"
+		}
+		owed = append(owed, who)
+	}
+	return owed
+}
+
+// reviewerLoad is one reviewer and the pull requests waiting on them.
+type reviewerLoad struct {
+	Reviewer string
+	Numbers  []int
+}
+
+// awaitingReviewerMap groups the pull requests owing a second look by the reviewer
+// who owes it, busiest reviewer first.
+//
+// Ties fall back to the login, so two runs over one dataset print the same order.
+// Both the table and the JSON report read this, so the grouping lives in one place.
+func awaitingReviewerMap(pulls []pullRequest) []reviewerLoad {
+	index := map[string]int{}
+	var loads []reviewerLoad
+	for _, pull := range pulls {
+		for _, reviewer := range awaitingReviewer(pull) {
+			at, found := index[reviewer]
+			if !found {
+				index[reviewer] = len(loads)
+				loads = append(loads, reviewerLoad{Reviewer: reviewer})
+				at = len(loads) - 1
+			}
+			loads[at].Numbers = append(loads[at].Numbers, pull.Number)
+		}
+	}
+
+	sort.SliceStable(loads, func(i, j int) bool {
+		if len(loads[i].Numbers) != len(loads[j].Numbers) {
+			return len(loads[i].Numbers) > len(loads[j].Numbers)
+		}
+		return loads[i].Reviewer < loads[j].Reviewer
+	})
+
+	// Oldest pull request first inside each row, which is the order a reviewer should
+	// work through, and it makes the row independent of the order the caller passed.
+	for index := range loads {
+		sort.Ints(loads[index].Numbers)
+	}
+	return loads
+}
+
+// rereviewRows builds the re-review table, one row per reviewer who owes a look.
+func rereviewRows(pulls []pullRequest) [][]string {
+	loads := awaitingReviewerMap(pulls)
+	rows := make([][]string, 0, len(loads))
+	for _, load := range loads {
+		rows = append(rows, []string{
+			load.Reviewer, fmt.Sprintf("%d", len(load.Numbers)), summaryNumbersOf(load.Numbers),
+		})
+	}
+	return rows
+}
+
+// rereviewNote says what the re-review table means, and which of its rows cannot
+// move yet.
+//
+// A pull request can be waiting on a reviewer and held up by its own build at the
+// same time. Saying so stops a reviewer opening something that cannot merge
+// whatever they decide.
+func rereviewNote(pulls []pullRequest, skipped []notReviewable) []string {
+	held := map[int]bool{}
+	for _, entry := range skipped {
+		held[entry.Pull.Number] = true
+	}
+
+	var blocked []int
+	for _, pull := range pulls {
+		if len(awaitingReviewer(pull)) > 0 && held[pull.Number] {
+			blocked = append(blocked, pull.Number)
+		}
+	}
+
+	lines := []string{
+		"",
+		"Each of these asked for changes and the author has pushed since, so the pull " +
+			"request is back with that reviewer, oldest first.",
+	}
+	if len(blocked) > 0 {
+		sort.Sort(sort.Reverse(sort.IntSlice(blocked)))
+		named := make([]string, 0, len(blocked))
+		for _, number := range blocked {
+			named = append(named, fmt.Sprintf("#%d", number))
+		}
+		lines = append(lines, fmt.Sprintf(
+			"%d of them cannot merge yet whatever the reviewer decides, being held up by a "+
+				"state above: %s.",
+			len(blocked), strings.Join(named, ", "),
+		))
+	}
+	return lines
+}
+
+// printRereviewTable prints the re-review table, or says nobody is owed one.
+func printRereviewTable(pulls []pullRequest, skipped []notReviewable) {
+	rows := rereviewRows(pulls)
+	if len(rows) == 0 {
+		fmt.Println("No reviewer is owed a second look: every change request is unanswered.")
+		return
+	}
+
+	printPadded(rereviewHeader, rows)
+	for _, line := range rereviewNote(pulls, skipped) {
+		fmt.Println(line)
+	}
 }
 
 // preTriageState says whether a pull request is in no condition to be triaged.
@@ -258,6 +411,10 @@ func triage(opts options, data dataset, set settings, specs []spec, key string) 
 	for _, line := range summaryNote(len(skipped) > 0, len(results) > 0) {
 		fmt.Println(line)
 	}
+
+	fmt.Printf("\n### Waiting on a reviewer\n\n")
+	printRereviewTable(data.PullRequests, skipped)
+
 	if len(results) == 0 {
 		fmt.Println("\nNothing reached Jev, so there is no route to report.")
 		printNotReviewable(skipped, len(data.PullRequests))
@@ -381,16 +538,26 @@ func triageRows(results []result) [][]string {
 // summaryNumbers names the pull requests in one summary row, stopping before the
 // cell is unreadable.
 func summaryNumbers(pulls []pullRequest) string {
-	numbers := make([]string, 0, len(pulls))
+	numbers := make([]int, 0, len(pulls))
 	for _, pull := range pulls {
-		numbers = append(numbers, fmt.Sprintf("#%d", pull.Number))
+		numbers = append(numbers, pull.Number)
 	}
-	if len(numbers) <= summaryNumbersShown {
-		return strings.Join(numbers, ", ")
+	return summaryNumbersOf(numbers)
+}
+
+// summaryNumbersOf is the same for a row already reduced to numbers, which is what
+// the re-review table carries.
+func summaryNumbersOf(numbers []int) string {
+	named := make([]string, 0, len(numbers))
+	for _, number := range numbers {
+		named = append(named, fmt.Sprintf("#%d", number))
+	}
+	if len(named) <= summaryNumbersShown {
+		return strings.Join(named, ", ")
 	}
 	return fmt.Sprintf(
 		"%s, and %d more",
-		strings.Join(numbers[:summaryNumbersShown], ", "), len(numbers)-summaryNumbersShown,
+		strings.Join(named[:summaryNumbersShown], ", "), len(named)-summaryNumbersShown,
 	)
 }
 

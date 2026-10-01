@@ -80,10 +80,12 @@ type triageReport struct {
 	RouteCounts map[string]int `json:"route_counts"`
 	// StateCounts covers the whole queue, so a job can see how much of it was even
 	// reviewable before any routing happened.
-	StateCounts   map[string]int      `json:"state_counts"`
-	NotReviewable []notReviewableJSON `json:"not_reviewable"`
-	CostUSD       float64             `json:"cost_usd"`
-	PullRequests  []pullReport        `json:"pull_requests"`
+	StateCounts map[string]int `json:"state_counts"`
+	// AwaitingReviewer is who owes a second look, keyed by reviewer.
+	AwaitingReviewer map[string][]int    `json:"awaiting_reviewer"`
+	NotReviewable    []notReviewableJSON `json:"not_reviewable"`
+	CostUSD          float64             `json:"cost_usd"`
+	PullRequests     []pullReport        `json:"pull_requests"`
 }
 
 // writeReports writes both files and returns their paths.
@@ -112,6 +114,17 @@ func writeReports(
 		return "", "", fmt.Errorf("writing %s: %w", mdPath, err)
 	}
 	return jsonPath, mdPath, nil
+}
+
+// awaitingReviewerJSON reduces the grouping to a plain map for the report. Go
+// marshals map keys in sorted order, so the file stays stable between runs even
+// though the table orders by load.
+func awaitingReviewerJSON(pulls []pullRequest) map[string][]int {
+	out := map[string][]int{}
+	for _, load := range awaitingReviewerMap(pulls) {
+		out[load.Reviewer] = load.Numbers
+	}
+	return out
 }
 
 // buildReport assembles the JSON report.
@@ -200,17 +213,18 @@ func buildReport(data dataset, results []result, specs []spec, set settings, ski
 	}
 
 	return triageReport{
-		Repo:           data.Repo,
-		Selector:       data.Selector,
-		TriagedAt:      time.Now().UTC().Format(time.RFC3339),
-		Model:          set.Model,
-		QuestionsAsked: len(specs),
-		TierCounts:     counts,
-		RouteCounts:    routeCounts,
-		StateCounts:    stateCounts,
-		NotReviewable:  notReviewable,
-		CostUSD:        round8(costUSD(results, set)),
-		PullRequests:   pulls,
+		Repo:             data.Repo,
+		Selector:         data.Selector,
+		TriagedAt:        time.Now().UTC().Format(time.RFC3339),
+		Model:            set.Model,
+		QuestionsAsked:   len(specs),
+		TierCounts:       counts,
+		RouteCounts:      routeCounts,
+		StateCounts:      stateCounts,
+		AwaitingReviewer: awaitingReviewerJSON(wholeQueue(results, skipped)),
+		NotReviewable:    notReviewable,
+		CostUSD:          round8(costUSD(results, set)),
+		PullRequests:     pulls,
 	}
 }
 
@@ -250,6 +264,16 @@ func markdownLines(
 	}
 	lines = append(lines, paddedLines(summaryHeader, summaryRows(results, skipped))...)
 	lines = append(lines, summaryNote(len(skipped) > 0, len(results) > 0)...)
+
+	lines = append(lines, "", "## Waiting on a reviewer", "")
+	queue := wholeQueue(results, skipped)
+	if rows := rereviewRows(queue); len(rows) > 0 {
+		lines = append(lines, paddedLines(rereviewHeader, rows)...)
+		lines = append(lines, rereviewNote(queue, skipped)...)
+	} else {
+		lines = append(lines,
+			"No reviewer is owed a second look: every change request is unanswered.")
+	}
 
 	if len(results) > 0 {
 		lines = append(lines,

@@ -221,6 +221,15 @@ SUMMARY_HEADER: list[str] = [
     "Pull requests",
 ]
 
+# The re-review table: who owes a second look. A reviewer asked for changes and the
+# author has pushed since, so the pull request is back in that reviewer's court and
+# nobody else can clear it.
+REREVIEW_HEADER: list[str] = [
+    "Reviewer",
+    "Waiting",
+    "Pull requests",
+]
+
 # How many numbers the summary names per row before it stops listing them. A queue
 # with ninety pull requests on one route would otherwise print a cell nobody reads.
 SUMMARY_NUMBERS_SHOWN: int = 12
@@ -672,6 +681,130 @@ def _awaiting_author(pull: dict) -> tuple[bool, str]:
     return True, f"changes requested by {names}, and no commits since"
 
 
+def _awaiting_reviewer(pull: dict) -> list[str]:
+    """Name the reviewers who asked for changes that the author has since answered.
+
+    The mirror of `_awaiting_author`, off the same two fields. A change request
+    judged against an older commit than the head means the author has pushed, so
+    the pull request is back with that reviewer and nobody else can clear it.
+
+    Only CHANGES_REQUESTED counts. A COMMENTED review does not block a merge and
+    never reaches the dataset, and an approval or a dismissal owes nothing.
+
+    Args:
+        pull: One pull request record from the dataset.
+
+    Returns:
+        Reviewer logins, in the order the fetcher recorded them.
+    """
+    head = pull.get("head_sha") or ""
+    if not head:
+        return []
+
+    return [
+        entry.get("user") or "a reviewer"
+        for entry in (pull.get("reviews") or {}).get("latest") or []
+        if entry.get("state") == "CHANGES_REQUESTED" and entry.get("commit_id") != head
+    ]
+
+
+def _awaiting_reviewer_map(pulls: list[dict]) -> dict[str, list[int]]:
+    """Group the pull requests owing a second look by the reviewer who owes it.
+
+    Both the table and the JSON report read this, so the grouping lives in one
+    place.
+
+    Args:
+        pulls: Every pull request in the dataset, routed or not.
+
+    Returns:
+        Pull request numbers per reviewer, busiest reviewer first.
+    """
+    owed: dict[str, list[int]] = {}
+    for pull in pulls:
+        for reviewer in _awaiting_reviewer(pull):
+            owed.setdefault(reviewer, []).append(pull["number"])
+
+    # Oldest pull request first inside each row, which is the order a reviewer should
+    # work through, and it makes the row independent of the order the caller passed.
+    ordered = sorted(owed.items(), key=lambda item: (-len(item[1]), item[0]))
+    return {reviewer: sorted(numbers) for reviewer, numbers in ordered}
+
+
+def _rereview_rows(pulls: list[dict]) -> list[list[str]]:
+    """Build the re-review table: one row per reviewer who owes a second look.
+
+    Busiest reviewer first, because that is the person to go and ask. Ties fall
+    back to the login so two runs of one dataset print the same order.
+
+    Args:
+        pulls: Every pull request in the dataset, routed or not.
+
+    Returns:
+        Cells per row, matching REREVIEW_HEADER.
+    """
+    return [
+        [reviewer, str(len(numbers)), _summary_numbers(numbers)]
+        for reviewer, numbers in _awaiting_reviewer_map(pulls).items()
+    ]
+
+
+def _rereview_note(
+    pulls: list[dict],
+    skipped: list[dict],
+) -> list[str]:
+    """Say what the re-review table means, and which of its rows cannot move yet.
+
+    A pull request can be waiting on a reviewer and held up by its own build at the
+    same time. Saying so stops a reviewer opening something that cannot merge
+    whatever they decide.
+
+    Args:
+        pulls: Every pull request in the dataset.
+        skipped: Entries from the pre-triage pass, each with a state.
+
+    Returns:
+        A blank line, then the note.
+    """
+    waiting = {pull["number"] for pull in pulls if _awaiting_reviewer(pull)}
+    blocked = {entry["pull"]["number"] for entry in skipped} & waiting
+
+    lines = [
+        "",
+        (
+            "Each of these asked for changes and the author has pushed since, so the pull "
+            "request is back with that reviewer, oldest first."
+        ),
+    ]
+    if blocked:
+        named = ", ".join(f"#{number}" for number in sorted(blocked, reverse=True))
+        lines.append(
+            f"{len(blocked)} of them cannot merge yet whatever the reviewer decides, "
+            f"being held up by a state above: {named}."
+        )
+    return lines
+
+
+def _print_rereview_table(
+    pulls: list[dict],
+    skipped: list[dict],
+) -> None:
+    """Print the re-review table, or say that nobody is owed one.
+
+    Args:
+        pulls: Every pull request in the dataset.
+        skipped: Entries from the pre-triage pass, each with a state.
+    """
+    rows = _rereview_rows(pulls)
+    if not rows:
+        print("No reviewer is owed a second look: every change request is unanswered.")
+        return
+
+    _print_padded(REREVIEW_HEADER, rows)
+    for line in _rereview_note(pulls, skipped):
+        print(line)
+
+
 def _pre_triage_state(pull: dict) -> tuple[str, str]:
     """Say whether a pull request is in no condition to be triaged, and why.
 
@@ -1069,21 +1202,21 @@ def _triage_row(result: dict) -> list[str]:
     ]
 
 
-def _summary_numbers(pulls: list[dict]) -> str:
-    """Name the pull requests in one summary row, stopping before the cell is unreadable.
+def _summary_numbers(numbers: list[int]) -> str:
+    """Name the pull requests in one table row, stopping before the cell is unreadable.
 
     Args:
-        pulls: The pull request records in this row, already in the order to read them.
+        numbers: The pull request numbers in this row, already in the order to read them.
 
     Returns:
         Their numbers, comma separated, with a count of any left unnamed.
     """
-    numbers = [f"#{pull['number']}" for pull in pulls]
-    if len(numbers) <= SUMMARY_NUMBERS_SHOWN:
-        return ", ".join(numbers)
+    named = [f"#{number}" for number in numbers]
+    if len(named) <= SUMMARY_NUMBERS_SHOWN:
+        return ", ".join(named)
 
-    shown = numbers[:SUMMARY_NUMBERS_SHOWN]
-    return ", ".join(shown) + f", and {len(numbers) - SUMMARY_NUMBERS_SHOWN} more"
+    shown = named[:SUMMARY_NUMBERS_SHOWN]
+    return ", ".join(shown) + f", and {len(named) - SUMMARY_NUMBERS_SHOWN} more"
 
 
 def _summary_rows(
@@ -1106,8 +1239,8 @@ def _summary_rows(
     for state in PRE_TRIAGE_STATES:
         members = [entry for entry in skipped if entry["state"] == state]
         if members:
-            pulls = [entry["pull"] for entry in members]
-            rows.append([state, str(len(members)), _summary_numbers(pulls)])
+            numbers = [entry["pull"]["number"] for entry in members]
+            rows.append([state, str(len(members)), _summary_numbers(numbers)])
 
     for route in ROUTES:
         members = sorted(
@@ -1116,8 +1249,8 @@ def _summary_rows(
             reverse=True,
         )
         if members:
-            pulls = [result["pull"] for result in members]
-            rows.append([route, str(len(members)), _summary_numbers(pulls)])
+            numbers = [result["pull"]["number"] for result in members]
+            rows.append([route, str(len(members)), _summary_numbers(numbers)])
 
     return rows
 
@@ -1451,6 +1584,10 @@ def _write_report(
             for state in PRE_TRIAGE_STATES
         }
         | {"reviewable": len(results)},
+        # Who owes a second look, keyed by reviewer, so a bot can go and ask them.
+        "awaiting_reviewer": _awaiting_reviewer_map(
+            [result["pull"] for result in results] + [entry["pull"] for entry in (skipped or [])]
+        ),
         "not_reviewable": [
             {
                 "number": entry["pull"]["number"],
@@ -1557,7 +1694,20 @@ def _markdown_lines(
         "",
         *_padded_lines(SUMMARY_HEADER, _summary_rows(results, skipped)),
         *_summary_note(bool(skipped), bool(results)),
+        "",
+        "## Waiting on a reviewer",
+        "",
     ]
+
+    pulls = [result["pull"] for result in results] + [entry["pull"] for entry in skipped]
+    rereview = _rereview_rows(pulls)
+    if rereview:
+        lines += [
+            *_padded_lines(REREVIEW_HEADER, rereview),
+            *_rereview_note(pulls, skipped),
+        ]
+    else:
+        lines.append("No reviewer is owed a second look: every change request is unanswered.")
 
     if results:
         lines += [
@@ -1749,6 +1899,10 @@ def triage(
 
     print(f"\n## Triage: {repo}, {_plural(len(pulls), 'pull request')}\n")
     _print_summary_table(results, skipped)
+
+    print("\n### Waiting on a reviewer\n")
+    _print_rereview_table(pulls, skipped)
+
     if not results:
         print("\nNothing reached Jev, so there is no route to report.")
         _print_not_reviewable(skipped, len(pulls))
