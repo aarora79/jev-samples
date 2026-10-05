@@ -822,7 +822,7 @@ def _evaluate_member(
     # metrics then score every ranker on the same fair candidate set.
     natural = _shortlist(profile, rated - {target}, before, movies, index, size)
     retrieved = any(c["id"] == target for c in natural)
-    rng = random.Random(f"{context['seed']}-{user_id}")
+    rng = random.Random(f"{context['seed']}-{user_id}")  # nosec B311 - seeded for reproducibility, not security
     negatives = _sampled_negatives(rated, before, movies, index, size - 1, rng)
     shortlist = [
         _candidate(movie_id, profile, before, movies, index) for movie_id in negatives + [target]
@@ -1328,7 +1328,8 @@ def evaluate(
     if not baselines_only:
         _require_api_key()
     movies, timelines, index = _load_catalog()
-    sample = sorted(random.Random(seed).sample(sorted(timelines), min(users, len(timelines))))
+    rng = random.Random(seed)  # nosec B311 - seeded for reproducibility, not security
+    sample = sorted(rng.sample(sorted(timelines), min(users, len(timelines))))
     if explain is not None and explain in timelines and explain not in sample:
         sample.append(explain)
     context = {
