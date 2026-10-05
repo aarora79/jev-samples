@@ -55,6 +55,25 @@ REPORT_DECIMALS: int = 4
 # Hit rate is reported at these cutoffs.
 HIT_AT: tuple[int, ...] = (1, 5)
 
+# The JSON report keeps this many members in full, chosen to span the headline
+# ranker's reciprocal rank from best to worst. Every other ranked member keeps
+# one line in the reciprocal-rank table, which is all the metrics rest on.
+REPORT_EXAMPLES: int = 5
+
+# The paired bootstrap measures the headline Jev ranker against this free one,
+# the ranker that reads the same genres Jev sees.
+BOOTSTRAP_BASELINE: str = "genre match"
+
+# Resamples, seed and tail for the bootstrap. 0.025 on each side gives a 95%
+# interval, and the fixed seed lets anyone recompute it from a saved report.
+BOOTSTRAP_RESAMPLES: int = 10_000
+BOOTSTRAP_SEED: int = 0
+BOOTSTRAP_TAIL: float = 0.025
+
+# Two reciprocal ranks closer than this count as a tie when the bootstrap counts
+# the members a ranker did better and worse for.
+BOOTSTRAP_TOLERANCE: float = 1e-9
+
 
 def _sampled_negatives(
     excluded: set[int],
@@ -509,27 +528,18 @@ def _rounded(candidate: dict) -> dict:
     }
 
 
-def _write_reports(
-    stem: str,
-    results: list[dict],
-    lines: list[str],
-    settings: dict,
-) -> tuple[pathlib.Path, pathlib.Path]:
-    """Write every answer as Jev sent it as JSON, and the printed tables as markdown.
+def _report_rows(results: list[dict]) -> list[dict]:
+    """Turn every result into the row the JSON report stores.
+
+    Per-ranker scores stay out: the free ones follow from each shortlist entry,
+    and the Jev ones are the probabilities under `jev`.
 
     Args:
-        stem: The file stem.
         results: Every result, ranked or not.
-        lines: The markdown already printed.
-        settings: Settings from questions.yml.
 
     Returns:
-        Tuple of (JSON path, markdown path).
+        One row per result, with the shortlist rounded and Jev's answer as JSON.
     """
-    REPORT_DIR.mkdir(exist_ok=True)
-    # Per-ranker scores stay out: the free ones follow from each shortlist entry,
-    # and the Jev ones are the probabilities under `jev`. Keeping them tripled the
-    # file without adding a number nobody could rebuild.
     skipped = ("history", "response", "scores")
     rows = []
     for result in results:
@@ -539,19 +549,227 @@ def _write_reports(
         if result.get("response"):
             row["jev"] = result["response"].model_dump(mode="json")
         rows.append(row)
-    ranked = [result for result in results if result["outcome"] == "ranked"]
-    report = {
-        "evaluated_at": datetime.datetime.now(datetime.UTC).isoformat(timespec="seconds"),
-        "model": settings["model"],
-        "dataset": "MovieLens ml-latest-small (GroupLens, University of Minnesota)",
-        "metrics": [dict(zip(_metric_header(), row)) for row in _metric_rows(ranked)],
-        "results": rows,
+    return rows
+
+
+def _headline_ranker(names: list[str]) -> str:
+    """Name the ranker the report leads with: the first Jev one, else the baseline.
+
+    Args:
+        names: Ranker names in table order.
+
+    Returns:
+        `jev next_watch` for the shipped questions.yml, or BOOTSTRAP_BASELINE
+        when Jev did not rank.
+    """
+    return next((name for name in names if name.startswith("jev ")), BOOTSTRAP_BASELINE)
+
+
+def _reciprocal_ranks(rows: list[dict]) -> dict[str, dict[str, float]]:
+    """Collect every ranked member's reciprocal rank under every ranker.
+
+    Args:
+        rows: Every report row, in run order.
+
+    Returns:
+        Reciprocal ranks keyed by member id as text, then by ranker, rounded to
+        REPORT_DECIMALS places, in run order.
+    """
+    return {
+        str(row["user"]): {
+            name: round(values["rr"], REPORT_DECIMALS) for name, values in row["rankers"].items()
+        }
+        for row in rows
+        if row["outcome"] == "ranked"
     }
+
+
+def _paired_bootstrap(
+    ranks: dict[str, dict[str, float]],
+    ranker: str,
+    baseline: str,
+) -> dict:
+    """Resample members to put an interval on one ranker's MRR lead over another.
+
+    Each resample draws as many members as ranked, with replacement, and
+    averages the per-member difference in reciprocal rank. The interval is the
+    middle 95% of those means.
+
+    Args:
+        ranks: The reciprocal-rank table from _reciprocal_ranks, in run order.
+        ranker: The ranker to measure.
+        baseline: The ranker to measure it against.
+
+    Returns:
+        The difference in MRR, its 95% interval, and how many members the ranker
+        did better and worse for.
+    """
+    diff = [row[ranker] - row[baseline] for row in ranks.values()]
+    n = len(diff)
+    rng = random.Random(BOOTSTRAP_SEED)  # nosec B311 - seeded for reproducibility, not security
+    means = sorted(
+        sum(diff[rng.randrange(n)] for _ in range(n)) / n for _ in range(BOOTSTRAP_RESAMPLES)
+    )
+    low = means[round(BOOTSTRAP_TAIL * BOOTSTRAP_RESAMPLES)]
+    high = means[round((1 - BOOTSTRAP_TAIL) * BOOTSTRAP_RESAMPLES)]
+    return {
+        "ranker": ranker,
+        "baseline": baseline,
+        "members": n,
+        "resamples": BOOTSTRAP_RESAMPLES,
+        "seed": BOOTSTRAP_SEED,
+        "mrr_difference": round(sum(diff) / n, REPORT_DECIMALS),
+        "interval_95": [round(low, REPORT_DECIMALS), round(high, REPORT_DECIMALS)],
+        "better": sum(1 for value in diff if value > BOOTSTRAP_TOLERANCE),
+        "worse": sum(1 for value in diff if value < -BOOTSTRAP_TOLERANCE),
+    }
+
+
+def _bootstrap_line(bootstrap: dict) -> str:
+    """Say what the paired bootstrap found, in one line.
+
+    Args:
+        bootstrap: The dict _paired_bootstrap returns.
+
+    Returns:
+        The line the evaluation prints and `--bootstrap` reprints.
+    """
+    low, high = bootstrap["interval_95"]
+    return (
+        f"Paired bootstrap of {bootstrap['ranker']} against {bootstrap['baseline']} over "
+        f"{_plural(bootstrap['members'], 'member')}, {bootstrap['resamples']:,} resamples: "
+        f"MRR difference {bootstrap['mrr_difference']:+.3f}, 95% interval {low:+.3f} to "
+        f"{high:+.3f}. {bootstrap['ranker']} ranked the hidden title higher for "
+        f"{_plural(bootstrap['better'], 'member')} and lower for {bootstrap['worse']}."
+    )
+
+
+def _example_results(rows: list[dict]) -> list[dict]:
+    """Pick the members the JSON report keeps in full.
+
+    The rule: sort ranked members by the headline ranker's reciprocal rank, best
+    first, ties broken by member id, and take REPORT_EXAMPLES positions at even
+    steps from the first to the last.
+
+    Args:
+        rows: Every report row, ranked or not.
+
+    Returns:
+        The chosen rows, best rank first, or an empty list when nobody ranked.
+    """
+    ranked = [row for row in rows if row["outcome"] == "ranked"]
+    if not ranked:
+        return []
+    headline = _headline_ranker(list(ranked[0]["rankers"]))
+    order = sorted(ranked, key=lambda row: (-row["rankers"][headline]["rr"], row["user"]))
+    k = min(REPORT_EXAMPLES, len(order))
+    if k == 1:
+        return order[:1]
+    return [order[round(i * (len(order) - 1) / (k - 1))] for i in range(k)]
+
+
+def _trim_report(report: dict) -> dict:
+    """Cut a full report down to the shape the repo commits.
+
+    Five members in full show what an answer looks like. The reciprocal-rank
+    table keeps every number the metric table and the bootstrap rest on, so
+    anyone can check both from the file alone.
+
+    Args:
+        report: The full report: evaluated_at, model, dataset, metrics, and one
+            row per sampled member under `results`.
+
+    Returns:
+        The trimmed report, with results_shown and results_total saying how
+        much of the run the full entries cover.
+    """
+    ranks = _reciprocal_ranks(report["results"])
+    headline = _headline_ranker(list(next(iter(ranks.values()), {})))
+    bootstrap = None
+    if ranks and headline != BOOTSTRAP_BASELINE:
+        bootstrap = _paired_bootstrap(ranks, headline, BOOTSTRAP_BASELINE)
+    examples = _example_results(report["results"])
+    return {
+        "evaluated_at": report["evaluated_at"],
+        "model": report["model"],
+        "dataset": report["dataset"],
+        "metrics": report["metrics"],
+        "bootstrap": bootstrap,
+        "results_shown": len(examples),
+        "results_total": len(report["results"]),
+        "results": examples,
+        "reciprocal_ranks": ranks,
+    }
+
+
+def _report_text(report: dict) -> str:
+    """Serialize a report the one way both a live run and a regeneration write it.
+
+    Args:
+        report: The trimmed report.
+
+    Returns:
+        Indented JSON with a trailing newline.
+    """
+    return json.dumps(report, indent=2, default=str) + "\n"
+
+
+def _write_reports(
+    stem: str,
+    report: dict,
+    lines: list[str],
+) -> tuple[pathlib.Path, pathlib.Path]:
+    """Write the trimmed report as JSON, and the printed tables as markdown.
+
+    Args:
+        stem: The file stem.
+        report: The trimmed report from _trim_report.
+        lines: The markdown already printed.
+
+    Returns:
+        Tuple of (JSON path, markdown path).
+    """
+    REPORT_DIR.mkdir(exist_ok=True)
     json_path = REPORT_DIR / f"{stem}.json"
-    json_path.write_text(json.dumps(report, indent=2, default=str) + "\n", encoding="utf-8")
+    json_path.write_text(_report_text(report), encoding="utf-8")
     md_path = REPORT_DIR / f"{stem}.md"
     md_path.write_text("\n".join(lines) + "\n", encoding="utf-8")
     return json_path, md_path
+
+
+def _summary_lines(
+    results: list[dict],
+    ranked: list[dict],
+    seed: int,
+    report: dict,
+    context: dict,
+) -> list[str]:
+    """Build the metric table, its notes, the cost line and the bootstrap line.
+
+    Args:
+        results: Every result, ranked or not.
+        ranked: Results whose outcome is "ranked".
+        seed: The sampling seed.
+        report: The trimmed report, which holds the bootstrap.
+        context: Settings and specs for the run.
+
+    Returns:
+        Lines to print and to write as markdown.
+    """
+    counts: dict[str, int] = {}
+    for result in results:
+        counts[result["outcome"]] = counts.get(result["outcome"], 0) + 1
+    lines = [
+        f"## next-watch: {len(ranked)} of {len(results)} sampled members ranked, seed {seed}\n",
+        *padded_lines(_metric_header(), _metric_rows(ranked)),
+        "",
+        *_metric_notes(ranked, counts),
+        "",
+        _cost_line(ranked, context["specs"], context["settings"]),
+    ]
+    if report["bootstrap"] is not None:
+        lines += ["", _bootstrap_line(report["bootstrap"])]
+    return lines
 
 
 def _report(
@@ -574,10 +792,6 @@ def _report(
         verbose: Print the raw JSON Jev returned for every member.
         context: Movies, settings and specs for the run.
     """
-    settings, specs = context["settings"], context["specs"]
-    counts: dict[str, int] = {}
-    for result in results:
-        counts[result["outcome"]] = counts.get(result["outcome"], 0) + 1
     ranked = [result for result in results if result["outcome"] == "ranked"]
     if not ranked:
         sys.exit("No sampled member had enough history to rank. Try a larger --users.")
@@ -588,22 +802,23 @@ def _report(
                 print(f"\nRaw response for member {result['user']}:")
                 print(json.dumps(result["response"].model_dump(mode="json"), indent=2))
 
-    lines = [
-        f"## next-watch: {len(ranked)} of {len(results)} sampled members ranked, seed {seed}\n",
-        *padded_lines(_metric_header(), _metric_rows(ranked)),
-        "",
-        *_metric_notes(ranked, counts),
-        "",
-        _cost_line(ranked, specs, settings),
-    ]
+    report = _trim_report(
+        {
+            "evaluated_at": datetime.datetime.now(datetime.UTC).isoformat(timespec="seconds"),
+            "model": context["settings"]["model"],
+            "dataset": "MovieLens ml-latest-small (GroupLens, University of Minnesota)",
+            "metrics": [dict(zip(_metric_header(), row)) for row in _metric_rows(ranked)],
+            "results": _report_rows(results),
+        }
+    )
+    lines = _summary_lines(results, ranked, seed, report, context)
     if explain is not None:
-        lines += _explain_or_why(explain, results, context["movies"], settings)
+        lines += _explain_or_why(explain, results, context["movies"], context["settings"])
     print("\n".join(lines))
     # Name the files for how many members actually ran, so an --explain member
     # added to the sample writes a new report instead of overwriting a recorded one.
-    json_path, md_path = _write_reports(
-        _report_stem(len(results), seed, not baselines_only), results, lines, settings
-    )
+    stem = _report_stem(len(results), seed, not baselines_only)
+    json_path, md_path = _write_reports(stem, report, lines)
     print(f"\nReport: {json_path}\nMarkdown: {md_path}")
 
 
@@ -641,3 +856,28 @@ def evaluate(
     }
     results = [_evaluate_member(user_id, timelines[user_id], context) for user_id in sample]
     _report(results, users, seed, explain, baselines_only, verbose, context)
+
+
+def replay_bootstrap(path: pathlib.Path) -> None:
+    """Recompute the paired bootstrap from a saved JSON report and print it.
+
+    Reads the reciprocal-rank table alone, so it needs no key, no catalog and no
+    calls.
+
+    Args:
+        path: A JSON report an evaluation wrote.
+
+    Raises:
+        SystemExit: If the file is missing, holds no reciprocal-rank table, or
+            comes from a run where Jev did not rank.
+    """
+    if not path.exists():
+        sys.exit(f"{path}: no such report")
+    report = json.loads(path.read_text(encoding="utf-8"))
+    ranks = report.get("reciprocal_ranks")
+    if not ranks:
+        sys.exit(f"{path}: no reciprocal_ranks table, so there is nothing to resample")
+    headline = _headline_ranker(list(next(iter(ranks.values()))))
+    if headline == BOOTSTRAP_BASELINE:
+        sys.exit(f"{path}: a baselines-only report, with no Jev ranker to measure")
+    print(_bootstrap_line(_paired_bootstrap(ranks, headline, BOOTSTRAP_BASELINE)))

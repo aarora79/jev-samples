@@ -22,6 +22,7 @@ Usage:
     uv run next_watch.py --baselines-only         # the free rankers, no key
     uv run next_watch.py --explain 414            # one member, every title
     uv run next_watch.py --user 414               # recommend for one member
+    uv run next_watch.py --bootstrap data/movielens-small-100-members-seed-7-jev.json
 """
 
 import argparse
@@ -812,7 +813,7 @@ def recommend(
 
 
 def main() -> None:
-    """Parse arguments and run an evaluation or one recommendation."""
+    """Parse arguments and run an evaluation, one recommendation, or a bootstrap replay."""
     parser = argparse.ArgumentParser(
         description="Rank what a MovieLens member watches next, one Jev call each.",
         formatter_class=argparse.RawDescriptionHelpFormatter,
@@ -832,6 +833,9 @@ Example usage:
 
     # Recommend for one member from their whole history
     uv run next_watch.py --user 414
+
+    # Recompute the bootstrap from the committed report, with no key and no calls
+    uv run next_watch.py --bootstrap data/movielens-small-100-members-seed-7-jev.json
 
 The questions, the weights, the shortlist size and the state budgets live in
 questions.yml. The shortlist rule and the cold-start rule live here, and the
@@ -863,6 +867,12 @@ the repo root.
         help="Recommend for one member instead of evaluating",
     )
     parser.add_argument(
+        "--bootstrap",
+        type=pathlib.Path,
+        metavar="REPORT",
+        help="Recompute the paired bootstrap from a saved JSON report, with no key and no calls",
+    )
+    parser.add_argument(
         "--baselines-only",
         action="store_true",
         help="Skip Jev and score the free rankers, which needs no key",
@@ -882,10 +892,15 @@ the repo root.
     if args.debug:
         logging.getLogger().setLevel(logging.DEBUG)
 
+    # evaluate.py imports this module, so main imports it at call time.
+    if args.bootstrap is not None:
+        from evaluate import replay_bootstrap
+
+        replay_bootstrap(args.bootstrap)
+        return
     if args.user is not None:
         recommend(args.user, args.baselines_only, args.verbose)
         return
-    # evaluate.py imports this module, so main imports it at call time.
     from evaluate import evaluate
 
     evaluate(args.users, args.seed, args.explain, args.baselines_only, args.verbose)

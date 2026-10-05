@@ -16,3 +16,5 @@ Retrieval is its own number: the free shortlist of 20 would have found the hidde
 Rules settled 0 members at no cost: fewer than 5 likes before the hidden one, so popularity serves them. 0 members never rated anything 4 stars or higher, so they hold nothing to hide.
 
 100 Jev calls, 2 questions each. 242,771 input tokens, 102 ms per call on average, $0.01020 at $0.042 per million input tokens, $0.000102 per member.
+
+Paired bootstrap of jev next_watch against genre match over 100 members, 10,000 resamples: MRR difference +0.137, 95% interval +0.070 to +0.206. jev next_watch ranked the hidden title higher for 64 members and lower for 26.
