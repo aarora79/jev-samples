@@ -633,9 +633,12 @@ def _build_questions(
     Returns:
         Choice objects keyed by question id.
     """
-    criteria = {f"m{c['id']}": _option_text(movies[c["id"]]) for c in shortlist}
+    # Treat the option text as untrusted. It is catalog metadata, and a catalog fed
+    # by studios or by users can carry a title written to win the pick. The name
+    # says where the text came from, so nobody reads it as a fact about the title.
+    catalog_text_by_option = {f"m{c['id']}": _option_text(movies[c["id"]]) for c in shortlist}
     return {
-        question_id: Choice(instructions=spec["instructions"], criteria=criteria)
+        question_id: Choice(instructions=spec["instructions"], criteria=catalog_text_by_option)
         for question_id, spec in specs.items()
     }
 

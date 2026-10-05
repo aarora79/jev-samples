@@ -6,6 +6,11 @@
 # fills in `criteria` at run time: each option key is a MovieLens id such as
 # `m318`, and its description is the title, the year and the genres.
 #
+# The option descriptions come from catalog metadata, so treat them the way you
+# treat a prompt. MovieLens titles are fixed and harmless. A catalog that takes
+# metadata from studios or from users is a different matter: a title written to
+# argue for its own pick would move these answers.
+#
 # The final ranking is the weighted sum of the probability each question gave
 # each title. The sample divides by the total weight, so an edited weight needs
 # no rebalancing. Setting `discovery` to 0 ranks on `next_watch` alone.

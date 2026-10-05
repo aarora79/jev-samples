@@ -116,6 +116,8 @@ Output from `uv run next_watch.py --user 414` in the same session, first five ro
 
 **Titles and genres are the only item features.** MovieLens carries no synopsis, so Jev ranks from what a title's name and genres suggest to a model that has read about films. A catalog with descriptions would put them in each option's text, and the Python would not change.
 
+**The options are catalog text, so they are untrusted.** Jev reads each title's name, year and genres as the thing it chooses among, and the titles in `recent_likes` and `recent_dislikes` come from the same catalog. MovieLens is fixed, so nothing here can argue for itself. A catalog fed by studios or by users can, and code that copies this shape should treat its option text the way `pr-triage` treats a pull request description.
+
 ## Data and license
 
 The sample uses MovieLens `ml-latest-small` from [GroupLens Research](https://grouplens.org/datasets/movielens/) at the University of Minnesota, which neither endorses nor reviewed this sample. The license allows research use, forbids commercial use without permission, and asks that anyone redistributing the data or transformations of it do so under the same terms. The reports in `data/` name MovieLens titles and ids, and travel under those terms. The downloaded CSVs stay out of git.
