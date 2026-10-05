@@ -1,0 +1,1945 @@
+{
+  "evaluated_at": "2026-09-30T20:57:16+00:00",
+  "model": "jev-1.13.0",
+  "dataset": "MovieLens ml-latest-small (GroupLens, University of Minnesota)",
+  "metrics": [
+    {
+      "Ranker": "random (expected)",
+      "MRR": "0.180",
+      "Hit@1": "0.050",
+      "Hit@5": "0.250",
+      "Widens": "n/a",
+      "Distinct #1": "n/a"
+    },
+    {
+      "Ranker": "popularity",
+      "MRR": "0.178",
+      "Hit@1": "0.050",
+      "Hit@5": "0.265",
+      "Widens": "0.180",
+      "Distinct #1": "54"
+    },
+    {
+      "Ranker": "genre match",
+      "MRR": "0.294",
+      "Hit@1": "0.132",
+      "Hit@5": "0.412",
+      "Widens": "0.000",
+      "Distinct #1": "89"
+    },
+    {
+      "Ranker": "shortlist order",
+      "MRR": "0.253",
+      "Hit@1": "0.100",
+      "Hit@5": "0.430",
+      "Widens": "0.000",
+      "Distinct #1": "74"
+    },
+    {
+      "Ranker": "jev next_watch",
+      "MRR": "0.431",
+      "Hit@1": "0.255",
+      "Hit@5": "0.648",
+      "Widens": "0.020",
+      "Distinct #1": "86"
+    },
+    {
+      "Ranker": "jev blend",
+      "MRR": "0.411",
+      "Hit@1": "0.255",
+      "Hit@5": "0.565",
+      "Widens": "0.020",
+      "Distinct #1": "86"
+    }
+  ],
+  "bootstrap": {
+    "ranker": "jev next_watch",
+    "baseline": "genre match",
+    "members": 100,
+    "resamples": 10000,
+    "seed": 0,
+    "mrr_difference": 0.137,
+    "interval_95": [
+      0.0697,
+      0.206
+    ],
+    "better": 64,
+    "worse": 26
+  },
+  "results_shown": 5,
+  "results_total": 100,
+  "results": [
+    {
+      "user": 50,
+      "outcome": "ranked",
+      "target": 1201,
+      "retrieved": false,
+      "shortlist": [
+        {
+          "id": 6283,
+          "popularity": 19,
+          "genre_match": 0.3861,
+          "shortlist_score": 1.1567
+        },
+        {
+          "id": 5349,
+          "popularity": 121,
+          "genre_match": 0.4479,
+          "shortlist_score": 2.1518
+        },
+        {
+          "id": 1021,
+          "popularity": 27,
+          "genre_match": 0.1311,
+          "shortlist_score": 0.4367
+        },
+        {
+          "id": 5444,
+          "popularity": 28,
+          "genre_match": 0.2626,
+          "shortlist_score": 0.8841
+        },
+        {
+          "id": 2991,
+          "popularity": 23,
+          "genre_match": 0.3924,
+          "shortlist_score": 1.2469
+        },
+        {
+          "id": 47,
+          "popularity": 203,
+          "genre_match": 0.3058,
+          "shortlist_score": 1.6263
+        },
+        {
+          "id": 788,
+          "popularity": 82,
+          "genre_match": 0.3552,
+          "shortlist_score": 1.5697
+        },
+        {
+          "id": 3440,
+          "popularity": 14,
+          "genre_match": 0.3454,
+          "shortlist_score": 0.9353
+        },
+        {
+          "id": 653,
+          "popularity": 65,
+          "genre_match": 0.3389,
+          "shortlist_score": 1.4197
+        },
+        {
+          "id": 71205,
+          "popularity": 2,
+          "genre_match": 0.3861,
+          "shortlist_score": 0.4242
+        },
+        {
+          "id": 76,
+          "popularity": 15,
+          "genre_match": 0.3924,
+          "shortlist_score": 1.0878
+        },
+        {
+          "id": 539,
+          "popularity": 106,
+          "genre_match": 0.6242,
+          "shortlist_score": 2.9168
+        },
+        {
+          "id": 1215,
+          "popularity": 51,
+          "genre_match": 0.3868,
+          "shortlist_score": 1.5284
+        },
+        {
+          "id": 10,
+          "popularity": 131,
+          "genre_match": 0.3924,
+          "shortlist_score": 1.9158
+        },
+        {
+          "id": 27611,
+          "popularity": 19,
+          "genre_match": 0.6242,
+          "shortlist_score": 1.8699
+        },
+        {
+          "id": 1201,
+          "popularity": 71,
+          "genre_match": 0.2497,
+          "shortlist_score": 1.0678
+        },
+        {
+          "id": 2352,
+          "popularity": 25,
+          "genre_match": 0.6771,
+          "shortlist_score": 2.2061
+        },
+        {
+          "id": 4502,
+          "popularity": 4,
+          "genre_match": 0.1311,
+          "shortlist_score": 0.2109
+        },
+        {
+          "id": 6195,
+          "popularity": 2,
+          "genre_match": 0.0309,
+          "shortlist_score": 0.0339
+        },
+        {
+          "id": 7173,
+          "popularity": 24,
+          "genre_match": 0.2184,
+          "shortlist_score": 0.7031
+        }
+      ],
+      "usual_genres": [
+        "Crime",
+        "Drama",
+        "Thriller"
+      ],
+      "rankers": {
+        "popularity": {
+          "rr": 0.16666666666666666,
+          "hit@1": 0.0,
+          "hit@5": 0.0,
+          "top_pick": 47,
+          "widens": false
+        },
+        "genre match": {
+          "rr": 0.0625,
+          "hit@1": 0.0,
+          "hit@5": 0.0,
+          "top_pick": 2352,
+          "widens": false
+        },
+        "shortlist order": {
+          "rr": 0.07692307692307693,
+          "hit@1": 0.0,
+          "hit@5": 0.0,
+          "top_pick": 539,
+          "widens": false
+        },
+        "jev next_watch": {
+          "rr": 1.0,
+          "hit@1": 1.0,
+          "hit@5": 1.0,
+          "top_pick": 1201,
+          "widens": true
+        },
+        "jev blend": {
+          "rr": 1.0,
+          "hit@1": 1.0,
+          "hit@5": 1.0,
+          "top_pick": 1201,
+          "widens": true
+        }
+      },
+      "latency_ms": 112,
+      "jev": {
+        "model": "jev-1.13.0",
+        "usage": {
+          "input_tokens": 2919,
+          "output_tokens": 468
+        },
+        "answers": {
+          "next_watch": {
+            "type": "choice",
+            "choice": "m1201",
+            "confidence": 0.35,
+            "probabilities": {
+              "m539": 0.0,
+              "m76": 0.0,
+              "m47": 0.13,
+              "m1021": 0.0,
+              "m7173": 0.0,
+              "m6195": 0.0,
+              "m1201": 0.4,
+              "m71205": 0.0,
+              "m5349": 0.0,
+              "m788": 0.0,
+              "m2352": 0.0,
+              "m2991": 0.0,
+              "m3440": 0.0,
+              "m4502": 0.0,
+              "m5444": 0.0,
+              "m10": 0.0,
+              "m27611": 0.14,
+              "m6283": 0.31,
+              "m653": 0.0,
+              "m1215": 0.02
+            }
+          },
+          "discovery": {
+            "type": "choice",
+            "choice": "m6195",
+            "confidence": 0.26,
+            "probabilities": {
+              "m6195": 0.29,
+              "m76": 0.0,
+              "m47": 0.01,
+              "m1021": 0.17,
+              "m7173": 0.03,
+              "m539": 0.03,
+              "m1201": 0.03,
+              "m71205": 0.02,
+              "m5349": 0.03,
+              "m2352": 0.01,
+              "m788": 0.01,
+              "m2991": 0.02,
+              "m3440": 0.04,
+              "m4502": 0.21,
+              "m5444": 0.05,
+              "m10": 0.01,
+              "m6283": 0.01,
+              "m27611": 0.01,
+              "m653": 0.01,
+              "m1215": 0.01
+            }
+          }
+        }
+      }
+    },
+    {
+      "user": 80,
+      "outcome": "ranked",
+      "target": 1258,
+      "retrieved": false,
+      "shortlist": [
+        {
+          "id": 4161,
+          "popularity": 20,
+          "genre_match": 0.3368,
+          "shortlist_score": 1.0253
+        },
+        {
+          "id": 1635,
+          "popularity": 16,
+          "genre_match": 0.35,
+          "shortlist_score": 0.9916
+        },
+        {
+          "id": 1291,
+          "popularity": 101,
+          "genre_match": 0.426,
+          "shortlist_score": 1.9703
+        },
+        {
+          "id": 609,
+          "popularity": 13,
+          "genre_match": 0.1379,
+          "shortlist_score": 0.3641
+        },
+        {
+          "id": 1393,
+          "popularity": 74,
+          "genre_match": 0.2637,
+          "shortlist_score": 1.1386
+        },
+        {
+          "id": 1356,
+          "popularity": 82,
+          "genre_match": 0.766,
+          "shortlist_score": 3.3848
+        },
+        {
+          "id": 26,
+          "popularity": 12,
+          "genre_match": 0.35,
+          "shortlist_score": 0.8978
+        },
+        {
+          "id": 6670,
+          "popularity": 1,
+          "genre_match": 0.0516,
+          "shortlist_score": 0.0358
+        },
+        {
+          "id": 8961,
+          "popularity": 64,
+          "genre_match": 0.3028,
+          "shortlist_score": 1.264
+        },
+        {
+          "id": 1186,
+          "popularity": 21,
+          "genre_match": 0.35,
+          "shortlist_score": 1.0819
+        },
+        {
+          "id": 1351,
+          "popularity": 2,
+          "genre_match": 0.7056,
+          "shortlist_score": 0.7752
+        },
+        {
+          "id": 919,
+          "popularity": 76,
+          "genre_match": 0.1348,
+          "shortlist_score": 0.5857
+        },
+        {
+          "id": 1258,
+          "popularity": 76,
+          "genre_match": 0.2238,
+          "shortlist_score": 0.972
+        },
+        {
+          "id": 16,
+          "popularity": 64,
+          "genre_match": 0.4179,
+          "shortlist_score": 1.7445
+        },
+        {
+          "id": 364,
+          "popularity": 133,
+          "genre_match": 0.2788,
+          "shortlist_score": 1.3653
+        },
+        {
+          "id": 1883,
+          "popularity": 23,
+          "genre_match": 0.2451,
+          "shortlist_score": 0.7791
+        },
+        {
+          "id": 1997,
+          "popularity": 41,
+          "genre_match": 0.3043,
+          "shortlist_score": 1.1374
+        },
+        {
+          "id": 71640,
+          "popularity": 1,
+          "genre_match": 0.0,
+          "shortlist_score": 0.0
+        },
+        {
+          "id": 3998,
+          "popularity": 12,
+          "genre_match": 0.35,
+          "shortlist_score": 0.8978
+        },
+        {
+          "id": 474,
+          "popularity": 65,
+          "genre_match": 0.7465,
+          "shortlist_score": 3.1277
+        }
+      ],
+      "usual_genres": [
+        "Action",
+        "Drama",
+        "Thriller"
+      ],
+      "rankers": {
+        "popularity": {
+          "rr": 0.225,
+          "hit@1": 0.0,
+          "hit@5": 1.0,
+          "top_pick": 364,
+          "widens": false
+        },
+        "genre match": {
+          "rr": 0.0625,
+          "hit@1": 0.0,
+          "hit@5": 0.0,
+          "top_pick": 1356,
+          "widens": false
+        },
+        "shortlist order": {
+          "rr": 0.08333333333333333,
+          "hit@1": 0.0,
+          "hit@5": 0.0,
+          "top_pick": 1356,
+          "widens": false
+        },
+        "jev next_watch": {
+          "rr": 0.75,
+          "hit@1": 0.5,
+          "hit@5": 1.0,
+          "top_pick": 1356,
+          "widens": false
+        },
+        "jev blend": {
+          "rr": 0.75,
+          "hit@1": 0.5,
+          "hit@5": 1.0,
+          "top_pick": 1356,
+          "widens": false
+        }
+      },
+      "latency_ms": 92,
+      "jev": {
+        "model": "jev-1.13.0",
+        "usage": {
+          "input_tokens": 2524,
+          "output_tokens": 469
+        },
+        "answers": {
+          "next_watch": {
+            "type": "choice",
+            "choice": "m1356",
+            "confidence": 0.29,
+            "probabilities": {
+              "m919": 0.0,
+              "m1258": 0.33,
+              "m1356": 0.33,
+              "m8961": 0.0,
+              "m1997": 0.15,
+              "m1351": 0.02,
+              "m474": 0.17,
+              "m6670": 0.0,
+              "m1186": 0.0,
+              "m71640": 0.0,
+              "m1635": 0.0,
+              "m4161": 0.0,
+              "m1393": 0.0,
+              "m26": 0.0,
+              "m609": 0.0,
+              "m3998": 0.0,
+              "m16": 0.0,
+              "m1291": 0.0,
+              "m364": 0.0,
+              "m1883": 0.0
+            }
+          },
+          "discovery": {
+            "type": "choice",
+            "choice": "m71640",
+            "confidence": 0.59,
+            "probabilities": {
+              "m919": 0.11,
+              "m1258": 0.0,
+              "m1356": 0.0,
+              "m8961": 0.1,
+              "m1997": 0.0,
+              "m1351": 0.0,
+              "m474": 0.0,
+              "m1635": 0.0,
+              "m1186": 0.0,
+              "m4161": 0.0,
+              "m26": 0.0,
+              "m71640": 0.62,
+              "m1393": 0.01,
+              "m6670": 0.02,
+              "m609": 0.01,
+              "m16": 0.0,
+              "m3998": 0.0,
+              "m1291": 0.0,
+              "m364": 0.07,
+              "m1883": 0.06
+            }
+          }
+        }
+      }
+    },
+    {
+      "user": 62,
+      "outcome": "ranked",
+      "target": 49530,
+      "retrieved": false,
+      "shortlist": [
+        {
+          "id": 2174,
+          "popularity": 91,
+          "genre_match": 0.311,
+          "shortlist_score": 1.4061
+        },
+        {
+          "id": 1799,
+          "popularity": 13,
+          "genre_match": 0.644,
+          "shortlist_score": 1.6994
+        },
+        {
+          "id": 4848,
+          "popularity": 51,
+          "genre_match": 0.5378,
+          "shortlist_score": 2.1249
+        },
+        {
+          "id": 8982,
+          "popularity": 3,
+          "genre_match": 0.4942,
+          "shortlist_score": 0.6852
+        },
+        {
+          "id": 49530,
+          "popularity": 51,
+          "genre_match": 0.788,
+          "shortlist_score": 3.1137
+        },
+        {
+          "id": 7346,
+          "popularity": 20,
+          "genre_match": 0.2559,
+          "shortlist_score": 0.7792
+        },
+        {
+          "id": 1917,
+          "popularity": 92,
+          "genre_match": 0.6129,
+          "shortlist_score": 2.7782
+        },
+        {
+          "id": 1831,
+          "popularity": 29,
+          "genre_match": 0.6448,
+          "shortlist_score": 2.1933
+        },
+        {
+          "id": 337,
+          "popularity": 77,
+          "genre_match": 0.4942,
+          "shortlist_score": 2.1533
+        },
+        {
+          "id": 73321,
+          "popularity": 16,
+          "genre_match": 0.7437,
+          "shortlist_score": 2.1071
+        },
+        {
+          "id": 355,
+          "popularity": 42,
+          "genre_match": 0.2854,
+          "shortlist_score": 1.0733
+        },
+        {
+          "id": 1374,
+          "popularity": 62,
+          "genre_match": 0.7316,
+          "shortlist_score": 3.0313
+        },
+        {
+          "id": 8464,
+          "popularity": 50,
+          "genre_match": 0.4247,
+          "shortlist_score": 1.6697
+        },
+        {
+          "id": 2291,
+          "popularity": 80,
+          "genre_match": 0.4696,
+          "shortlist_score": 2.0636
+        },
+        {
+          "id": 2746,
+          "popularity": 39,
+          "genre_match": 0.1775,
+          "shortlist_score": 0.6548
+        },
+        {
+          "id": 1396,
+          "popularity": 46,
+          "genre_match": 0.771,
+          "shortlist_score": 2.9685
+        },
+        {
+          "id": 180265,
+          "popularity": 1,
+          "genre_match": 0.0,
+          "shortlist_score": 0.0
+        },
+        {
+          "id": 249,
+          "popularity": 18,
+          "genre_match": 0.4348,
+          "shortlist_score": 1.2802
+        },
+        {
+          "id": 1391,
+          "popularity": 85,
+          "genre_match": 0.5774,
+          "shortlist_score": 2.5721
+        },
+        {
+          "id": 1333,
+          "popularity": 44,
+          "genre_match": 0.2807,
+          "shortlist_score": 1.0685
+        }
+      ],
+      "usual_genres": [
+        "Action",
+        "Adventure",
+        "Drama"
+      ],
+      "rankers": {
+        "popularity": {
+          "rr": 0.13392857142857142,
+          "hit@1": 0.0,
+          "hit@5": 0.0,
+          "top_pick": 1917,
+          "widens": false
+        },
+        "genre match": {
+          "rr": 1.0,
+          "hit@1": 1.0,
+          "hit@5": 1.0,
+          "top_pick": 49530,
+          "widens": false
+        },
+        "shortlist order": {
+          "rr": 1.0,
+          "hit@1": 1.0,
+          "hit@5": 1.0,
+          "top_pick": 49530,
+          "widens": false
+        },
+        "jev next_watch": {
+          "rr": 0.25,
+          "hit@1": 0.0,
+          "hit@5": 1.0,
+          "top_pick": 1396,
+          "widens": false
+        },
+        "jev blend": {
+          "rr": 0.2,
+          "hit@1": 0.0,
+          "hit@5": 1.0,
+          "top_pick": 1396,
+          "widens": false
+        }
+      },
+      "latency_ms": 112,
+      "jev": {
+        "model": "jev-1.13.0",
+        "usage": {
+          "input_tokens": 2791,
+          "output_tokens": 486
+        },
+        "answers": {
+          "next_watch": {
+            "type": "choice",
+            "choice": "m1396",
+            "confidence": 0.22,
+            "probabilities": {
+              "m1799": 0.17,
+              "m1333": 0.0,
+              "m1917": 0.01,
+              "m73321": 0.01,
+              "m1391": 0.05,
+              "m1831": 0.0,
+              "m355": 0.0,
+              "m337": 0.01,
+              "m2291": 0.08,
+              "m2746": 0.0,
+              "m180265": 0.0,
+              "m7346": 0.01,
+              "m249": 0.0,
+              "m1396": 0.27,
+              "m2174": 0.04,
+              "m8464": 0.0,
+              "m49530": 0.1,
+              "m4848": 0.21,
+              "m1374": 0.04,
+              "m8982": 0.0
+            }
+          },
+          "discovery": {
+            "type": "choice",
+            "choice": "m180265",
+            "confidence": 0.73,
+            "probabilities": {
+              "m1799": 0.0,
+              "m1333": 0.04,
+              "m1917": 0.0,
+              "m73321": 0.0,
+              "m1391": 0.0,
+              "m1831": 0.0,
+              "m355": 0.01,
+              "m337": 0.0,
+              "m2291": 0.0,
+              "m2746": 0.03,
+              "m180265": 0.75,
+              "m7346": 0.0,
+              "m249": 0.0,
+              "m1396": 0.0,
+              "m2174": 0.0,
+              "m8464": 0.14,
+              "m49530": 0.01,
+              "m4848": 0.02,
+              "m8982": 0.0,
+              "m1374": 0.0
+            }
+          }
+        }
+      }
+    },
+    {
+      "user": 332,
+      "outcome": "ranked",
+      "target": 2420,
+      "retrieved": false,
+      "shortlist": [
+        {
+          "id": 6869,
+          "popularity": 2,
+          "genre_match": 0.2185,
+          "shortlist_score": 0.2401
+        },
+        {
+          "id": 724,
+          "popularity": 28,
+          "genre_match": 0.559,
+          "shortlist_score": 1.8823
+        },
+        {
+          "id": 2420,
+          "popularity": 28,
+          "genre_match": 0.6272,
+          "shortlist_score": 2.1119
+        },
+        {
+          "id": 8910,
+          "popularity": 17,
+          "genre_match": 0.3181,
+          "shortlist_score": 0.9195
+        },
+        {
+          "id": 3481,
+          "popularity": 60,
+          "genre_match": 0.6507,
+          "shortlist_score": 2.675
+        },
+        {
+          "id": 1049,
+          "popularity": 19,
+          "genre_match": 0.4499,
+          "shortlist_score": 1.3478
+        },
+        {
+          "id": 5638,
+          "popularity": 1,
+          "genre_match": 0.4772,
+          "shortlist_score": 0.3308
+        },
+        {
+          "id": 223,
+          "popularity": 86,
+          "genre_match": 0.3181,
+          "shortlist_score": 1.4207
+        },
+        {
+          "id": 5644,
+          "popularity": 3,
+          "genre_match": 0.6272,
+          "shortlist_score": 0.8694
+        },
+        {
+          "id": 6796,
+          "popularity": 18,
+          "genre_match": 0.6556,
+          "shortlist_score": 1.9303
+        },
+        {
+          "id": 5015,
+          "popularity": 17,
+          "genre_match": 0.572,
+          "shortlist_score": 1.6533
+        },
+        {
+          "id": 2952,
+          "popularity": 10,
+          "genre_match": 0.7032,
+          "shortlist_score": 1.6862
+        },
+        {
+          "id": 3089,
+          "popularity": 12,
+          "genre_match": 0.6272,
+          "shortlist_score": 1.6087
+        },
+        {
+          "id": 500,
+          "popularity": 119,
+          "genre_match": 0.6684,
+          "shortlist_score": 3.2001
+        },
+        {
+          "id": 7247,
+          "popularity": 8,
+          "genre_match": 0.378,
+          "shortlist_score": 0.8306
+        },
+        {
+          "id": 1831,
+          "popularity": 25,
+          "genre_match": 0.4723,
+          "shortlist_score": 1.5388
+        },
+        {
+          "id": 7481,
+          "popularity": 3,
+          "genre_match": 0.6402,
+          "shortlist_score": 0.8875
+        },
+        {
+          "id": 45499,
+          "popularity": 31,
+          "genre_match": 0.4671,
+          "shortlist_score": 1.6187
+        },
+        {
+          "id": 5364,
+          "popularity": 6,
+          "genre_match": 0.6491,
+          "shortlist_score": 1.2632
+        },
+        {
+          "id": 48516,
+          "popularity": 59,
+          "genre_match": 0.7032,
+          "shortlist_score": 2.8791
+        }
+      ],
+      "usual_genres": [
+        "Action",
+        "Comedy",
+        "Drama"
+      ],
+      "rankers": {
+        "popularity": {
+          "rr": 0.15476190476190477,
+          "hit@1": 0.0,
+          "hit@5": 0.0,
+          "top_pick": 500,
+          "widens": false
+        },
+        "genre match": {
+          "rr": 0.11203703703703705,
+          "hit@1": 0.0,
+          "hit@5": 0.0,
+          "top_pick": 2952,
+          "widens": false
+        },
+        "shortlist order": {
+          "rr": 0.25,
+          "hit@1": 0.0,
+          "hit@5": 1.0,
+          "top_pick": 500,
+          "widens": false
+        },
+        "jev next_watch": {
+          "rr": 0.12912698412698412,
+          "hit@1": 0.0,
+          "hit@5": 0.0,
+          "top_pick": 48516,
+          "widens": false
+        },
+        "jev blend": {
+          "rr": 0.0914141414141414,
+          "hit@1": 0.0,
+          "hit@5": 0.0,
+          "top_pick": 48516,
+          "widens": false
+        }
+      },
+      "latency_ms": 104,
+      "jev": {
+        "model": "jev-1.13.0",
+        "usage": {
+          "input_tokens": 2925,
+          "output_tokens": 481
+        },
+        "answers": {
+          "next_watch": {
+            "type": "choice",
+            "choice": "m48516",
+            "confidence": 0.32,
+            "probabilities": {
+              "m1831": 0.0,
+              "m8910": 0.0,
+              "m3481": 0.01,
+              "m7481": 0.1,
+              "m5015": 0.0,
+              "m3089": 0.32,
+              "m48516": 0.37,
+              "m5638": 0.0,
+              "m223": 0.0,
+              "m5644": 0.01,
+              "m5364": 0.0,
+              "m500": 0.0,
+              "m6869": 0.0,
+              "m7247": 0.01,
+              "m2952": 0.03,
+              "m45499": 0.0,
+              "m6796": 0.01,
+              "m724": 0.0,
+              "m2420": 0.01,
+              "m1049": 0.13
+            }
+          },
+          "discovery": {
+            "type": "choice",
+            "choice": "m6869",
+            "confidence": 0.67,
+            "probabilities": {
+              "m1831": 0.02,
+              "m8910": 0.0,
+              "m3481": 0.0,
+              "m3089": 0.04,
+              "m5015": 0.0,
+              "m7481": 0.0,
+              "m48516": 0.0,
+              "m5638": 0.05,
+              "m223": 0.01,
+              "m5644": 0.0,
+              "m5364": 0.0,
+              "m500": 0.0,
+              "m6869": 0.6900000000000001,
+              "m7247": 0.15,
+              "m2952": 0.0,
+              "m45499": 0.01,
+              "m6796": 0.01,
+              "m724": 0.01,
+              "m2420": 0.0,
+              "m1049": 0.0
+            }
+          }
+        }
+      }
+    },
+    {
+      "user": 520,
+      "outcome": "ranked",
+      "target": 3529,
+      "retrieved": false,
+      "shortlist": [
+        {
+          "id": 587,
+          "popularity": 101,
+          "genre_match": 0.6329,
+          "shortlist_score": 2.9271
+        },
+        {
+          "id": 648,
+          "popularity": 138,
+          "genre_match": 0.524,
+          "shortlist_score": 2.5855
+        },
+        {
+          "id": 1704,
+          "popularity": 76,
+          "genre_match": 0.3167,
+          "shortlist_score": 1.3756
+        },
+        {
+          "id": 527,
+          "popularity": 146,
+          "genre_match": 0.2407,
+          "shortlist_score": 1.201
+        },
+        {
+          "id": 153,
+          "popularity": 123,
+          "genre_match": 0.7524,
+          "shortlist_score": 3.6266
+        },
+        {
+          "id": 3392,
+          "popularity": 5,
+          "genre_match": 0.5732,
+          "shortlist_score": 1.0271
+        },
+        {
+          "id": 1689,
+          "popularity": 6,
+          "genre_match": 0.5223,
+          "shortlist_score": 1.0163
+        },
+        {
+          "id": 30812,
+          "popularity": 19,
+          "genre_match": 0.3045,
+          "shortlist_score": 0.9123
+        },
+        {
+          "id": 3529,
+          "popularity": 4,
+          "genre_match": 0.2343,
+          "shortlist_score": 0.3772
+        },
+        {
+          "id": 173,
+          "popularity": 53,
+          "genre_match": 0.4913,
+          "shortlist_score": 1.9597
+        },
+        {
+          "id": 3156,
+          "popularity": 12,
+          "genre_match": 0.4551,
+          "shortlist_score": 1.1672
+        },
+        {
+          "id": 3967,
+          "popularity": 22,
+          "genre_match": 0.3045,
+          "shortlist_score": 0.9549
+        },
+        {
+          "id": 2396,
+          "popularity": 74,
+          "genre_match": 0.5895,
+          "shortlist_score": 2.5452
+        },
+        {
+          "id": 2000,
+          "popularity": 58,
+          "genre_match": 0.6942,
+          "shortlist_score": 2.8304
+        },
+        {
+          "id": 1283,
+          "popularity": 16,
+          "genre_match": 0.2217,
+          "shortlist_score": 0.628
+        },
+        {
+          "id": 2882,
+          "popularity": 3,
+          "genre_match": 0.3045,
+          "shortlist_score": 0.4222
+        },
+        {
+          "id": 2080,
+          "popularity": 39,
+          "genre_match": 0.4523,
+          "shortlist_score": 1.6686
+        },
+        {
+          "id": 62374,
+          "popularity": 5,
+          "genre_match": 0.5068,
+          "shortlist_score": 0.908
+        },
+        {
+          "id": 4878,
+          "popularity": 61,
+          "genre_match": 0.4478,
+          "shortlist_score": 1.8483
+        },
+        {
+          "id": 1994,
+          "popularity": 35,
+          "genre_match": 0.19,
+          "shortlist_score": 0.6809
+        }
+      ],
+      "usual_genres": [
+        "Action",
+        "Adventure",
+        "Comedy"
+      ],
+      "rankers": {
+        "popularity": {
+          "rr": 0.05263157894736842,
+          "hit@1": 0.0,
+          "hit@5": 0.0,
+          "top_pick": 527,
+          "widens": true
+        },
+        "genre match": {
+          "rr": 0.05555555555555555,
+          "hit@1": 0.0,
+          "hit@5": 0.0,
+          "top_pick": 153,
+          "widens": false
+        },
+        "shortlist order": {
+          "rr": 0.05,
+          "hit@1": 0.0,
+          "hit@5": 0.0,
+          "top_pick": 153,
+          "widens": false
+        },
+        "jev next_watch": {
+          "rr": 0.059657986001418105,
+          "hit@1": 0.0,
+          "hit@5": 0.0,
+          "top_pick": 648,
+          "widens": false
+        },
+        "jev blend": {
+          "rr": 0.058823529411764705,
+          "hit@1": 0.0,
+          "hit@5": 0.0,
+          "top_pick": 648,
+          "widens": false
+        }
+      },
+      "latency_ms": 111,
+      "jev": {
+        "model": "jev-1.13.0",
+        "usage": {
+          "input_tokens": 2741,
+          "output_tokens": 475
+        },
+        "answers": {
+          "next_watch": {
+            "type": "choice",
+            "choice": "m648",
+            "confidence": 0.25,
+            "probabilities": {
+              "m4878": 0.03,
+              "m2396": 0.06,
+              "m3967": 0.0,
+              "m3156": 0.03,
+              "m2080": 0.02,
+              "m1994": 0.0,
+              "m3529": 0.0,
+              "m30812": 0.01,
+              "m587": 0.07,
+              "m527": 0.0,
+              "m1283": 0.0,
+              "m62374": 0.0,
+              "m648": 0.3,
+              "m2000": 0.16,
+              "m3392": 0.01,
+              "m173": 0.01,
+              "m1689": 0.14,
+              "m2882": 0.0,
+              "m1704": 0.02,
+              "m153": 0.14
+            }
+          },
+          "discovery": {
+            "type": "choice",
+            "choice": "m1994",
+            "confidence": 0.46,
+            "probabilities": {
+              "m4878": 0.01,
+              "m2396": 0.0,
+              "m153": 0.0,
+              "m3156": 0.0,
+              "m2080": 0.02,
+              "m1994": 0.5,
+              "m3529": 0.03,
+              "m648": 0.0,
+              "m2000": 0.0,
+              "m527": 0.04,
+              "m1283": 0.38,
+              "m62374": 0.0,
+              "m587": 0.0,
+              "m30812": 0.0,
+              "m3392": 0.0,
+              "m173": 0.0,
+              "m1689": 0.0,
+              "m2882": 0.01,
+              "m1704": 0.0,
+              "m3967": 0.01
+            }
+          }
+        }
+      }
+    }
+  ],
+  "reciprocal_ranks": {
+    "24": {
+      "popularity": 0.0513,
+      "genre match": 0.0714,
+      "shortlist order": 0.0556,
+      "jev next_watch": 0.0699,
+      "jev blend": 0.0625
+    },
+    "39": {
+      "popularity": 0.0588,
+      "genre match": 0.0588,
+      "shortlist order": 0.0526,
+      "jev next_watch": 0.0773,
+      "jev blend": 0.1056
+    },
+    "41": {
+      "popularity": 0.0955,
+      "genre match": 0.1,
+      "shortlist order": 0.1,
+      "jev next_watch": 0.1181,
+      "jev blend": 0.0909
+    },
+    "48": {
+      "popularity": 0.0513,
+      "genre match": 0.6111,
+      "shortlist order": 0.0833,
+      "jev next_watch": 0.5,
+      "jev blend": 0.5
+    },
+    "50": {
+      "popularity": 0.1667,
+      "genre match": 0.0625,
+      "shortlist order": 0.0769,
+      "jev next_watch": 1.0,
+      "jev blend": 1.0
+    },
+    "51": {
+      "popularity": 0.0833,
+      "genre match": 0.1263,
+      "shortlist order": 0.0909,
+      "jev next_watch": 0.1698,
+      "jev blend": 0.1339
+    },
+    "60": {
+      "popularity": 0.125,
+      "genre match": 0.1,
+      "shortlist order": 0.1667,
+      "jev next_watch": 0.4167,
+      "jev blend": 0.4167
+    },
+    "61": {
+      "popularity": 0.5,
+      "genre match": 0.125,
+      "shortlist order": 0.5,
+      "jev next_watch": 0.5,
+      "jev blend": 0.5
+    },
+    "62": {
+      "popularity": 0.1339,
+      "genre match": 1.0,
+      "shortlist order": 1.0,
+      "jev next_watch": 0.25,
+      "jev blend": 0.2
+    },
+    "63": {
+      "popularity": 0.1,
+      "genre match": 0.0714,
+      "shortlist order": 0.0714,
+      "jev next_watch": 0.0699,
+      "jev blend": 0.125
+    },
+    "64": {
+      "popularity": 0.0833,
+      "genre match": 0.1429,
+      "shortlist order": 0.125,
+      "jev next_watch": 0.1364,
+      "jev blend": 0.0871
+    },
+    "65": {
+      "popularity": 0.0667,
+      "genre match": 0.0769,
+      "shortlist order": 0.0714,
+      "jev next_watch": 0.3333,
+      "jev blend": 0.3333
+    },
+    "67": {
+      "popularity": 0.3333,
+      "genre match": 0.125,
+      "shortlist order": 0.2,
+      "jev next_watch": 0.5,
+      "jev blend": 0.5
+    },
+    "71": {
+      "popularity": 0.0513,
+      "genre match": 0.1833,
+      "shortlist order": 0.0588,
+      "jev next_watch": 0.1833,
+      "jev blend": 0.1
+    },
+    "72": {
+      "popularity": 0.2,
+      "genre match": 0.25,
+      "shortlist order": 0.2,
+      "jev next_watch": 0.2056,
+      "jev blend": 0.1263
+    },
+    "75": {
+      "popularity": 0.3333,
+      "genre match": 0.1833,
+      "shortlist order": 1.0,
+      "jev next_watch": 1.0,
+      "jev blend": 1.0
+    },
+    "80": {
+      "popularity": 0.225,
+      "genre match": 0.0625,
+      "shortlist order": 0.0833,
+      "jev next_watch": 0.75,
+      "jev blend": 0.75
+    },
+    "84": {
+      "popularity": 0.05,
+      "genre match": 0.4167,
+      "shortlist order": 0.05,
+      "jev next_watch": 1.0,
+      "jev blend": 1.0
+    },
+    "89": {
+      "popularity": 0.05,
+      "genre match": 0.125,
+      "shortlist order": 0.05,
+      "jev next_watch": 0.25,
+      "jev blend": 0.25
+    },
+    "93": {
+      "popularity": 1.0,
+      "genre match": 0.25,
+      "shortlist order": 0.3333,
+      "jev next_watch": 0.3333,
+      "jev blend": 0.25
+    },
+    "96": {
+      "popularity": 0.3333,
+      "genre match": 0.5,
+      "shortlist order": 1.0,
+      "jev next_watch": 0.25,
+      "jev blend": 0.25
+    },
+    "97": {
+      "popularity": 1.0,
+      "genre match": 0.1429,
+      "shortlist order": 0.25,
+      "jev next_watch": 0.25,
+      "jev blend": 0.25
+    },
+    "100": {
+      "popularity": 0.0588,
+      "genre match": 1.0,
+      "shortlist order": 0.25,
+      "jev next_watch": 1.0,
+      "jev blend": 1.0
+    },
+    "106": {
+      "popularity": 0.5,
+      "genre match": 0.0667,
+      "shortlist order": 0.125,
+      "jev next_watch": 0.25,
+      "jev blend": 0.2
+    },
+    "112": {
+      "popularity": 0.2,
+      "genre match": 0.3333,
+      "shortlist order": 0.5,
+      "jev next_watch": 1.0,
+      "jev blend": 1.0
+    },
+    "120": {
+      "popularity": 0.05,
+      "genre match": 0.0607,
+      "shortlist order": 0.0526,
+      "jev next_watch": 0.0642,
+      "jev blend": 0.125
+    },
+    "121": {
+      "popularity": 0.1181,
+      "genre match": 0.0646,
+      "shortlist order": 0.0769,
+      "jev next_watch": 0.0699,
+      "jev blend": 0.0878
+    },
+    "127": {
+      "popularity": 0.0625,
+      "genre match": 0.1021,
+      "shortlist order": 0.0909,
+      "jev next_watch": 0.5,
+      "jev blend": 0.3333
+    },
+    "137": {
+      "popularity": 0.0667,
+      "genre match": 0.2917,
+      "shortlist order": 0.25,
+      "jev next_watch": 1.0,
+      "jev blend": 1.0
+    },
+    "148": {
+      "popularity": 0.3333,
+      "genre match": 0.125,
+      "shortlist order": 0.1429,
+      "jev next_watch": 0.1429,
+      "jev blend": 0.1
+    },
+    "155": {
+      "popularity": 0.1,
+      "genre match": 0.75,
+      "shortlist order": 0.25,
+      "jev next_watch": 1.0,
+      "jev blend": 1.0
+    },
+    "156": {
+      "popularity": 0.0699,
+      "genre match": 0.0556,
+      "shortlist order": 0.0556,
+      "jev next_watch": 0.1068,
+      "jev blend": 0.1
+    },
+    "169": {
+      "popularity": 0.05,
+      "genre match": 0.1548,
+      "shortlist order": 0.05,
+      "jev next_watch": 1.0,
+      "jev blend": 1.0
+    },
+    "173": {
+      "popularity": 0.05,
+      "genre match": 0.5,
+      "shortlist order": 0.0769,
+      "jev next_watch": 0.0909,
+      "jev blend": 0.0833
+    },
+    "185": {
+      "popularity": 0.0541,
+      "genre match": 0.069,
+      "shortlist order": 0.0556,
+      "jev next_watch": 0.1171,
+      "jev blend": 0.0806
+    },
+    "186": {
+      "popularity": 1.0,
+      "genre match": 0.5,
+      "shortlist order": 1.0,
+      "jev next_watch": 1.0,
+      "jev blend": 1.0
+    },
+    "193": {
+      "popularity": 0.1833,
+      "genre match": 0.0769,
+      "shortlist order": 0.0909,
+      "jev next_watch": 0.3333,
+      "jev blend": 0.3333
+    },
+    "211": {
+      "popularity": 0.5,
+      "genre match": 0.1548,
+      "shortlist order": 0.5,
+      "jev next_watch": 1.0,
+      "jev blend": 1.0
+    },
+    "220": {
+      "popularity": 0.2917,
+      "genre match": 0.3333,
+      "shortlist order": 1.0,
+      "jev next_watch": 1.0,
+      "jev blend": 1.0
+    },
+    "227": {
+      "popularity": 0.0769,
+      "genre match": 1.0,
+      "shortlist order": 0.5,
+      "jev next_watch": 0.5,
+      "jev blend": 0.5
+    },
+    "229": {
+      "popularity": 0.0646,
+      "genre match": 0.1,
+      "shortlist order": 0.0769,
+      "jev next_watch": 0.225,
+      "jev blend": 0.1833
+    },
+    "247": {
+      "popularity": 0.3333,
+      "genre match": 0.1429,
+      "shortlist order": 0.25,
+      "jev next_watch": 0.5,
+      "jev blend": 0.5
+    },
+    "250": {
+      "popularity": 0.0871,
+      "genre match": 0.1548,
+      "shortlist order": 0.2,
+      "jev next_watch": 0.1409,
+      "jev blend": 0.125
+    },
+    "255": {
+      "popularity": 0.0588,
+      "genre match": 0.75,
+      "shortlist order": 0.5,
+      "jev next_watch": 1.0,
+      "jev blend": 1.0
+    },
+    "277": {
+      "popularity": 0.05,
+      "genre match": 0.5,
+      "shortlist order": 0.05,
+      "jev next_watch": 0.225,
+      "jev blend": 0.1056
+    },
+    "292": {
+      "popularity": 0.0769,
+      "genre match": 0.5,
+      "shortlist order": 0.3333,
+      "jev next_watch": 1.0,
+      "jev blend": 1.0
+    },
+    "295": {
+      "popularity": 0.3333,
+      "genre match": 0.5,
+      "shortlist order": 1.0,
+      "jev next_watch": 0.5,
+      "jev blend": 0.5
+    },
+    "297": {
+      "popularity": 0.2,
+      "genre match": 0.4167,
+      "shortlist order": 0.3333,
+      "jev next_watch": 0.4167,
+      "jev blend": 0.2917
+    },
+    "307": {
+      "popularity": 0.05,
+      "genre match": 0.0833,
+      "shortlist order": 0.05,
+      "jev next_watch": 0.1667,
+      "jev blend": 0.1429
+    },
+    "308": {
+      "popularity": 0.1667,
+      "genre match": 0.112,
+      "shortlist order": 0.25,
+      "jev next_watch": 0.5,
+      "jev blend": 0.5
+    },
+    "316": {
+      "popularity": 0.0667,
+      "genre match": 0.0572,
+      "shortlist order": 0.0588,
+      "jev next_watch": 0.1833,
+      "jev blend": 0.3333
+    },
+    "318": {
+      "popularity": 0.05,
+      "genre match": 0.0909,
+      "shortlist order": 0.05,
+      "jev next_watch": 0.5,
+      "jev blend": 0.3333
+    },
+    "322": {
+      "popularity": 0.0667,
+      "genre match": 0.1667,
+      "shortlist order": 0.0714,
+      "jev next_watch": 0.5,
+      "jev blend": 0.5
+    },
+    "332": {
+      "popularity": 0.1548,
+      "genre match": 0.112,
+      "shortlist order": 0.25,
+      "jev next_watch": 0.1291,
+      "jev blend": 0.0914
+    },
+    "349": {
+      "popularity": 0.0694,
+      "genre match": 1.0,
+      "shortlist order": 0.25,
+      "jev next_watch": 0.1291,
+      "jev blend": 0.1021
+    },
+    "351": {
+      "popularity": 0.1429,
+      "genre match": 0.75,
+      "shortlist order": 0.5,
+      "jev next_watch": 1.0,
+      "jev blend": 1.0
+    },
+    "352": {
+      "popularity": 0.25,
+      "genre match": 0.1111,
+      "shortlist order": 0.25,
+      "jev next_watch": 0.3333,
+      "jev blend": 0.25
+    },
+    "356": {
+      "popularity": 0.1056,
+      "genre match": 0.3611,
+      "shortlist order": 0.5,
+      "jev next_watch": 0.25,
+      "jev blend": 0.2
+    },
+    "359": {
+      "popularity": 0.1111,
+      "genre match": 0.1448,
+      "shortlist order": 0.25,
+      "jev next_watch": 1.0,
+      "jev blend": 1.0
+    },
+    "364": {
+      "popularity": 0.0769,
+      "genre match": 0.3333,
+      "shortlist order": 0.1429,
+      "jev next_watch": 0.0699,
+      "jev blend": 0.05
+    },
+    "371": {
+      "popularity": 0.0909,
+      "genre match": 0.3333,
+      "shortlist order": 0.1667,
+      "jev next_watch": 0.125,
+      "jev blend": 0.0955
+    },
+    "375": {
+      "popularity": 0.1429,
+      "genre match": 0.4167,
+      "shortlist order": 0.3333,
+      "jev next_watch": 0.5,
+      "jev blend": 0.5
+    },
+    "382": {
+      "popularity": 0.2,
+      "genre match": 1.0,
+      "shortlist order": 1.0,
+      "jev next_watch": 0.0876,
+      "jev blend": 0.0642
+    },
+    "396": {
+      "popularity": 0.0909,
+      "genre match": 1.0,
+      "shortlist order": 1.0,
+      "jev next_watch": 1.0,
+      "jev blend": 1.0
+    },
+    "405": {
+      "popularity": 0.0541,
+      "genre match": 0.0833,
+      "shortlist order": 0.0625,
+      "jev next_watch": 0.5,
+      "jev blend": 0.5
+    },
+    "407": {
+      "popularity": 0.069,
+      "genre match": 1.0,
+      "shortlist order": 1.0,
+      "jev next_watch": 1.0,
+      "jev blend": 1.0
+    },
+    "429": {
+      "popularity": 1.0,
+      "genre match": 1.0,
+      "shortlist order": 1.0,
+      "jev next_watch": 1.0,
+      "jev blend": 1.0
+    },
+    "430": {
+      "popularity": 0.0513,
+      "genre match": 1.0,
+      "shortlist order": 0.0588,
+      "jev next_watch": 1.0,
+      "jev blend": 1.0
+    },
+    "432": {
+      "popularity": 0.0543,
+      "genre match": 0.1667,
+      "shortlist order": 0.0714,
+      "jev next_watch": 0.1698,
+      "jev blend": 0.1056
+    },
+    "435": {
+      "popularity": 0.1111,
+      "genre match": 0.1,
+      "shortlist order": 0.1111,
+      "jev next_watch": 0.1833,
+      "jev blend": 0.1339
+    },
+    "438": {
+      "popularity": 0.0955,
+      "genre match": 0.0714,
+      "shortlist order": 0.0714,
+      "jev next_watch": 0.3333,
+      "jev blend": 0.3333
+    },
+    "445": {
+      "popularity": 0.5,
+      "genre match": 0.0769,
+      "shortlist order": 0.125,
+      "jev next_watch": 0.3333,
+      "jev blend": 0.3333
+    },
+    "457": {
+      "popularity": 0.3333,
+      "genre match": 0.0556,
+      "shortlist order": 0.0667,
+      "jev next_watch": 0.082,
+      "jev blend": 0.1056
+    },
+    "460": {
+      "popularity": 0.25,
+      "genre match": 0.1068,
+      "shortlist order": 0.2,
+      "jev next_watch": 0.1698,
+      "jev blend": 0.1263
+    },
+    "465": {
+      "popularity": 0.0556,
+      "genre match": 0.1111,
+      "shortlist order": 0.0833,
+      "jev next_watch": 0.5,
+      "jev blend": 0.5
+    },
+    "468": {
+      "popularity": 0.0669,
+      "genre match": 0.0646,
+      "shortlist order": 0.0526,
+      "jev next_watch": 0.1,
+      "jev blend": 0.0833
+    },
+    "473": {
+      "popularity": 0.0909,
+      "genre match": 0.1667,
+      "shortlist order": 0.3333,
+      "jev next_watch": 1.0,
+      "jev blend": 1.0
+    },
+    "477": {
+      "popularity": 0.0769,
+      "genre match": 0.1,
+      "shortlist order": 0.0909,
+      "jev next_watch": 1.0,
+      "jev blend": 1.0
+    },
+    "486": {
+      "popularity": 0.1056,
+      "genre match": 1.0,
+      "shortlist order": 0.5,
+      "jev next_watch": 1.0,
+      "jev blend": 1.0
+    },
+    "501": {
+      "popularity": 0.0513,
+      "genre match": 0.0801,
+      "shortlist order": 0.0556,
+      "jev next_watch": 0.0773,
+      "jev blend": 0.0577
+    },
+    "506": {
+      "popularity": 0.0833,
+      "genre match": 0.6111,
+      "shortlist order": 0.3333,
+      "jev next_watch": 1.0,
+      "jev blend": 1.0
+    },
+    "507": {
+      "popularity": 0.1111,
+      "genre match": 0.25,
+      "shortlist order": 0.2,
+      "jev next_watch": 0.1833,
+      "jev blend": 0.1429
+    },
+    "509": {
+      "popularity": 0.0667,
+      "genre match": 1.0,
+      "shortlist order": 0.2,
+      "jev next_watch": 1.0,
+      "jev blend": 1.0
+    },
+    "520": {
+      "popularity": 0.0526,
+      "genre match": 0.0556,
+      "shortlist order": 0.05,
+      "jev next_watch": 0.0597,
+      "jev blend": 0.0588
+    },
+    "525": {
+      "popularity": 0.05,
+      "genre match": 0.2056,
+      "shortlist order": 0.05,
+      "jev next_watch": 0.0955,
+      "jev blend": 0.0801
+    },
+    "538": {
+      "popularity": 0.0526,
+      "genre match": 0.0772,
+      "shortlist order": 0.0556,
+      "jev next_watch": 0.0876,
+      "jev blend": 0.0801
+    },
+    "545": {
+      "popularity": 0.0714,
+      "genre match": 0.3333,
+      "shortlist order": 0.1667,
+      "jev next_watch": 0.2,
+      "jev blend": 0.1429
+    },
+    "549": {
+      "popularity": 0.3333,
+      "genre match": 0.0909,
+      "shortlist order": 0.1429,
+      "jev next_watch": 0.2917,
+      "jev blend": 0.225
+    },
+    "554": {
+      "popularity": 0.05,
+      "genre match": 0.0714,
+      "shortlist order": 0.05,
+      "jev next_watch": 0.0773,
+      "jev blend": 0.1667
+    },
+    "560": {
+      "popularity": 0.0527,
+      "genre match": 0.2,
+      "shortlist order": 0.0588,
+      "jev next_watch": 0.1056,
+      "jev blend": 0.0769
+    },
+    "561": {
+      "popularity": 1.0,
+      "genre match": 0.3333,
+      "shortlist order": 0.5,
+      "jev next_watch": 1.0,
+      "jev blend": 1.0
+    },
+    "563": {
+      "popularity": 0.0909,
+      "genre match": 0.0871,
+      "shortlist order": 0.0769,
+      "jev next_watch": 0.0699,
+      "jev blend": 0.0646
+    },
+    "565": {
+      "popularity": 0.1111,
+      "genre match": 0.225,
+      "shortlist order": 0.2,
+      "jev next_watch": 0.1364,
+      "jev blend": 0.0963
+    },
+    "571": {
+      "popularity": 0.0572,
+      "genre match": 0.5,
+      "shortlist order": 0.0909,
+      "jev next_watch": 0.3333,
+      "jev blend": 0.1263
+    },
+    "574": {
+      "popularity": 0.4167,
+      "genre match": 0.1833,
+      "shortlist order": 0.3333,
+      "jev next_watch": 0.082,
+      "jev blend": 0.0597
+    },
+    "580": {
+      "popularity": 0.0833,
+      "genre match": 0.1429,
+      "shortlist order": 0.0833,
+      "jev next_watch": 0.3333,
+      "jev blend": 0.25
+    },
+    "589": {
+      "popularity": 0.1,
+      "genre match": 0.0769,
+      "shortlist order": 0.0833,
+      "jev next_watch": 0.0618,
+      "jev blend": 0.0627
+    },
+    "595": {
+      "popularity": 0.05,
+      "genre match": 0.1339,
+      "shortlist order": 0.05,
+      "jev next_watch": 0.225,
+      "jev blend": 0.1339
+    },
+    "597": {
+      "popularity": 0.05,
+      "genre match": 0.0588,
+      "shortlist order": 0.0526,
+      "jev next_watch": 0.2,
+      "jev blend": 0.125
+    },
+    "606": {
+      "popularity": 0.0742,
+      "genre match": 0.0556,
+      "shortlist order": 0.0588,
+      "jev next_watch": 0.125,
+      "jev blend": 0.1
+    }
+  }
+}

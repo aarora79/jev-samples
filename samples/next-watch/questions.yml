@@ -1,0 +1,62 @@
+# Everything this sample sends to Jev, plus the weights it ranks with: the model
+# pin, the shortlist size, the state budgets, and both questions.
+#
+# Both questions are Choices over the same shortlist, asked in one call. The
+# options come from the shortlist the rules build for each member, so the Python
+# fills in `criteria` at run time: each option key is a MovieLens id such as
+# `m318`, and its description is the title, the year and the genres.
+#
+# The option descriptions come from catalog metadata, so treat them the way you
+# treat a prompt. MovieLens titles are fixed and harmless. A catalog that takes
+# metadata from studios or from users is a different matter: a title written to
+# argue for its own pick would move these answers.
+#
+# The final ranking is the weighted sum of the probability each question gave
+# each title. The sample divides by the total weight, so an edited weight needs
+# no rebalancing. Setting `discovery` to 0 ranks on `next_watch` alone.
+#
+# Adding a question means adding an entry here. Nothing else changes.
+
+# The SDKs default to jev-latest, and a silent upgrade would move answers under
+# weights tuned against an older version.
+model: jev-1.13.0
+
+# How many titles each Choice sees. The API allows up to 255 options per Choice,
+# and every option adds to the text the model has to separate. Twenty keeps the
+# shortlist inside what one screen of a streaming app would show, and it makes
+# the random baseline easy to read: one in twenty lands first.
+shortlist_size: 20
+
+# One budget per state field, so a long history of likes cannot crowd out the
+# dislikes or the taste summary. Together they come to about 1,000 tokens. The
+# sample fills each field line by line, newest first, and stops at the last line
+# that fits, so no title arrives cut in half.
+max_taste_chars: 500
+max_likes_chars: 2400
+max_dislikes_chars: 900
+
+# TypeSafe's published price for input tokens, September 2026. Output tokens are
+# counted and not charged, and the report uses this to price each run.
+input_usd_per_million: 0.042
+
+# Each question asks about one thing. The order here is the order the sample
+# prints them.
+questions:
+  # The ranking question. It reads the member's recent likes and dislikes and
+  # spreads probability across the shortlist, and that spread is the ranking.
+  next_watch:
+    type: choice
+    label: next watch
+    weight: 1.0
+    instructions: Which of these titles this member would most enjoy watching next
+
+  # The reward question. Netflix steers its ranker toward catalog exploration
+  # with reward models at training time; this asks for the same pull at inference
+  # time, and its weight sets how hard it pulls. A weight of 0.25 lets it reorder
+  # titles the first question left close together without overriding a clear
+  # favourite.
+  discovery:
+    type: choice
+    label: discovery
+    weight: 0.25
+    instructions: Which of these titles would widen the range of what this member watches
