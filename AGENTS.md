@@ -31,7 +31,8 @@ jev-samples/
       vend/               a SKILL.md and an installer, so any repo can use it
     next-watch/           the fourth sample, one Jev call per MovieLens member
       fetch_movielens.py  downloads MovieLens small and checks its MD5, needs no Jev key
-      next_watch.py       the shortlist, the Jev call, the blend, the metrics
+      next_watch.py       the shortlist, the Jev call, the blend, the commands
+      evaluate.py         the hold-out split, the metrics, the reports
       data/               the recorded evaluation, committed; the CSVs, gitignored
 ```
 

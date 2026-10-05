@@ -24,6 +24,8 @@ GenRec trains on Netflix's engagement logs and learns an embedding for every tit
 5. One call asks both questions over the shuffled twenty. Python blends the two probability spreads by weight and ranks.
 6. Every ranker orders the same twenty, and the sample reports where the hidden title landed.
 
+`next_watch.py` holds the shortlist, the state, the Jev call and the blend, and runs every command below; `evaluate.py` holds the hold-out split, the metrics and the reports.
+
 `--user` runs the recommender itself: it takes a member's whole history, shortlists twenty unrated titles (fifteen by genre match times log popularity, five of the most popular outside the member's usual genres), and prints the top ten with every column explained.
 
 Everything the sample sends sits in [`questions.yml`](questions.yml): the model pin, the shortlist size, the three state budgets, and both questions with their weights.
