@@ -89,6 +89,8 @@ Output from `uv run next_watch.py` on 30 September 2026 against `jev-1.13.0`, se
 $0.01020 at $0.042 per million input tokens, $0.000102 per member.
 ```
 
+The evaluation now prints one more line after these: the paired bootstrap described next. The 30 September run came before that line existed, so its markdown report in `data/` ends at the cost line.
+
 Jev put the hidden title first for 25.5 of 100 members, against 13.2 for genre match and 5 for a random draw. A paired bootstrap over the 100 members (10,000 resamples of the reciprocal ranks in the committed report) puts `jev next_watch` ahead of genre match by 0.137 MRR, with a 95% interval of 0.070 to 0.206. Jev ranked the hidden title higher for 64 members and lower for 26. `uv run next_watch.py --bootstrap data/movielens-small-100-members-seed-7-jev.json` recomputes those numbers from the committed file with no key and no calls. The 102 ms is the round trip from the machine that ran the evaluation, measured by the sample around each call. TypeSafe's own latency figures remain unreproduced outside the company.
 
 Output from `uv run next_watch.py --user 414` in the same session, first five rows. One call took 130 ms and 2,818 input tokens:
