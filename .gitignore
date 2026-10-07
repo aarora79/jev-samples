@@ -38,6 +38,15 @@ samples/pr-triage/data/*
 !samples/pr-triage/data/apache-airflow-open-latest-18-triage.json
 !samples/pr-triage/data/apache-airflow-open-latest-18-triage.md
 
+# issue-triage writes one markdown report per repository and state. The two for
+# the reference repository are committed, because they are the output the README
+# quotes and a diff on them is how a reworded question gets reviewed. Reports for
+# other repositories stay out, because triaging somebody else's backlog is their
+# business rather than this repo's.
+samples/issue-triage/data/*
+!samples/issue-triage/data/triage-agentic-community-mcp-gateway-registry-open.md
+!samples/issue-triage/data/triage-agentic-community-mcp-gateway-registry-closed.md
+
 # next-watch downloads MovieLens into data/ml-latest-small/ and writes two reports
 # per run. The repo keeps the run behind the README's table and drops the rest.
 # The dataset stays out because fetch_movielens.py rebuilds it and checks its MD5,
@@ -55,6 +64,9 @@ samples/agents-md-readiness/go/go
 samples/pr-triage/go/dist/
 samples/pr-triage/go/pr-triage
 samples/pr-triage/go/go
+samples/issue-triage/go/dist/
+samples/issue-triage/go/issue-triage
+samples/issue-triage/go/go
 *.exe
 
 # OS

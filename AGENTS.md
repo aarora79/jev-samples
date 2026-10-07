@@ -34,11 +34,20 @@ jev-samples/
       next_watch.py       the shortlist, the Jev call, the blend, the commands
       evaluate.py         the hold-out split, the metrics, the reports
       data/               the recorded evaluation, committed; the CSVs, gitignored
+    issue-triage/         the fifth sample, two Jev calls per issue, all Go
+      README.md           what it does, how to run it, what to notice
+      questions.yml       the canonical payload, which build.sh copies into go/
+      explainer.md        the design, as markdown and as one self-contained page
+      go/                 the whole sample: the fetch, both calls, the buckets
+      vend/               a SKILL.md and an installer, so any repo can use it
+      data/               the markdown reports for the reference repo, committed
 ```
 
 ## Setup and commands
 
-Each sample folder is its own uv project, so the root needs no install and samples never share a virtualenv.
+Four samples are Python and read the payload through `typesafe-sdk`. `issue-triage` is Go end to end, hand-rolls the Jev call as one `net/http` POST, and ships as a static binary. It went that way because it needs two calibration files before it can answer anything, and a tool that needs a second runtime installed to produce its own inputs is not one binary. Where a rule below says Python, read it as applying to the four. Read "Jev conventions the samples must follow" as applying to all five: those are about the payload and the arithmetic, which hold in any language.
+
+Each Python sample folder is its own uv project, so the root needs no install and samples never share a virtualenv.
 
 ```bash
 # Samples read TYPESAFE_API_KEY from the environment, then fall back to .env
@@ -62,7 +71,8 @@ One check runs in CI: `.github/workflows/agents-md-readiness.yml` scores this fi
 2. `uvx ruff check .` and `uvx ruff format --check .` both report clean.
 3. The sample runs against a live key, and every code path you changed runs at least once. For readme-check that means a local file, a GitHub repo root, a `/blob/` file page, and an `http://` URL it should refuse. For agents-md-readiness add a repo holding neither AGENTS.md nor CLAUDE.md, and a directory with neither. For pr-triage that means a live fetch, a `--dataset` replay, `--explain` on a number in the dataset and on one that is absent, and a repo whose pull requests include a diff too large to send whole. For next-watch that means an evaluation, `--baselines-only`, `--explain` on a ranked member and on a cold-start one (member 54), `--user` on a member with history and on member 54, and `--bootstrap` on the committed report.
 4. Any output shown in a README comes from a run you just did, with the date next to it.
-5. `samples/agents-md-readiness/go/` and `samples/pr-triage/go/` each compile a sample into one static binary, so a change to a `questions.yml` or to any Go file in those folders means `gofmt -l .`, `go vet ./...`, `go test ./...` and `./build.sh <version>` in that folder, then one live run of the binary you built. The Python stays canonical, and `payload_test.go` fails when the embedded copy of the payload drifts.
+5. `samples/agents-md-readiness/go/`, `samples/pr-triage/go/` and `samples/issue-triage/go/` each compile a sample into one static binary, so a change to a `questions.yml` or to any Go file in those folders means `gofmt -l .`, `go vet ./...`, `go test ./...` and `./build.sh <version>` in that folder, then one live run of the binary you built. In the first two the Python stays canonical. In `issue-triage` the Go is the only implementation, and `questions.yml` at the sample root stays canonical because that is where a reader looks. Either way `payload_test.go` fails when the embedded copy of the payload drifts.
+6. `samples/issue-triage/` is judged by reading its output, so a change to `questions.yml` means re-running it over the reference repository's open issues and over a seeded sample of closed ones, then reading the diff on both committed reports. The reasons column on every row names the signal that put an issue in a bucket, which is what makes a wrong bucket traceable to a question worth rewording. Scores move slightly between runs of identical input, so re-run before believing a changed bucket: one rerun moved the today count from 4 to 5.
 
 Run the whole list before you open a pull request, because CI covers the AGENTS.md check and nothing else. If you add a test suite, use pytest, mock the client rather than calling the API, and wire it into that workflow.
 
@@ -103,7 +113,7 @@ These are the habits the samples exist to teach, so breaking one in a sample tea
 ## Adding a sample
 
 1. Create `samples/<sample-name>/` with kebab-case naming.
-2. Give it its own `pyproject.toml`, depending on `typesafe-sdk` and `pyyaml`.
+2. Give it its own `pyproject.toml`, depending on `typesafe-sdk` and `pyyaml`. Python is the default, because four of the five samples use it and the SDK is part of what they teach. Reach for Go when the thing being shown is a binary somebody installs, as `issue-triage` does, and say so in the sample README: there is no Go SDK, so a Go sample teaches the wire format instead.
 3. Put the whole Jev payload in `questions.yml`: `model`, the state budget, then `questions`, each entry carrying `type`, `label`, `instructions` and any `criteria`. Question order in the file is print order. One state field takes one `max_state_chars`; a state with several fields takes one budget per field, as `pr-triage` does, so a long diff cannot crowd out a description.
 4. Write the sample as a single module where possible. Reach for a second file only when one stops being readable.
 5. Write the sample README to answer three questions in this order: what it does, how to run it, what to notice.
