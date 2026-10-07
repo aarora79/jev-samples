@@ -1,0 +1,147 @@
+# Everything this tool sends to Jev, in the order it asks.
+#
+# Two calls per issue, and the split is the design.
+#
+# Stage one reads the issue. Every question here is a claim about the text, so
+# the body can settle it: what kind of report this is, whether somebody says
+# they are blocked, whether there is a way to reproduce it. A question needing
+# knowledge of the codebase would be asking prose for something prose does not
+# carry.
+#
+# Stage two decides. It gets no issue body at all, only a compact table of the
+# stage-one answers and the facts GitHub already knows, and it answers one
+# question: is this a today thing or a this-month thing.
+#
+# The facts from GitHub never go near a model to be produced. Whether a pull
+# request is linked, how many days the issue has been open, when it was last
+# touched, who filed it, and who has been commenting are all exact and free, so
+# they are read and handed over rather than guessed at.
+#
+# The comment counts are worth naming. They split by who wrote each one, with
+# bots left out, because the reporter asking twice with no maintainer reply and
+# a CI job posting twelve build failures look identical as a single number.
+
+# The SDKs default to jev-latest, and a silent upgrade would move answers under
+# cuts calibrated on an older version.
+model: jev-1.13.0
+
+# One budget per state field, so a long body cannot crowd out the labels.
+max_title_chars: 300
+max_body_chars: 6000
+max_labels_chars: 300
+
+# The digest stage two reads is a dozen short lines, so it needs far less room
+# than a body. Capped anyway, because an issue with forty labels would otherwise
+# push the facts off the end.
+max_digest_chars: 2000
+
+# TypeSafe's published price for input tokens, September 2026. Output tokens are
+# counted and not charged, and the report uses this to cost a run.
+input_usd_per_million: 0.042
+
+# Stage one: eight questions about the text, one call.
+questions:
+  # What kind of thing this is. One axis, so one Choice, and the options are
+  # mutually exclusive by construction.
+  report_kind:
+    type: choice
+    label: kind
+    instructions: What kind of report this is
+    criteria:
+      defect: Something is broken now
+      regression: Something that used to work is broken
+      feature-request: A capability that does not exist yet
+      enhancement: An improvement to something that already works
+      question: A question rather than a request
+      docs-gap: The documentation is wrong, missing or misleading
+      debt: Working code that should be restructured
+
+  # Security and performance sit outside report_kind rather than inside it,
+  # because they overlay every kind. A security regression is both, and a Choice
+  # would force it to pick.
+  #
+  # The wording names the fix rather than the subject. Asking whether an issue
+  # "involves security" returns yes for anything that mentions a token.
+  touches_security:
+    type: noul
+    label: security
+    instructions: >-
+      Fixing this will require changing authentication, authorization, secrets,
+      token handling, or the guarding of outbound requests
+
+  is_performance:
+    type: noul
+    label: performance
+    instructions: >-
+      This issue is about speed, latency, throughput, or how much memory, CPU or
+      cost something uses
+
+  # Coarse on purpose. Measured over 284 closed issues, the areas a reporter can
+  # actually decide are the externally visible ones: documentation scored 91%
+  # precision and the web interface 74%, while internal distinctions between one
+  # service package and another scored 10% to 16%. A reporter knows their
+  # problem is in the browser or in deployment. They do not know which internal
+  # package owns it, so the tool stops asking.
+  area:
+    type: choice
+    label: area
+    instructions: Which part of the system this issue is about
+    criteria:
+      frontend: The web interface, or anything a user sees in a browser
+      backend: The server, its API, its business logic and its stored data
+      infrastructure-as-code: Helm charts, Terraform, CDK and other declared infrastructure
+      deployment-and-ops: How the system is run, including containers, CI, releases, configuration and monitoring
+      docs: Documentation, guides and READMEs, where the writing itself is the problem
+      unclear: The issue does not say which part it concerns
+
+  # Somebody says their work has stopped. The claim is what gets read here, and
+  # who made it arrives separately as a fact from the API.
+  claims_blocking:
+    type: noul
+    label: blocking
+    instructions: The body says work is stopped or unusable, and names no workaround
+
+  has_repro:
+    type: noul
+    label: repro
+    instructions: >-
+      The body carries steps, a command, a log, an error message or a payload
+      that shows the problem happening
+
+  has_proposed_solution:
+    type: noul
+    label: solution
+    instructions: The body says what should be done about it, rather than only what is wrong
+
+  # "Nice to have" is the bottom level here rather than a kind, because it
+  # describes how much somebody wants the thing, not what the thing is.
+  urgency_stated:
+    type: score
+    label: urgency
+    instructions: How urgently the body says this is needed
+    criteria:
+      - Nice to have, someday
+      - Wanted
+      - Cannot proceed without it
+
+# Stage two: one question over the digest.
+#
+# A Score rather than a Choice, because Jev returns a fraction between levels
+# and that fraction is what orders the queue inside a bucket. A Choice would
+# throw the ordering away.
+#
+# The levels are time horizons rather than a ranking, because a ranking needs to
+# know what else is in the queue and one call sees one issue. "Is this a today
+# thing" is a judgement about the issue alone, and it is the same vocabulary the
+# output groups by.
+decision:
+  id: work_horizon
+  label: horizon
+  type: score
+  instructions: >-
+    Given everything in this summary, when should somebody pick this issue up
+  criteria:
+    - When time permits
+    - This month
+    - This week
+    - Today

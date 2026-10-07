@@ -1,0 +1,392 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sorting a 106-issue backlog in ten seconds</title>
+<style>
+  :root{
+    --bg:#fffdf5; --surface:#ffffff; --zebra:#faf8ef;
+    --ink:#1d2b2a; --muted:#52615f; --line:#e4e0d0;
+    --teal:#0f766e; --teal-soft:#e0f2ef;
+    --yellow:#f5c518; --yellow-soft:#fff6cc;
+    --mono:"JetBrains Mono","Roboto Mono",ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  }
+  @media (prefers-color-scheme:dark){
+    :root{
+      --bg:#10191a; --surface:#172224; --zebra:#13201f;
+      --ink:#e8efee; --muted:#9fb2b0; --line:#2a3a3b;
+      --teal:#4fd1c1; --teal-soft:#173a38;
+      --yellow:#f5c518; --yellow-soft:#3a3312;
+    }
+  }
+  *{box-sizing:border-box;}
+  html{-webkit-text-size-adjust:100%;}
+  body{margin:0;background:var(--bg);color:var(--ink);
+    font:16px/1.65 -apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;}
+  main{max-width:880px;margin:0 auto;padding:30px 18px 90px;}
+  header{border-left:6px solid var(--yellow);padding:4px 0 4px 16px;margin-bottom:18px;}
+  h1{margin:0;font-size:1.9rem;line-height:1.2;color:var(--teal);}
+  .sub{color:var(--muted);margin:6px 0 0;font-size:.95rem;}
+  h2{margin:44px 0 10px;font-size:1.3rem;color:var(--teal);
+    border-bottom:2px solid var(--yellow);padding-bottom:5px;}
+  h3{margin:28px 0 8px;font-size:1.03rem;}
+  p{margin:0 0 12px;}
+  a{color:var(--teal);}
+  code{font-family:var(--mono);font-size:.85em;background:var(--teal-soft);
+    color:var(--ink);padding:.1em .35em;border-radius:4px;}
+  pre{font-family:var(--mono);font-size:.78rem;line-height:1.6;background:var(--surface);
+    border:1px solid var(--line);border-left:4px solid var(--teal);border-radius:6px;
+    padding:13px 15px;overflow-x:auto;margin:16px 0;}
+  pre code{background:none;padding:0;font-size:1em;}
+  table{width:100%;border-collapse:collapse;font-size:.87rem;margin:16px 0;
+    font-variant-numeric:tabular-nums;}
+  thead th{background:var(--teal-soft);text-align:left;padding:8px 10px;
+    border-bottom:2px solid var(--yellow);font-weight:600;}
+  td{padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top;}
+  tbody tr:nth-child(even){background:var(--zebra);}
+  .strip{display:flex;flex-wrap:wrap;gap:10px;margin:18px 0 6px;}
+  .stat{flex:1 1 160px;background:var(--surface);border:1px solid var(--line);
+    border-top:3px solid var(--teal);border-radius:6px;padding:10px 12px;}
+  .stat .v{font-size:1.45rem;font-weight:600;color:var(--teal);line-height:1.1;}
+  .stat .k{font-size:.78rem;color:var(--muted);margin-top:3px;}
+  figure{margin:22px 0;background:var(--surface);border:1px solid var(--line);
+    border-radius:6px;padding:16px 14px 10px;}
+  figcaption{font-size:.84rem;color:var(--muted);margin-top:10px;
+    border-top:1px solid var(--line);padding-top:8px;}
+  svg{display:block;width:100%;height:auto;overflow:visible;}
+  .d-box{fill:var(--surface);stroke:var(--line);stroke-width:1.5;}
+  .d-box-t{fill:var(--teal-soft);stroke:var(--teal);stroke-width:1.5;}
+  .d-box-y{fill:var(--yellow-soft);stroke:var(--yellow);stroke-width:1.5;}
+  .d-t{font:600 12px var(--mono);fill:var(--ink);}
+  .d-s{font:10.5px var(--mono);fill:var(--muted);}
+  .d-n{font:600 12.5px var(--mono);fill:var(--teal);}
+  .d-line{stroke:var(--muted);stroke-width:1.4;fill:none;}
+  .note{background:var(--yellow-soft);border-left:4px solid var(--yellow);
+    padding:11px 14px;border-radius:6px;margin:16px 0;font-size:.92rem;}
+  footer{margin-top:50px;padding-top:14px;border-top:1px solid var(--line);
+    color:var(--muted);font-size:.84rem;}
+  ul{margin:0 0 12px;padding-left:22px;} li{margin-bottom:5px;}
+  @media print{body{font-size:11pt;background:#fff;} figure,pre,table{break-inside:avoid;}}
+</style>
+</head>
+<body>
+<main>
+
+<header>
+  <h1>Sorting a 106-issue backlog in ten seconds</h1>
+  <p class="sub">How issue-triage decides what to work on today, why it asks the questions it asks, and what it produced on a real queue. Measured 7 October 2026 against <code>agentic-community/mcp-gateway-registry</code>.</p>
+</header>
+
+<div class="strip"><div class="stat"><div class="v">106</div><div class="k">open issues, 57 older than 90 days, 54 with no label</div></div><div class="stat"><div class="v">10 seconds</div><div class="k">to read and sort all of them</div></div><div class="stat"><div class="v">$0.0093</div><div class="k">the whole run, 221,768 input tokens</div></div><div class="stat"><div class="v">4</div><div class="k">issues it says to start on now</div></div></div>
+<h2>Start with a question nobody can answer</h2>
+<p>Issue #1832 says the registry's outbound HTTP client ignores <code>HTTPS_PROXY</code>, so the health checker cannot reach servers behind a corporate proxy. Ask how long it will take to fix. The answer is not in the issue, the reporter does not know it, and careful reading will not produce it: the body describes a symptom and the cost lives in code the reporter has never opened. Its closing pull request changed 39 files.</p>
+<p>Now ask a different question about the same text. Is somebody blocked? Does the body contain a way to reproduce it? Does it propose a fix? Is this a defect or a feature request?</p>
+<p>Every one of those is a fact about the text in front of you. The tool asks only questions a body can settle, and takes everything else from the GitHub API, which knows the answers exactly.</p>
+<h2>What Jev is, and what it hands back</h2>
+<p>Jev is a small model from TypeSafe that answers a fixed list of questions about one piece of text. You send the text once and every question you want asked about it, and you get one typed answer per question. No prose comes back, so there is nothing to parse and nothing to retry when the parse fails.</p>
+<p>Questions come in three shapes, and this tool uses each of them.</p>
+<table>
+<thead><tr><th>shape</th><th>asks</th><th>hands back</th></tr></thead>
+<tbody><tr><td><code>Noul</code></td><td>one yes-or-no claim</td><td>a probability from 0 to 1</td></tr><tr><td><code>Choice</code></td><td>pick one of a named set</td><td>the option, its confidence, and the spread over all options</td></tr><tr><td><code>Score</code></td><td>where this sits on a rubric</td><td>a number between levels, with the level text and the spread</td></tr></tbody>
+</table>
+<p>Here is a real call, cut down to three questions so it fits on a page. The request:</p>
+<pre><code>{
+  "model": "jev-1.13.0",
+  "state": {
+    "issue_body": "Calling my registered server through the gateway returns 502
+      after about 30 seconds. Steps: register a server with a 60s startup, then
+      GET /mcpgw/my-server. Logs attached. We cannot ship until this is fixed."
+  },
+  "questions": {
+    "has_repro": {
+      "type": "noul",
+      "instructions": "The body carries steps, a command, a log, an error
+        message or a payload that shows the problem happening"
+    },
+    "report_kind": {
+      "type": "choice",
+      "instructions": "What kind of report this is",
+      "criteria": {
+        "defect": "Something is broken now",
+        "feature-request": "A capability that does not exist yet",
+        "question": "A question rather than a request"
+      }
+    },
+    "urgency_stated": {
+      "type": "score",
+      "instructions": "How urgently the body says this is needed",
+      "criteria": ["Nice to have, someday", "Wanted",
+                   "Cannot proceed without it"]
+    }
+  }
+}</code></pre>
+<p>And the answer, 469 input tokens:</p>
+<pre><code>{
+  "answers": {
+    "has_repro":   { "type": "noul", "noul": 0.84 },
+    "report_kind": { "type": "choice", "choice": "defect", "confidence": 1.0,
+                     "probabilities": {"defect": 1.0, "feature-request": 0.0,
+                                       "question": 0.0} },
+    "urgency_stated": { "type": "score", "score": 2.0, "confidence": 1.0,
+                        "legend": {"0": "Nice to have, someday",
+                                   "1": "Wanted",
+                                   "2": "Cannot proceed without it"},
+                        "probabilities": {"0": 0.0, "1": 0.0, "2": 1.0} }
+  },
+  "usage": { "input_tokens": 469, "output_tokens": 77 }
+}</code></pre>
+<p>Three properties of that shape are what the rest of this design rests on.</p>
+<p><strong>The text is sent once and every question reads it.</strong> The body is the expensive part of the request, so a fourth question about a body already on the wire costs a few tokens and no extra round trip. That is why this tool asks eight at a time rather than eight times.</p>
+<figure>
+<svg viewBox="0 0 840 250" role="img" aria-label="One issue body is sent once, and every question reads it, each returning a typed answer">
+<defs><marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0 L10 5 L0 10 z" fill="var(--muted)"/></marker></defs>
+  <rect class="d-box" x="2" y="80" width="186" height="76" rx="6"/>
+  <text class="d-t" x="16" y="104">one issue body</text>
+  <text class="d-s" x="16" y="124">sent once</text>
+  <text class="d-s" x="16" y="142">one round trip</text>
+
+  <path class="d-line" d="M192 118 H 226 V 36 H 256" marker-end="url(#ar)"/>
+  <path class="d-line" d="M226 118 H 256" marker-end="url(#ar)"/>
+  <path class="d-line" d="M226 118 V 200 H 256" marker-end="url(#ar)"/>
+  <path class="d-line" d="M226 118 V 78 H 256" marker-end="url(#ar)"/>
+  <path class="d-line" d="M226 118 V 158 H 256" marker-end="url(#ar)"/>
+
+  <rect class="d-box-t" x="260" y="20" width="250" height="32" rx="4"/>
+  <text class="d-s" x="272" y="40">has_repro            Noul</text>
+  <rect class="d-box-t" x="260" y="62" width="250" height="32" rx="4"/>
+  <text class="d-s" x="272" y="82">report_kind          Choice</text>
+  <rect class="d-box-t" x="260" y="102" width="250" height="32" rx="4"/>
+  <text class="d-s" x="272" y="122">urgency_stated       Score</text>
+  <rect class="d-box" x="260" y="142" width="250" height="32" rx="4"/>
+  <text class="d-s" x="272" y="162">area, security, performance,</text>
+  <rect class="d-box" x="260" y="184" width="250" height="32" rx="4"/>
+  <text class="d-s" x="272" y="204">blocking, solution</text>
+
+  <path class="d-line" d="M514 36 H 548" marker-end="url(#ar)"/>
+  <path class="d-line" d="M514 78 H 548" marker-end="url(#ar)"/>
+  <path class="d-line" d="M514 118 H 548" marker-end="url(#ar)"/>
+
+  <text class="d-n" x="554" y="40">0.84</text>
+  <text class="d-n" x="554" y="82">defect, confidence 1.00</text>
+  <text class="d-n" x="554" y="122">2.00 of 2</text>
+  <text class="d-s" x="554" y="162">a number per question,</text>
+  <text class="d-s" x="554" y="180">never a sentence</text>
+
+  <text class="d-s" x="2" y="238">469 input tokens for the three above. The eight this tool asks cost about 2,400.</text>
+</svg>
+<figcaption>The body is the expensive part of the request, so a fourth question about a body already on the wire costs a few tokens and no extra round trip.</figcaption>
+</figure>
+<p><strong>Every answer is a number you can threshold.</strong> <code>has_repro</code> came back 0.84, not "yes, the issue appears to contain reproduction steps". So the code compares it to a floor, and that floor lives in the code where a diff shows it. Nothing has to read a sentence to find out what the model decided.</p>
+<p><strong>The model never does arithmetic.</strong> It classifies, and the numbers it returns get combined in Go. Jev cannot count, and its comparisons of dates and quantities are unreliable, so every threshold, every sum and every sort in this tool happens outside it.</p>
+<h2>What one issue costs</h2>
+<p>Two calls, and the split between them is the design.</p>
+<figure>
+<svg viewBox="0 0 840 290" role="img" aria-label="Stage one asks eight questions about the issue text; the GitHub facts join it to form a table; stage two answers one question and the score becomes a bucket">
+<defs><marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0 L10 5 L0 10 z" fill="var(--muted)"/></marker></defs>
+  <text class="d-t" x="2" y="16">stage 1</text>
+  <rect class="d-box" x="2" y="26" width="166" height="96" rx="6"/>
+  <text class="d-t" x="14" y="48">the issue text</text>
+  <text class="d-s" x="14" y="68">title</text>
+  <text class="d-s" x="14" y="84">body</text>
+  <text class="d-s" x="14" y="100">labels</text>
+  <path class="d-line" d="M172 74 H 214" marker-end="url(#ar)"/>
+  <rect class="d-box-t" x="218" y="26" width="206" height="96" rx="6"/>
+  <text class="d-t" x="230" y="48">8 questions a body</text>
+  <text class="d-t" x="230" y="64">can settle</text>
+  <text class="d-s" x="230" y="84">kind, area, security,</text>
+  <text class="d-s" x="230" y="100">performance, blocking,</text>
+  <text class="d-s" x="230" y="116">repro, solution, urgency</text>
+
+  <text class="d-t" x="2" y="156">facts, no model</text>
+  <rect class="d-box-y" x="2" y="166" width="422" height="80" rx="6"/>
+  <text class="d-s" x="14" y="188">days open &#183; days idle &#183; linked pull request</text>
+  <text class="d-s" x="14" y="208">who filed it &#183; who has commented, bots excluded</text>
+  <text class="d-s" x="14" y="232">GitHub knows all of this exactly, so nothing guesses at it</text>
+
+  <path class="d-line" d="M428 74 H 470 V 140 H 500" marker-end="url(#ar)"/>
+  <path class="d-line" d="M428 206 H 470 V 140 H 500" marker-end="url(#ar)"/>
+
+  <text class="d-t" x="504" y="110">stage 2</text>
+  <rect class="d-box-t" x="504" y="118" width="190" height="78" rx="6"/>
+  <text class="d-t" x="516" y="140">one question over</text>
+  <text class="d-t" x="516" y="156">a fact table</text>
+  <text class="d-s" x="516" y="178">and no issue body</text>
+
+  <path class="d-line" d="M698 157 H 736" marker-end="url(#ar)"/>
+  <rect class="d-box" x="740" y="92" width="98" height="130" rx="6"/>
+  <text class="d-n" x="752" y="114">Today</text>
+  <text class="d-n" x="752" y="140">This week</text>
+  <text class="d-n" x="752" y="166">This month</text>
+  <text class="d-n" x="752" y="192">When time</text>
+  <text class="d-n" x="752" y="208">permits</text>
+
+  <text class="d-s" x="2" y="272">About 2,700 input tokens per issue across both calls, 265 ms.</text>
+  <text class="d-s" x="2" y="288">Stage two cannot read the body, so a persuasively written issue has to win on the facts.</text>
+</svg>
+<figcaption>Stage one only ever asks things the text can answer. Everything a model would have to guess at comes from the API instead.</figcaption>
+</figure>
+<p>Stage one reads the issue. Stage two never sees the body at all, only a table of facts, so a persuasively written issue cannot argue past the evidence. An issue that says "CRITICAL, please fix immediately" and carries no repro, no proposed fix and no other commenters has to win on those facts.</p>
+<h2>Why two calls instead of one</h2>
+<p>The split buys two things.</p>
+<p>Stage one can be asked a question and checked. "Does this body contain a repro" has one right answer, visible to anyone who opens the issue. When the tool gets it wrong, you can see that it is wrong and reword the question.</p>
+<p>Stage two works from a table small enough to read whole. When a bucket looks wrong, the input to that decision is a dozen lines, and you can look at them.</p>
+<p>Here is all of it for one real issue, printed by <code>-explain 1575</code>:</p>
+<pre><code>#1575  macOS: prepare-log-dirs.sh 0750/uid-1000 blocks the bind mount and
+       nginx logging, so registry/auth-server/mcpgw never serve
+
+stage 1, asked about the issue text
+  kind                   defect
+  security               0.05
+  performance            0.01
+  area                   deployment-and-ops
+  blocking               0.01
+  repro                  0.98
+  solution               0.67
+  urgency                1.82 of 2, "Cannot proceed without it"
+
+stage 2 read exactly this, and no body
+  kind: defect
+  security: 0.05
+  performance: 0.01
+  area: deployment-and-ops
+  blocking: 0.01
+  repro: 0.98
+  solution: 0.67
+  urgency: 1.82 of 2, "Cannot proceed without it"
+  filed by: an outside reporter
+  days open: 67
+  days since last activity: 65
+  comments: 1 from 1 different person
+  comments by the reporter: 1
+  comments by a project maintainer: 0
+  discussion: an outside reporter has commented and no maintainer has replied
+  linked pull request: none
+
+stage 2 answered work_horizon 2.85 of 3, which is "Today"
+  2673 input tokens across both calls, 265 ms</code></pre>
+<p>Read the fact table and the answer follows. Somebody outside the project reported a defect that stops three services from starting, gave steps to reproduce it, said they cannot proceed, commented once, and has been waiting 65 days without a reply.</p>
+<p>Compare the bottom of the queue, <code>-explain 805</code>:</p>
+<pre><code>#805  Inconsistent tool extraction between hybrid and client-side search paths
+  kind: defect
+  filed by: a project maintainer
+  days open: 179
+  days since last activity: 179
+  discussion: nobody has commented
+  linked pull request: none
+  labels: semantic-search, search, parking-lot
+
+stage 2 answered work_horizon 0.42 of 3, which is "When time permits"</code></pre>
+<p>A real defect, filed by the maintainer, that nobody has commented on in six months and that carries a <code>parking-lot</code> label. Same questions, opposite answer, and the reasons are on the page.</p>
+<h2>The areas are deliberately coarse</h2>
+<p>Six options: frontend, backend, infrastructure-as-code, deployment-and-ops, docs, unclear.</p>
+<p>Each one is something a reporter can see from outside. A person filing an issue knows their problem showed up in the browser, or while deploying, or in the documentation. They do not know which internal package owns it, because that split exists in the codebase and not in their experience of the bug.</p>
+<p>Measured over 284 closed issues whose fixes we could check, that line is sharp. Asking about an externally visible area agrees with where the fix landed 74% to 91% of the time. Asking about one internal service package against another drops to 10% to 16%, which is what guessing looks like.</p>
+<p>So the question offers the six a body can decide, and <code>unclear</code> for the ones that say nothing about where the problem is.</p>
+<h2>Security and performance sit outside the kind</h2>
+<p><code>report_kind</code> offers one answer from defect, regression, feature-request, enhancement, question, docs-gap and debt. Those are mutually exclusive, so one question is right.</p>
+<p>Security and performance are separate yes-or-no questions, because they overlay every kind. A security regression is both, and a single question forcing one answer would lose half of it. Issue #1834 came back <code>regression</code> with security at 0.95, which is the shape of a login failure behind a proxy.</p>
+<h2>Who has been talking, counted rather than asked</h2>
+<p>Four facts come out of the comment thread, and GitHub knows all of them exactly:</p>
+<figure>
+<svg viewBox="0 0 840 230" role="img" aria-label="Seven comments split into reporter, maintainer, others and bots, with three distinct humans counted">
+<defs><marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0 L10 5 L0 10 z" fill="var(--muted)"/></marker></defs>
+  <rect class="d-box" x="2" y="88" width="168" height="40" rx="5"/>
+  <text class="d-t" x="16" y="113">7 comments</text>
+  <path class="d-line" d="M174 108 H 210" marker-end="url(#ar)"/>
+  <rect class="d-box-t" x="214" y="14" width="300" height="30" rx="4"/>
+  <text class="d-s" x="226" y="34">2 from the person who filed it</text>
+  <rect class="d-box-t" x="214" y="50" width="300" height="30" rx="4"/>
+  <text class="d-s" x="226" y="70">1 from somebody with a project role</text>
+  <rect class="d-box-t" x="214" y="86" width="300" height="30" rx="4"/>
+  <text class="d-s" x="226" y="106">2 from other people</text>
+  <rect class="d-box-y" x="214" y="122" width="300" height="30" rx="4"/>
+  <text class="d-s" x="226" y="142">2 from bots, ignored</text>
+  <rect class="d-box" x="214" y="158" width="300" height="30" rx="4"/>
+  <text class="d-n" x="226" y="178">3 distinct humans</text>
+  <text class="d-s" x="532" y="34">is it waiting on us?</text>
+  <text class="d-s" x="532" y="70">has anybody looked?</text>
+  <text class="d-s" x="532" y="106">how wide is this?</text>
+  <text class="d-s" x="532" y="142">a CI job is not a debate</text>
+  <text class="d-s" x="532" y="178">more than one person affected</text>
+  <text class="d-s" x="2" y="214">The reporter and maintainer counts overlap, because a maintainer who files an issue and replies on it does both.</text>
+</svg>
+<figcaption>Each count answers a different question. Collapsing them into "7 comments" throws all five away.</figcaption>
+</figure>
+<p>Each one says something a single number cannot. Three different people on a thread means more than one person is affected, which one insistent reporter cannot establish. A maintainer having replied means somebody already looked. An outside reporter posting four times with no reply means the issue is waiting on us, and 5 of the 106 are in exactly that state.</p>
+<p>Who filed the issue decides whether that last one means anything. The maintainer filed 49 of these 106 issues, so a thread with no maintainer reply is often a maintainer talking on their own issue rather than somebody being ignored.</p>
+<p>Bots are excluded two ways, because GitHub reports them two ways: a real bot account comes back with a <code>Bot</code> type, and an app posting through a user account comes back as a user whose login ends in <code>[bot]</code>. Without the second check, a CI job posting twelve build failures reads as a busy, contested thread.</p>
+<h2>From a score to four buckets</h2>
+<p>The second question is a score with four levels, and the levels are the buckets:</p>
+<figure>
+<svg viewBox="0 0 840 220" role="img" aria-label="A score from 0 to 3 rounds to one of four buckets, with caps on the first two spilling overflow downward">
+<defs><marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0 L10 5 L0 10 z" fill="var(--muted)"/></marker></defs>
+  <text class="d-t" x="2" y="18">work_horizon, a score Jev returns between 0 and 3</text>
+  <line x1="60" y1="52" x2="700" y2="52" stroke="var(--line)" stroke-width="2"/>
+  <text class="d-s" x="52" y="72">0</text>
+  <text class="d-s" x="265" y="72">1</text>
+  <text class="d-s" x="478" y="72">2</text>
+  <text class="d-s" x="694" y="72">3</text>
+  <circle cx="668" cy="52" r="5" fill="var(--teal)"/>
+  <text class="d-n" x="620" y="40">2.85</text>
+  <circle cx="150" cy="52" r="5" fill="var(--teal)"/>
+  <text class="d-n" x="128" y="40">0.42</text>
+  <rect class="d-box" x="2" y="96" width="196" height="54" rx="5"/>
+  <text class="d-t" x="14" y="118">When time permits</text>
+  <text class="d-s" x="14" y="138">no cap</text>
+  <rect class="d-box" x="216" y="96" width="196" height="54" rx="5"/>
+  <text class="d-t" x="228" y="118">This month</text>
+  <text class="d-s" x="228" y="138">no cap</text>
+  <rect class="d-box-t" x="430" y="96" width="196" height="54" rx="5"/>
+  <text class="d-t" x="442" y="118">This week</text>
+  <text class="d-s" x="442" y="138">at most 15</text>
+  <rect class="d-box-t" x="644" y="96" width="194" height="54" rx="5"/>
+  <text class="d-t" x="656" y="118">Today</text>
+  <text class="d-s" x="656" y="138">at most 5</text>
+  <path class="d-line" d="M740 154 V 174 H 528 V 154" marker-end="url(#ar)"/>
+  <path class="d-line" d="M528 174 H 314 V 154" marker-end="url(#ar)"/>
+  <text class="d-s" x="2" y="196">A full bucket spills into the next one down, and the row records that it moved.</text>
+  <text class="d-s" x="2" y="212">The fraction between levels orders the issues inside a bucket, which is why the question is a score.</text>
+</svg>
+<figcaption>Rounding a score to its nearest level gives the four buckets. On this queue the scores spread across all four, so no clustering is needed.</figcaption>
+</figure>
+<p>A score rather than a pick-one, because Jev returns a fraction between levels, and that fraction orders the issues inside a bucket. #1575 came back at 2.85 and sits above an issue that came back at 2.61.</p>
+<p>The levels are time horizons rather than a ranking for a reason worth naming. A ranking question like "would this make your top five" asks one issue to know what else is in the queue, and one call sees one issue. "Is this a today thing" is a judgement about the issue alone, and the selection of the actual five happens afterwards in Go, by sorting.</p>
+<p>Rounding a score to its nearest level gives four buckets without any clustering. On the real queue the scores spread across all four, so natural breaks would add machinery for nothing. The tool prints the distribution on every run and says so if three quarters of a queue ever land in one bucket, which is when the cuts would be worth revisiting.</p>
+<p>The two caps are capacity promises. A list of thirty things to do today is not a plan, so anything scoring into a full bucket moves down one and the row says it moved.</p>
+<h2>What it produced</h2>
+<pre><code>| horizon           | issues | numbers                             |
+| Today             | 4      | #1662, #1575, #1859, #1663          |
+| This week         | 15     | #1571, #1607, #1597, #98, #895, ... |
+| This month        | 67     | ...                                 |
+| When time permits | 20     | ...                                 |</code></pre>
+<p>The four it says to start on, with the reasons column that makes the thing correctable:</p>
+<table>
+<thead><tr><th>issue</th><th>kind</th><th>area</th><th>why it is here</th></tr></thead>
+<tbody><tr><td>#1662</td><td>defect</td><td>infrastructure-as-code</td><td>urgent in the body (1.53 of 2), proposes a fix, outside reporter</td></tr><tr><td>#1575</td><td>defect</td><td>deployment-and-ops</td><td>outside reporter commented once, no reply, urgent in the body (1.79 of 2), has a repro</td></tr><tr><td>#1859</td><td>defect</td><td>backend</td><td>urgent in the body (1.58 of 2), has a repro, opened 0 days ago</td></tr><tr><td>#1663</td><td>defect</td><td>deployment-and-ops</td><td>#1784 already open, says work is blocked (0.82), security (0.58)</td></tr></tbody>
+</table>
+<p>All four are defects. Three come with a way to reproduce them. One has a pull request already open against it, which the table says so you can go and finish it rather than start it.</p>
+<h3>Checking it against work whose answer is known</h3>
+<p><code>-state CLOSED -sample 25 -seed 7</code> scores a random sample of closed issues, which is a sanity check rather than a fitted target. The single issue it put in Today was #1834: a 1.31.0 regression where browser login fails behind an HTTP proxy, blocked, security 0.95, urgency 2.00 of 2. That was a real regression, and somebody did fix it.</p>
+<p>One confound to know about: a closed issue has a large "days since last activity", which pushes it toward the bottom buckets. Ten of the twenty-five landed in "when time permits". The closed check is a fair read on the top of the ranking and an unfair one on the bottom.</p>
+<h2>What it cannot do</h2>
+<div class="note"><p>The buckets are advice. The tool writes a markdown file and nothing else: it does not close, label, comment on or assign anything. TypeSafe publishes 67.8% accuracy on their own benchmark, their figure, September 2026, unreproduced outside the company. That is enough to decide what to read first and nowhere near enough to be the last word on anything.</p></div>
+<p>Scores move between runs. The same issue asked twice comes back with a slightly different number, so one rerun moved the Today count from 4 to 5. Any score within 0.15 of a bucket edge is marked on its row, and a changed bucket is worth a rerun before it is worth a theory.</p>
+<p>There is no accuracy figure for the buckets, because there is nothing honest to measure one against. The obvious candidate is how long an issue actually took to close, which the closed issues record exactly. Fitting to it would be a mistake: measured over 374 closed issues, the ones labelled <code>security</code> took thirty times longer to close than the ones labelled <code>bug</code>. That is a record of delay, and fitting weights to it would make the delay the goal.</p>
+<p>So the judgement in this tool is declared rather than fitted. The weights are in <code>questions.yml</code> where you can read them, the thresholds are in <code>score.go</code> where a diff shows them, and the thing you check is the output.</p>
+<h2>Running it</h2>
+<pre><code># Every open issue, into data/triage-owner-repo-open.md
+issue-triage owner/repo
+
+# A seeded sample of closed issues, as a sanity check
+issue-triage owner/repo -state CLOSED -sample 25 -seed 7
+
+# Everything behind one issue's bucket
+issue-triage owner/repo -explain 1575</code></pre>
+<p>One static binary, no runtime, no per-repository configuration. It needs a GitHub token, from <code>GITHUB_TOKEN</code>, <code>GH_TOKEN</code> or the <code>gh</code> CLI, and a Jev key in <code>TYPESAFE_API_KEY</code> or a <code>.env</code> file.</p>
+<p>A bucket you disagree with is a question worth rewording. The reasons column names the signal that put the issue there, <code>-explain</code> prints the whole decision, and the questions live in <code>questions.yml</code>.</p>
+</main><footer><h2>Sources</h2>
+<ul><li>The two runs behind every number here: <code>data/triage-agentic-community-mcp-gateway-registry-open.md</code> and <code>-closed.md</code>, both 7 October 2026.</li><li>The worked examples: <code>issue-triage ... -explain 1575</code> and <code>-explain 805</code>, same day.</li><li>The 284-issue measurement of the twelve-area version, which is why the areas are coarse now: recorded in the project handoff, 6 October 2026.</li><li>Repository under test: <a href="https://github.com/agentic-community/mcp-gateway-registry">agentic-community/mcp-gateway-registry</a>.</li><li>Jev price and accuracy figures are TypeSafe's own, September 2026.</li></ul>
+</footer>
+</body>
+</html>

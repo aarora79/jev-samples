@@ -12,6 +12,7 @@ Every sample is a small self-contained project under [samples/](samples/), and y
 | [agents-md-readiness](samples/agents-md-readiness/) | Scores an AGENTS.md or CLAUDE.md against the [agents.md](https://agents.md) format: seventeen questions in one call, a padded markdown table, one weighted readiness score, and a JSON report per document. Ships scored runs for eleven open-source repos in [data/](samples/agents-md-readiness/data/), plus a [Go port](samples/agents-md-readiness/go/) that compiles the same check into one static binary for a CI runner without Python. |
 | [pr-triage](samples/pr-triage/) | Says what evidence each open pull request needs before it merges, from a green tick up to a person reading it with the author. Rules settle the drafts, the red branches and anything a reviewer has already sent back to its author, at no cost; the rest take one call of twelve questions about the title, the description, the file list, the diff and the newest comment. Nine answers become two numbers, effort and consequence, and those pick one of five routes. Builds its dataset from the GitHub API, prints a summary table, three pull requests to clear first, a per-reviewer table of who owes a second look, and a per-pull-request table, and ships the scored runs for two repositories in [data/](samples/pr-triage/data/). On eighteen airflow pull requests, rules settled ten at no cost and the other eight routed for $0.001. Ships a [Go port](samples/pr-triage/go/) that does both halves in one static binary, against github.com or a GitHub Enterprise Server host, and a [Claude Code skill](samples/pr-triage/#install-it-as-a-claude-code-skill) that installs in one command and then drives the binary for you. |
 | [next-watch](samples/next-watch/) | Ranks what a MovieLens member watches next in the shape of GenRec, Netflix's LLM-backed ranker: the member's history goes in as text, twenty candidate titles go in as the options of one `Choice`, and the probabilities that come back are the ranking. Rules shortlist the catalog and serve members with too little history at no cost, and a second `Choice` pulls toward titles that widen a member's range, blended by a weight in `questions.yml`. Hides each sampled member's last like and reports MRR and Hit@k against popularity, genre match and a random draw on the same candidates. On 100 members, Jev put the hidden title first for 25.5 against 13.2 for genre match, for $0.010 in total. |
+| [issue-triage](samples/issue-triage/) | Reads a repository's open issues and says which to work on today, this week, this month, and when time permits. Two calls per issue: eight questions about the text, which is all an issue body can settle, then one decision over a table holding those answers plus the facts GitHub already knows, including how long it has sat and whether an outside reporter is waiting on a reply. The decision is a `Score` whose four levels are the buckets, and the fraction between levels orders each bucket. Writes one markdown file with a summary table and a per-bucket table whose every row names the signal that put it there, so a placement you disagree with points at the question to reword. On 106 open issues it took ten seconds and $0.0093. All Go, in one static binary with no per-repository setup, plus a [Claude Code skill](samples/issue-triage/#install-it-as-a-claude-code-skill) that installs in one command. |
 
 Each sample keeps its Jev payload in `questions.yml`: the model pin, the state budget, every question with the label it prints under, and what each answer is worth toward the score. The Python reads that file and does the arithmetic, so changing a question or a weight is a data change and changing a threshold is a code change.
 
@@ -152,7 +153,16 @@ uv run pr_triage.py --help
 uv run pr_triage.py apache/airflow --limit 10
 ```
 
-`pr-triage` reads the GitHub API as well, so it wants `GITHUB_TOKEN`, `GH_TOKEN`, or a logged-in `gh` CLI for the fetch.
+`issue-triage` is Go rather than Python, so it builds instead:
+
+```bash
+cd samples/issue-triage/go
+go build -o issue-triage .
+./issue-triage agentic-community/mcp-gateway-registry
+./issue-triage agentic-community/mcp-gateway-registry -explain 1575
+```
+
+`pr-triage` and `issue-triage` read the GitHub API as well, so they want `GITHUB_TOKEN`, `GH_TOKEN`, or a logged-in `gh` CLI for the fetch.
 
 ## The three primitives
 
